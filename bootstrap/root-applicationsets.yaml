@@ -26,7 +26,7 @@ metadata:
 spec:
   generators:
   - git:
-      repoURL: https://github.com/YOUR_USERNAME/YOUR_REPO.git  # Replace with your repo URL
+      repoURL: https://github.com/ronganam/homelab
       revision: HEAD
       directories:
       - path: infra/*
@@ -39,7 +39,7 @@ spec:
     spec:
       project: homelab
       source:
-        repoURL: https://github.com/YOUR_USERNAME/YOUR_REPO.git  # Replace with your repo URL
+        repoURL: https://github.com/ronganam/homelab
         targetRevision: HEAD
         path: '{{path}}'
       destination:
@@ -61,7 +61,7 @@ metadata:
 spec:
   generators:
   - git:
-      repoURL: https://github.com/YOUR_USERNAME/YOUR_REPO.git  # Replace with your repo URL
+      repoURL: https://github.com/ronganam/homelab
       revision: HEAD
       directories:
       - path: apps/*
@@ -76,7 +76,7 @@ spec:
     spec:
       project: homelab
       source:
-        repoURL: https://github.com/YOUR_USERNAME/YOUR_REPO.git  # Replace with your repo URL
+        repoURL: https://github.com/ronganam/homelab
         targetRevision: HEAD
         path: '{{path}}'
       destination:

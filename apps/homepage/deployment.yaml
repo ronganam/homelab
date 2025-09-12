@@ -1,0 +1,206 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: homepage-config
+  namespace: homepage
+data:
+  settings.yaml: |
+    title: Homelab Dashboard
+    favicon: https://gethomepage.dev/img/favicon.ico
+    theme: dark
+    color: slate
+    headerStyle: boxed
+    layout:
+      Infrastructure:
+        style: row
+        columns: 3
+      Applications:
+        style: row
+        columns: 3
+  
+  services.yaml: |
+    - Infrastructure:
+        - Argo CD:
+            href: http://argocd.local  # Update with your Argo CD URL
+            description: GitOps Continuous Delivery
+            icon: argocd
+        - Longhorn:
+            href: http://longhorn.local  # Update with your Longhorn URL
+            description: Distributed Block Storage
+            icon: longhorn
+        - Kubernetes Dashboard:
+            href: http://dashboard.local  # Update if you have k8s dashboard
+            description: Kubernetes Management
+            icon: kubernetes-dashboard
+    
+    - Applications:
+        - n8n:
+            href: http://n8n.local  # Update with your n8n URL
+            description: Workflow Automation
+            icon: n8n
+        - Homepage:
+            href: http://homepage.local  # Update with your homepage URL
+            description: Homelab Dashboard
+            icon: homepage
+  
+  widgets.yaml: |
+    - logo:
+        icon: https://gethomepage.dev/img/favicon.ico
+    - greeting:
+        text_size: xl
+        text: "Welcome to your Homelab!"
+    - datetime:
+        text_size: l
+        format:
+          dateStyle: long
+          timeStyle: short
+          hour12: false
+    - openmeteo:
+        label: Weather
+        latitude: 40.7589
+        longitude: -73.9851
+        timezone: America/New_York
+        cache: 5
+  
+  bookmarks.yaml: |
+    - Homelab:
+        - Documentation:
+            - href: https://kubernetes.io/docs/
+              icon: kubernetes
+        - Repositories:
+            - href: https://github.com/
+              icon: github
+        - Monitoring:
+            - href: https://grafana.com/
+              icon: grafana
+  
+  docker.yaml: |
+    # Docker integration disabled for K8s deployment
+  
+  kubernetes.yaml: |
+    mode: cluster
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: homepage
+  namespace: homepage
+  labels:
+    app: homepage
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: homepage
+  template:
+    metadata:
+      labels:
+        app: homepage
+    spec:
+      serviceAccountName: homepage
+      containers:
+      - name: homepage
+        image: ghcr.io/gethomepage/homepage:v1.4
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: HOMEPAGE_VAR_TITLE
+          value: "Homelab Dashboard"
+        - name: HOMEPAGE_VAR_SEARCH_PROVIDER
+          value: "duckduckgo"
+        - name: HOMEPAGE_VAR_HEADER_STYLE
+          value: "boxed"
+        - name: HOMEPAGE_VAR_WEATHER_API_KEY
+          value: ""  # Add your weather API key if desired
+        volumeMounts:
+        - name: config
+          mountPath: /app/config
+          readOnly: true
+        resources:
+          limits:
+            memory: 512Mi
+            cpu: 200m
+          requests:
+            memory: 256Mi
+            cpu: 100m
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      volumes:
+      - name: config
+        configMap:
+          name: homepage-config
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: homepage
+  namespace: homepage
+  labels:
+    app: homepage
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: homepage
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - namespaces
+  - pods
+  - nodes
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - extensions
+  - networking.k8s.io
+  resources:
+  - ingresses
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - traefik.containo.us
+  resources:
+  - ingressroutes
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - metrics.k8s.io
+  resources:
+  - nodes
+  - pods
+  verbs:
+  - get
+  - list
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: homepage
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: homepage
+subjects:
+- kind: ServiceAccount
+  name: homepage
+  namespace: homepage

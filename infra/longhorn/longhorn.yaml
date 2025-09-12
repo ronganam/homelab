@@ -1,0 +1,92 @@
+---
+# Longhorn installation using remote manifest
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: longhorn-install
+  namespace: longhorn-system
+data:
+  install.sh: |
+    #!/bin/bash
+    kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.5.3/deploy/longhorn.yaml
+---
+# Service to expose Longhorn UI via LoadBalancer
+apiVersion: v1
+kind: Service
+metadata:
+  name: longhorn-frontend-lb
+  namespace: longhorn-system
+  labels:
+    app: longhorn-ui
+    app.kubernetes.io/name: longhorn
+    app.kubernetes.io/instance: longhorn
+    app.kubernetes.io/component: frontend
+spec:
+  type: LoadBalancer
+  ports:
+  - name: http
+    port: 80
+    protocol: TCP
+    targetPort: http
+  selector:
+    app: longhorn-ui
+---
+# Job to install Longhorn
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: longhorn-installer
+  namespace: longhorn-system
+spec:
+  template:
+    spec:
+      serviceAccountName: longhorn-installer
+      containers:
+      - name: installer
+        image: bitnami/kubectl:1.33
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Installing Longhorn..."
+          kubectl apply -f https://raw.githubusercontent.com/longhorn/longhorn/v1.9.1/deploy/longhorn.yaml
+          echo "Longhorn installation completed"
+        resources:
+          limits:
+            memory: 128Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+      restartPolicy: OnFailure
+  backoffLimit: 3
+---
+# ServiceAccount for the installer job
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: longhorn-installer
+  namespace: longhorn-system
+---
+# ClusterRole for the installer
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: longhorn-installer
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+# ClusterRoleBinding for the installer
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: longhorn-installer
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: longhorn-installer
+subjects:
+- kind: ServiceAccount
+  name: longhorn-installer
+  namespace: longhorn-system

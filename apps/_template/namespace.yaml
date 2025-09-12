@@ -1,0 +1,7 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: CHANGEME  # Replace with your app name
+  labels:
+    name: CHANGEME  # Replace with your app name

@@ -118,6 +118,8 @@ spec:
         - name: config
           mountPath: /app/config
           readOnly: true
+        - name: logs
+          mountPath: /app/config/logs
         resources:
           limits:
             memory: 512Mi
@@ -145,6 +147,8 @@ spec:
       - name: config
         configMap:
           name: homepage-config
+      - name: logs
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: ServiceAccount

@@ -23,13 +23,21 @@ fi
 
 echo "✅ Manifest downloaded successfully"
 
+# Create the argocd namespace if it doesn't exist
+echo "📦 Creating argocd namespace..."
+kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
+
 # Install Argo CD
 echo "🔧 Installing Argo CD to cluster..."
-kubectl apply -f "${MANIFEST_FILE}"
+kubectl apply -f "${MANIFEST_FILE}" -n argocd
 
 # Wait for Argo CD to be ready
 echo "⏳ Waiting for Argo CD to be ready..."
 kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+
+# Clean up the downloaded manifest
+echo "🧹 Cleaning up downloaded manifest..."
+rm -f "${MANIFEST_FILE}"
 
 echo "🎉 Argo CD installation completed!"
 echo ""

@@ -1,0 +1,171 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: ipaddresspools.metallb.io
+spec:
+  group: metallb.io
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              addresses:
+                type: array
+                items:
+                  type: string
+              autoAssign:
+                type: boolean
+              avoidBuggyIPs:
+                type: boolean
+              serviceAllocation:
+                type: object
+                properties:
+                  priority:
+                    type: integer
+                  service:
+                    type: string
+                  serviceNamespace:
+                    type: string
+          status:
+            type: object
+            properties:
+              used:
+                type: array
+                items:
+                  type: string
+              allocated:
+                type: object
+                additionalProperties:
+                  type: string
+    additionalPrinterColumns:
+    - name: Auto Assign
+      type: boolean
+      description: Whether to automatically assign addresses from this pool
+      jsonPath: .spec.autoAssign
+    - name: Avoid Buggy IPs
+      type: boolean
+      description: Whether to avoid buggy IPs
+      jsonPath: .spec.avoidBuggyIPs
+    - name: Addresses
+      type: string
+      description: The addresses in this pool
+      jsonPath: .spec.addresses
+  scope: Namespaced
+  names:
+    plural: ipaddresspools
+    singular: ipaddresspool
+    kind: IPAddressPool
+    shortNames:
+    - ip-pool
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: l2advertisements.metallb.io
+spec:
+  group: metallb.io
+  versions:
+  - name: v1beta1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              ipAddressPools:
+                type: array
+                items:
+                  type: string
+              ipAddressPoolSelectors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    matchLabels:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    matchExpressions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                          values:
+                            type: array
+                            items:
+                              type: string
+              nodeSelectors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    matchLabels:
+                      type: object
+                      additionalProperties:
+                        type: string
+                    matchExpressions:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                          values:
+                            type: array
+                            items:
+                              type: string
+              interfaces:
+                type: array
+                items:
+                  type: string
+          status:
+            type: object
+            properties:
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                      format: date-time
+                    reason:
+                      type: string
+                    message:
+                      type: string
+    additionalPrinterColumns:
+    - name: IP Address Pools
+      type: string
+      description: The IP address pools to advertise
+      jsonPath: .spec.ipAddressPools
+    - name: Node Selectors
+      type: string
+      description: The node selectors for this advertisement
+      jsonPath: .spec.nodeSelectors
+  scope: Namespaced
+  names:
+    plural: l2advertisements
+    singular: l2advertisement
+    kind: L2Advertisement
+    shortNames:
+    - l2adv

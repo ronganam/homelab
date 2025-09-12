@@ -114,6 +114,8 @@ spec:
           value: "boxed"
         - name: HOMEPAGE_VAR_WEATHER_API_KEY
           value: ""  # Add your weather API key if desired
+        - name: HOMEPAGE_ALLOWED_HOSTS
+          value: "*"
         volumeMounts:
         - name: config
           mountPath: /app/config

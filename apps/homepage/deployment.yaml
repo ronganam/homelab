@@ -80,6 +80,10 @@ data:
   
   kubernetes.yaml: |
     mode: cluster
+  
+  custom.css: |
+    /* Custom CSS for Homepage */
+    /* Add your custom styles here */
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -99,6 +103,15 @@ spec:
         app: homepage
     spec:
       serviceAccountName: homepage
+      initContainers:
+      - name: init-config
+        image: busybox:1.35
+        command: ['sh', '-c', 'cp -R /config/* /writable-config/']
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: writable-config
+          mountPath: /writable-config
       containers:
       - name: homepage
         image: ghcr.io/gethomepage/homepage:v1.4
@@ -117,9 +130,8 @@ spec:
         - name: HOMEPAGE_ALLOWED_HOSTS
           value: "*"
         volumeMounts:
-        - name: config
+        - name: writable-config
           mountPath: /app/config
-          readOnly: true
         - name: logs
           mountPath: /app/config/logs
         resources:
@@ -149,6 +161,8 @@ spec:
       - name: config
         configMap:
           name: homepage-config
+      - name: writable-config
+        emptyDir: {}
       - name: logs
         emptyDir: {}
 ---

@@ -16,6 +16,13 @@ spec:
       labels:
         app: n8n
     spec:
+      initContainers:
+      - name: init-permissions
+        image: busybox:1.35
+        command: ["sh", "-c", "chown -R 1000:1000 /home/node/.n8n && chmod -R 755 /home/node/.n8n"]
+        volumeMounts:
+        - name: n8n-data
+          mountPath: /home/node/.n8n
       containers:
       - name: n8n
         image: n8nio/n8n:1.110.1
@@ -34,7 +41,7 @@ spec:
         - name: WEBHOOK_URL
           value: "http://n8n.local"  # Change this to your actual domain/IP
         - name: GENERIC_TIMEZONE
-          value: "America/New_York"  # Change to your timezone
+          value: "Asia/Jerusalem"
         - name: N8N_LOG_LEVEL
           value: "info"
         - name: DB_TYPE

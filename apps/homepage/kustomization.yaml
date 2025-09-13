@@ -5,7 +5,6 @@ resources:
 - namespace.yaml
 - deployment.yaml
 - service.yaml
-- dns-deployment.yaml
-- dns-service.yaml
+- ingress.yaml
 
 namespace: homepage

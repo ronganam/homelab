@@ -22,25 +22,25 @@ data:
   services.yaml: |
     - Infrastructure:
         - Argo CD:
-            href: http://argocd.local  # Update with your Argo CD URL
+            href: https://argocd.buildin.group
             description: GitOps Continuous Delivery
             icon: argocd
         - Longhorn:
-            href: http://longhorn.local  # Update with your Longhorn URL
+            href: https://longhorn.buildin.group
             description: Distributed Block Storage
             icon: longhorn
         - Kubernetes Dashboard:
-            href: http://dashboard.local  # Update if you have k8s dashboard
+            href: https://dashboard.buildin.group  # Update if you have k8s dashboard
             description: Kubernetes Management
             icon: kubernetes-dashboard
     
     - Applications:
         - n8n:
-            href: http://n8n.local  # Update with your n8n URL
+            href: https://n9n.buildin.group
             description: Workflow Automation
             icon: n8n
         - Homepage:
-            href: http://homepage.local  # Update with your homepage URL
+            href: https://homepage.buildin.group
             description: Homelab Dashboard
             icon: homepage
   

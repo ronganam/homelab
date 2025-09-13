@@ -39,7 +39,7 @@ spec:
         - name: NODE_ENV
           value: "production"
         - name: WEBHOOK_URL
-          value: "http://n8n.local"  # Change this to your actual domain/IP
+          value: "https://n9n.buildin.group"
         - name: GENERIC_TIMEZONE
           value: "Asia/Jerusalem"
         - name: N8N_LOG_LEVEL

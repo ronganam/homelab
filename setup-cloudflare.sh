@@ -51,27 +51,37 @@ else
     echo "✅ Tunnel 'homelab-tunnel' created"
 fi
 
-# Get tunnel token
-echo "🔑 Getting tunnel token..."
-TUNNEL_TOKEN=$(cloudflared tunnel token homelab-tunnel)
-if [ -z "$TUNNEL_TOKEN" ]; then
-    echo "❌ Failed to get tunnel token"
+# Get tunnel credentials
+echo "🔑 Getting tunnel credentials..."
+TUNNEL_ID=$(cloudflared tunnel list --output json | jq -r '.[] | select(.name=="homelab-tunnel") | .id')
+if [ -z "$TUNNEL_ID" ] || [ "$TUNNEL_ID" = "null" ]; then
+    echo "❌ Failed to get tunnel ID"
     exit 1
 fi
 
-echo "✅ Got tunnel token"
+echo "✅ Got tunnel ID: $TUNNEL_ID"
+
+# Check if credentials file exists
+CREDENTIALS_FILE="$HOME/.cloudflared/$TUNNEL_ID.json"
+if [ ! -f "$CREDENTIALS_FILE" ]; then
+    echo "❌ Credentials file not found at $CREDENTIALS_FILE"
+    echo "Please ensure the tunnel was created properly with: cloudflared tunnel create homelab-tunnel"
+    exit 1
+fi
+
+echo "✅ Found credentials file"
 
 # Create namespace and secret
 echo "🔐 Creating Kubernetes secret..."
 kubectl create namespace cloudflare-tunnel --dry-run=client -o yaml | kubectl apply -f -
 
 # Delete existing secret to avoid annotation warnings
-kubectl delete secret cloudflare-tunnel-token -n cloudflare-tunnel --ignore-not-found=true
+kubectl delete secret cloudflare-tunnel-credentials -n cloudflare-tunnel --ignore-not-found=true
 
-# Create the secret fresh
-kubectl create secret generic cloudflare-tunnel-token \
+# Create the secret with credentials file
+kubectl create secret generic cloudflare-tunnel-credentials \
   --namespace=cloudflare-tunnel \
-  --from-literal=tunnel-token="${TUNNEL_TOKEN}"
+  --from-file=credentials.json="$CREDENTIALS_FILE"
 
 echo "✅ Kubernetes secret created"
 

@@ -103,6 +103,11 @@ else
     exit 1
 fi
 
+# Create namespaces first
+echo "📦 Creating namespaces..."
+kubectl create namespace external-dns --dry-run=client -o yaml | kubectl apply -f -
+kubectl create namespace cloudflare-tunnel --dry-run=client -o yaml | kubectl apply -f -
+
 # Create External-DNS secret
 echo "🔐 Creating External-DNS secret..."
 kubectl create secret generic cloudflare-api-token \

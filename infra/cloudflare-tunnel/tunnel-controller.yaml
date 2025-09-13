@@ -74,8 +74,8 @@ spec:
         - name: TUNNEL_TOKEN
           valueFrom:
             secretKeyRef:
-              name: cloudflare-tunnel-token
-              key: tunnel-token
+              name: cloudflare-tunnel-credentials
+              key: credentials.json
         volumeMounts:
         - name: cloudflared-config
           mountPath: /etc/cloudflared
@@ -104,8 +104,8 @@ spec:
         - name: TUNNEL_TOKEN
           valueFrom:
             secretKeyRef:
-              name: cloudflare-tunnel-token
-              key: tunnel-token
+              name: cloudflare-tunnel-credentials
+              key: credentials.json
         volumeMounts:
         - name: cloudflared-config
           mountPath: /etc/cloudflared

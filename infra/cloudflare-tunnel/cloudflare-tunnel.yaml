@@ -1,4 +1,13 @@
 ---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-tunnel-token
+  namespace: cloudflare-tunnel
+type: Opaque
+stringData:
+  tunnel-token: ""  # This will be populated by the create-secret.sh script
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,26 +27,19 @@ spec:
     spec:
       containers:
       - name: cloudflared
-        image: cloudflare/cloudflared:2025.8.1
+        image: cloudflare/cloudflared:latest
         command:
         - cloudflared
         - tunnel
-        - --config
-        - /etc/cloudflared/config/config.yaml
+        - --token
+        - $(TUNNEL_TOKEN)
         - run
         env:
         - name: TUNNEL_TOKEN
           valueFrom:
             secretKeyRef:
-              name: cloudflared-tunnel-credentials
-              key: credentials.json
-        volumeMounts:
-        - name: config
-          mountPath: /etc/cloudflared/config
-          readOnly: true
-        - name: credentials
-          mountPath: /etc/cloudflared/credentials
-          readOnly: true
+              name: cloudflare-tunnel-token
+              key: tunnel-token
         resources:
           limits:
             memory: 128Mi
@@ -57,10 +59,20 @@ spec:
             port: 8080
           initialDelaySeconds: 10
           periodSeconds: 10
-      volumes:
-      - name: config
-        configMap:
-          name: cloudflared-config
-      - name: credentials
-        secret:
-          secretName: cloudflared-tunnel-credentials
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloudflared-metrics
+  namespace: cloudflare-tunnel
+  labels:
+    app: cloudflared
+spec:
+  selector:
+    app: cloudflared
+  ports:
+  - name: metrics
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP

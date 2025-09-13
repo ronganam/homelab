@@ -1,0 +1,41 @@
+# Cloudflare Tunnel Configuration
+# This file defines how your tunnel routes traffic to your services
+# Edit this file to add/remove services, then run: cloudflared tunnel route dns homelab-tunnel <hostname> <domain>
+
+tunnel: homelab-tunnel
+credentials-file: /etc/cloudflared/credentials/credentials.json
+
+# Ingress rules - define your services here
+ingress:
+  # Homepage dashboard
+  - hostname: homepage.YOUR_DOMAIN.com
+    service: http://homepage.homepage.svc.cluster.local:3000
+  
+  # n8n workflow automation  
+  - hostname: n8n.YOUR_DOMAIN.com
+    service: http://n8n.n8n.svc.cluster.local:5678
+  
+  # ArgoCD GitOps
+  - hostname: argocd.YOUR_DOMAIN.com
+    service: http://argocd-server.argocd.svc.cluster.local:80
+  
+  # Longhorn storage UI
+  - hostname: longhorn.YOUR_DOMAIN.com
+    service: http://longhorn-frontend.longhorn-system.svc.cluster.local:80
+  
+  # Grafana monitoring
+  - hostname: grafana.YOUR_DOMAIN.com
+    service: http://grafana.monitoring.svc.cluster.local:3000
+  
+  # Prometheus monitoring
+  - hostname: prometheus.YOUR_DOMAIN.com
+    service: http://prometheus-server.monitoring.svc.cluster.local:80
+  
+  # Catch-all rule (returns 404 for unmatched requests)
+  - service: http_status:404
+
+# Optional: Enable metrics
+metrics: 0.0.0.0:8080
+
+# Optional: Enable logging
+loglevel: info

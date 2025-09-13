@@ -1,0 +1,139 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tunnel-controller
+  namespace: cloudflare-tunnel
+  labels:
+    app: tunnel-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tunnel-controller
+  template:
+    metadata:
+      labels:
+        app: tunnel-controller
+    spec:
+      serviceAccountName: tunnel-controller
+      containers:
+      - name: tunnel-controller
+        image: bitnami/kubectl:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          set -e
+          echo "🔍 Tunnel Controller started - watching for services with cloudflare.com/tunnel-hostname annotation"
+          
+          # Function to create tunnel route
+          create_route() {
+            local service_name=$1
+            local hostname=$2
+            local namespace=$3
+            
+            echo "🌐 Creating tunnel route for $hostname -> $service_name.$namespace"
+            
+            # Extract domain from hostname
+            domain=$(echo "$hostname" | cut -d'.' -f2-)
+            service_subdomain=$(echo "$hostname" | cut -d'.' -f1)
+            
+            # Create the tunnel route
+            if cloudflared tunnel route dns homelab-tunnel "$service_subdomain" "$domain" 2>/dev/null; then
+              echo "✅ Created route for $hostname"
+            else
+              echo "⚠️  Route may already exist for $hostname"
+            fi
+          }
+          
+          # Function to delete tunnel route
+          delete_route() {
+            local hostname=$1
+            echo "🗑️  Deleting tunnel route for $hostname"
+            # Note: cloudflared doesn't have a direct delete command, routes are managed automatically
+            echo "ℹ️  Route will be cleaned up automatically by Cloudflare"
+          }
+          
+          # Watch for services with the annotation
+          kubectl get services --all-namespaces --watch --output-watch-events -o json | \
+          jq -r 'select(.type == "ADDED" or .type == "MODIFIED" or .type == "DELETED") | 
+                 select(.object.metadata.annotations["cloudflare.com/tunnel-hostname"]) |
+                 "\(.type)|\(.object.metadata.name)|\(.object.metadata.namespace)|\(.object.metadata.annotations["cloudflare.com/tunnel-hostname"])"' | \
+          while IFS='|' read -r event_type service_name namespace hostname; do
+            case "$event_type" in
+              "ADDED"|"MODIFIED")
+                create_route "$service_name" "$hostname" "$namespace"
+                ;;
+              "DELETED")
+                delete_route "$hostname"
+                ;;
+            esac
+          done
+        env:
+        - name: TUNNEL_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-tunnel-token
+              key: tunnel-token
+        volumeMounts:
+        - name: cloudflared-config
+          mountPath: /etc/cloudflared
+        resources:
+          limits:
+            memory: 128Mi
+            cpu: 100m
+          requests:
+            memory: 64Mi
+            cpu: 50m
+      volumes:
+      - name: cloudflared-config
+        emptyDir: {}
+      initContainers:
+      - name: cloudflared-init
+        image: cloudflare/cloudflared:latest
+        command:
+        - /bin/bash
+        - -c
+        - |
+          echo "🔧 Initializing cloudflared..."
+          cloudflared tunnel --token "$TUNNEL_TOKEN" run --no-autoupdate &
+          sleep 5
+          echo "✅ cloudflared initialized"
+        env:
+        - name: TUNNEL_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-tunnel-token
+              key: tunnel-token
+        volumeMounts:
+        - name: cloudflared-config
+          mountPath: /etc/cloudflared
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tunnel-controller
+  namespace: cloudflare-tunnel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: tunnel-controller
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: tunnel-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: tunnel-controller
+subjects:
+- kind: ServiceAccount
+  name: tunnel-controller
+  namespace: cloudflare-tunnel

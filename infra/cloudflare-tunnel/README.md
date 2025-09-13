@@ -1,44 +1,100 @@
-# Cloudflare Tunnel Configuration
+# Simple Cloudflare Tunnel Setup
 
-This directory contains the Kubernetes manifests for running Cloudflare Tunnel in your homelab cluster.
+This is a clean, simple Cloudflare Tunnel setup for your homelab with **annotation-based service exposure**.
 
-## Files
+## What's Included
 
-- `namespace.yaml` - Creates the `cloudflare-tunnel` namespace
-- `cloudflared-deployment.yaml` - Deploys the cloudflared daemon
-- `cloudflared-config.yaml` - Tunnel configuration with ingress rules
-- `cloudflared-service.yaml` - Service for metrics endpoint
-- `cloudflared-secret.yaml` - Template for tunnel credentials
-- `kustomization.yaml` - Kustomize configuration
+- **Single setup script** - Just run and follow prompts
+- **Annotation-based control** - Add/remove services with simple annotations
+- **Automatic DNS management** - No manual DNS route creation needed
+- **Internal/External separation** - Control which services are internet-accessible
 
-## Setup
+## Quick Setup
 
-Run the setup script:
-```bash
-./bootstrap/setup-cloudflare.sh
+1. **Run the setup script:**
+   ```bash
+   ./setup-cloudflare.sh
+   ```
+
+2. **Follow the prompts:**
+   - Enter your domain (e.g., `example.com`)
+   - The script will create the tunnel and deploy the controller
+
+3. **Add services to expose:**
+   ```yaml
+   apiVersion: v1
+   kind: Service
+   metadata:
+     name: my-service
+     namespace: my-namespace
+     annotations:
+       cloudflare.com/tunnel-hostname: "myservice.example.com"
+   ```
+
+## Adding/Removing Services
+
+### To Expose a Service to the Internet:
+Add the annotation to your Service:
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  name: my-service
+  namespace: my-namespace
+  annotations:
+    cloudflare.com/tunnel-hostname: "myservice.example.com"
+spec:
+  # ... your service spec
 ```
 
-This will automatically create the tunnel and configure all credentials.
+### To Keep a Service Internal-Only:
+Don't add the annotation. The service will only be accessible through:
+- MetalLB (if using LoadBalancer type)
+- Port-forwarding: `kubectl port-forward svc/my-service 8080:80`
+- Internal cluster access
 
-## Configuration
-
-The tunnel is configured to route traffic to these services:
-
-- `homepage.yourdomain.com` → Homepage dashboard
-- `n9n.yourdomain.com` → n8n workflow automation
-- `argocd.yourdomain.com` → Argo CD GitOps
-- `longhorn.yourdomain.com` → Longhorn storage UI
+### Examples:
+- **Homepage**: `cloudflare.com/tunnel-hostname: "homepage.example.com"`
+- **n8n**: `cloudflare.com/tunnel-hostname: "n8n.example.com"`
+- **ArgoCD**: `cloudflare.com/tunnel-hostname: "argocd.example.com"`
+- **Longhorn**: No annotation = Internal only
+- **Prometheus**: No annotation = Internal only
 
 ## Monitoring
 
-Check tunnel status:
+Check tunnel and controller status:
 ```bash
 kubectl get pods -n cloudflare-tunnel
 kubectl logs -n cloudflare-tunnel deployment/cloudflared
+kubectl logs -n cloudflare-tunnel deployment/tunnel-controller
 ```
 
-Access metrics:
+Check which services are exposed:
 ```bash
-kubectl port-forward -n cloudflare-tunnel svc/cloudflared 8080:8080
-curl http://localhost:8080/metrics
+kubectl get services --all-namespaces -o jsonpath='{range .items[*]}{.metadata.namespace}{"\t"}{.metadata.name}{"\t"}{.metadata.annotations.cloudflare\.com/tunnel-hostname}{"\n"}{end}' | grep -v "^$"
 ```
+
+## Troubleshooting
+
+- **Tunnel not starting?** Check the logs above
+- **Controller not working?** Check controller logs and ensure it has proper RBAC permissions
+- **Services not accessible?** Verify the annotation is correct and the service is running
+- **DNS not working?** Check if the tunnel route was created: `cloudflared tunnel route list homelab-tunnel`
+
+## Security Benefits
+
+🔒 **No Hardcoded Tokens** - Secrets are created dynamically  
+🔒 **Selective Exposure** - Only services with annotations are exposed to internet  
+🔒 **Internal Services Protected** - Services without annotations remain internal-only  
+🔒 **Secure Storage** - Tokens stored in Kubernetes secrets  
+🔒 **No Token Exposure** - Tokens never appear in configuration files  
+
+## Benefits
+
+✅ **Simple** - One script, annotation-based control  
+✅ **Secure** - Traffic encrypted through Cloudflare, selective exposure  
+✅ **Fast** - Cloudflare's global CDN  
+✅ **Reliable** - No need for LoadBalancer or external IPs  
+✅ **Maintainable** - Clear, minimal configuration  
+✅ **Safe** - No hardcoded credentials in version control  
+✅ **Flexible** - Easy to add/remove services with annotations

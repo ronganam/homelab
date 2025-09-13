@@ -27,6 +27,16 @@ spec:
           set -e
           echo "🔍 Tunnel Controller started - watching for services with cloudflare.com/tunnel-hostname annotation"
           
+          # Process existing services with annotations on startup
+          echo "🔍 Processing existing services with annotations..."
+          kubectl get services --all-namespaces -o json | \
+          jq -r '.items[] | select(.metadata.annotations["cloudflare.com/tunnel-hostname"]) | 
+                 "EXISTING|\(.metadata.name)|\(.metadata.namespace)|\(.metadata.annotations["cloudflare.com/tunnel-hostname"])"' | \
+          while IFS='|' read -r event_type service_name namespace hostname; do
+            echo "📋 Found existing service: $service_name.$namespace with hostname $hostname"
+            create_route "$service_name" "$hostname" "$namespace"
+          done
+          
           # Function to create tunnel route
           create_route() {
             local service_name=$1
@@ -35,12 +45,8 @@ spec:
             
             echo "🌐 Creating tunnel route for $hostname -> $service_name.$namespace"
             
-            # Extract domain from hostname
-            domain=$(echo "$hostname" | cut -d'.' -f2-)
-            service_subdomain=$(echo "$hostname" | cut -d'.' -f1)
-            
             # Create the tunnel route using kubectl exec to run cloudflared in the cloudflared pod
-            if kubectl exec -n cloudflare-tunnel deployment/cloudflared -- cloudflared tunnel route dns homelab-tunnel "$service_subdomain" "$domain" 2>/dev/null; then
+            if kubectl exec -n cloudflare-tunnel deployment/cloudflared -- cloudflared tunnel route dns homelab-tunnel "$hostname" 2>/dev/null; then
               echo "✅ Created route for $hostname"
             else
               echo "⚠️  Route may already exist for $hostname"

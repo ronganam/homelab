@@ -6,6 +6,5 @@ namespace: cloudflare-tunnel
 
 resources:
   - namespace.yaml
-  - cloudflared-deployment.yaml
-  - cloudflared-config.yaml
-  - cloudflared-service.yaml
+  - cloudflare-tunnel.yaml
+  - tunnel-controller.yaml

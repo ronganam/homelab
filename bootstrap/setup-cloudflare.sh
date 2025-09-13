@@ -108,26 +108,35 @@ echo "📦 Creating namespaces..."
 kubectl create namespace external-dns --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace cloudflare-tunnel --dry-run=client -o yaml | kubectl apply -f -
 
+# Delete existing secrets/configmaps to ensure clean creation
+echo "🧹 Cleaning up existing resources..."
+kubectl delete secret cloudflare-api-token -n external-dns --ignore-not-found=true
+kubectl delete configmap cloudflare-config -n external-dns --ignore-not-found=true
+kubectl delete secret cloudflared-tunnel-credentials -n cloudflare-tunnel --ignore-not-found=true
+
 # Create External-DNS secret
 echo "🔐 Creating External-DNS secret..."
 kubectl create secret generic cloudflare-api-token \
   --namespace=external-dns \
-  --from-literal=api-token="$API_TOKEN" \
-  --dry-run=client -o yaml | kubectl apply -f -
+  --from-literal=api-token="$API_TOKEN"
 
 # Create External-DNS configmap
 echo "📋 Creating External-DNS configmap..."
 kubectl create configmap cloudflare-config \
   --namespace=external-dns \
-  --from-literal=zone-id="$ZONE_ID" \
-  --dry-run=client -o yaml | kubectl apply -f -
+  --from-literal=zone-id="$ZONE_ID"
 
 # Create Cloudflare Tunnel secret
 echo "🔐 Creating Cloudflare Tunnel secret..."
 kubectl create secret generic cloudflared-tunnel-credentials \
   --namespace=cloudflare-tunnel \
-  --from-file=credentials.json=/tmp/tunnel-credentials.json \
-  --dry-run=client -o yaml | kubectl apply -f -
+  --from-file=credentials.json=/tmp/tunnel-credentials.json
+
+# Verify resources were created
+echo "✅ Verifying created resources..."
+kubectl get secret cloudflare-api-token -n external-dns > /dev/null && echo "✅ External-DNS secret created" || echo "❌ External-DNS secret failed"
+kubectl get configmap cloudflare-config -n external-dns > /dev/null && echo "✅ External-DNS configmap created" || echo "❌ External-DNS configmap failed"
+kubectl get secret cloudflared-tunnel-credentials -n cloudflare-tunnel > /dev/null && echo "✅ Cloudflare Tunnel secret created" || echo "❌ Cloudflare Tunnel secret failed"
 
 # Update domain filter in external-dns deployment
 echo "🌐 Updating domain filter..."

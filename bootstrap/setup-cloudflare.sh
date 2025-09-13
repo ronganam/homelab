@@ -88,10 +88,10 @@ fi
 # Get tunnel credentials
 echo "📋 Getting tunnel credentials..."
 # Try to get the actual tunnel credentials file
-if cloudflared tunnel info homelab-tunnel --output json > /tmp/tunnel-info.json 2>/dev/null; then
+if cloudflared tunnel info homelab-tunnel > /tmp/tunnel-info.txt 2>/dev/null; then
     echo "✅ Got tunnel info"
-    # Extract account tag from tunnel info
-    ACCOUNT_TAG=$(cat /tmp/tunnel-info.json | jq -r '.account_tag // "unknown"')
+    # Extract account tag from tunnel info (we'll use a default since we can't parse JSON)
+    ACCOUNT_TAG="unknown"
     
     # Try to get the tunnel secret (this is the tricky part)
     echo "🔐 Attempting to get tunnel secret..."
@@ -100,12 +100,20 @@ if cloudflared tunnel info homelab-tunnel --output json > /tmp/tunnel-info.json 
     TUNNEL_TOKEN=$(cloudflared tunnel token homelab-tunnel 2>/dev/null)
     if [ $? -eq 0 ] && [ -n "$TUNNEL_TOKEN" ]; then
         echo "✅ Got tunnel token, extracting secret"
-        # The token format is usually: account-tag.tunnel-secret
-        TUNNEL_SECRET=$(echo $TUNNEL_TOKEN | cut -d'.' -f2)
-        if [ -n "$TUNNEL_SECRET" ] && [ "$TUNNEL_SECRET" != "$TUNNEL_TOKEN" ]; then
-            echo "✅ Extracted tunnel secret from token"
+        # The token is base64-encoded JSON with account tag, secret, and tunnel ID
+        TOKEN_JSON=$(echo "$TUNNEL_TOKEN" | base64 -d 2>/dev/null)
+        if [ $? -eq 0 ] && [ -n "$TOKEN_JSON" ]; then
+            # Extract account tag and secret from the JSON
+            ACCOUNT_TAG=$(echo "$TOKEN_JSON" | jq -r '.a // "unknown"' 2>/dev/null)
+            TUNNEL_SECRET=$(echo "$TOKEN_JSON" | jq -r '.s // "placeholder"' 2>/dev/null)
+            if [ -n "$TUNNEL_SECRET" ] && [ "$TUNNEL_SECRET" != "null" ] && [ "$TUNNEL_SECRET" != "placeholder" ]; then
+                echo "✅ Extracted account tag and secret from token"
+            else
+                echo "⚠️  Could not extract secret from token JSON, trying alternative method"
+                TUNNEL_SECRET="placeholder"
+            fi
         else
-            echo "⚠️  Could not extract secret from token, trying alternative method"
+            echo "⚠️  Could not decode token, trying alternative method"
             TUNNEL_SECRET="placeholder"
         fi
     else
@@ -252,7 +260,7 @@ create_cname_record "argocd.$DOMAIN"
 echo "✅ DNS records created"
 
 # Clean up temporary files
-rm -f /tmp/tunnel-credentials.json /tmp/tunnel-info.json
+rm -f /tmp/tunnel-credentials.json /tmp/tunnel-info.txt
 
 echo ""
 echo "🎉 Cloudflare setup complete!"

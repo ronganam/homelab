@@ -25,7 +25,6 @@ spec:
         - --source=ingress
         - --domain-filter=buildin.group
         - --provider=cloudflare
-        - --cloudflare-proxied=false
         - --zone-id-filter=$(CLOUDFLARE_ZONE_ID)
         - --registry=txt
         - --txt-owner-id=homelab

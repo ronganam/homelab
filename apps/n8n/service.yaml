@@ -6,8 +6,11 @@ metadata:
   namespace: n8n
   labels:
     app: n8n
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: n9n.buildin.group
+    external-dns.alpha.kubernetes.io/ttl: "300"
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
   - name: http
     port: 80

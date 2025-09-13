@@ -9,6 +9,7 @@ A complete, ready-to-deploy homelab setup using GitOps principles with Argo CD. 
 - A running Kubernetes cluster (k3s, k8s, kind, etc.)
 - `kubectl` configured to access your cluster
 - Git repository hosting (GitHub, GitLab, etc.)
+- Cloudflare account with a domain (for secure external access)
 
 ### Bootstrap Steps
 
@@ -44,17 +45,25 @@ A complete, ready-to-deploy homelab setup using GitOps principles with Argo CD. 
    kubectl apply -n argocd -f bootstrap/root-applicationsets.yaml
    ```
 
-5. **Access Argo CD UI:**
+5. **Set up Cloudflare Tunnel (Recommended for secure external access):**
    ```bash
-   # Get the LoadBalancer IP
-   kubectl get svc argocd-server -n argocd
-
-   # Default credentials:
-   # Username: admin
-   # Password: admin
+   # Run the setup script
+   ./bootstrap/setup-cloudflare.sh
+   
+   # This will:
+   # - Create a Cloudflare tunnel
+   # - Set up External-DNS for automatic DNS management
+   # - Configure all credentials and settings
+   # - Update all configurations with your domain
    ```
 
-That's it! Argo CD will now automatically sync and deploy all infrastructure and applications.
+6. **Access your services:**
+   - **Homepage Dashboard**: `https://homepage.yourdomain.com`
+   - **n8n Workflow Automation**: `https://n8n.yourdomain.com`
+   - **Argo CD GitOps**: `https://argocd.yourdomain.com`
+   - **Longhorn Storage UI**: `https://longhorn.yourdomain.com`
+
+That's it! Argo CD will automatically sync and deploy all infrastructure and applications.
 
 ## 📁 Repository Structure
 
@@ -62,16 +71,30 @@ That's it! Argo CD will now automatically sync and deploy all infrastructure and
 .
 ├── bootstrap/                   # Argo CD installation and root ApplicationSets
 │   ├── argocd-install.yaml     # Complete Argo CD installation
-│   └── root-applicationsets.yaml # App-of-apps ApplicationSets
+│   ├── root-applicationsets.yaml # App-of-apps ApplicationSets
+│   └── setup-cloudflare.sh     # Cloudflare Tunnel setup script
 ├── infra/                      # Infrastructure components
 │   ├── metallb/               # MetalLB load balancer
 │   │   ├── namespace.yaml
 │   │   ├── metallb.yaml
 │   │   └── address-pool.yaml  # ⚠️ Edit IP range here
-│   └── longhorn/             # Longhorn distributed storage
+│   ├── longhorn/             # Longhorn distributed storage
+│   │   ├── namespace.yaml
+│   │   ├── kustomization.yaml
+│   │   └── longhorn.yaml
+│   ├── cloudflare-tunnel/    # Cloudflare Tunnel for secure access
+│   │   ├── namespace.yaml
+│   │   ├── kustomization.yaml
+│   │   ├── cloudflared-deployment.yaml
+│   │   ├── cloudflared-config.yaml
+│   │   ├── cloudflared-service.yaml
+│   │   └── cloudflared-secret.yaml
+│   └── external-dns/         # Automatic DNS management
 │       ├── namespace.yaml
 │       ├── kustomization.yaml
-│       └── longhorn.yaml
+│       ├── external-dns-deployment.yaml
+│       ├── external-dns-rbac.yaml
+│       └── external-dns-secret.yaml
 ├── apps/                      # Applications
 │   ├── n8n/                 # n8n workflow automation
 │   ├── homepage/            # Homepage dashboard
@@ -85,6 +108,8 @@ That's it! Argo CD will now automatically sync and deploy all infrastructure and
 - **Argo CD**: GitOps continuous delivery
 - **MetalLB**: Load balancer for bare metal clusters
 - **Longhorn**: Distributed block storage with web UI
+- **Cloudflare Tunnel**: Secure external access without exposing your network
+- **External-DNS**: Automatic DNS record management in Cloudflare
 
 ### Applications
 - **n8n**: Workflow automation platform
@@ -100,19 +125,43 @@ spec:
   - 192.168.1.200-192.168.1.250  # Your network range
 ```
 
-### Application Access
-After deployment, your services will be available via LoadBalancer IPs:
+### Cloudflare Tunnel Setup
 
+#### Prerequisites
+- Cloudflare account with a domain (e.g., `buildin.group`)
+- `cloudflared` CLI installed on your local machine
+
+#### Setup
 ```bash
-# Get all LoadBalancer services
-kubectl get svc --all-namespaces -o wide | grep LoadBalancer
+# Run the setup script
+./bootstrap/setup-cloudflare.sh
 ```
 
-Services you'll see:
-- Argo CD UI (argocd namespace)
-- Longhorn UI (longhorn-system namespace)  
-- n8n (n8n namespace)
-- Homepage dashboard (homepage namespace)
+This script will:
+1. Create a Cloudflare tunnel named `homelab-tunnel`
+2. Set up External-DNS for automatic DNS management
+3. Configure tunnel credentials in Kubernetes
+4. Update all configurations with your domain
+
+#### How It Works
+- **External-DNS** automatically creates DNS records based on service annotations
+- **Cloudflare Tunnel** routes traffic from DNS records to your Kubernetes services
+- **No manual DNS management** required
+
+#### Benefits
+- **Security**: No need to expose ports on your router
+- **SSL/TLS**: Automatic HTTPS certificates
+- **DDoS Protection**: Cloudflare's global network protection
+- **Performance**: Cloudflare's CDN and caching
+- **Automatic DNS**: DNS records created automatically via External-DNS
+
+### Application Access
+
+After setting up Cloudflare Tunnel, your services will be available at:
+- **Homepage Dashboard**: `https://homepage.yourdomain.com`
+- **n8n Workflow Automation**: `https://n8n.yourdomain.com`
+- **Argo CD GitOps**: `https://argocd.yourdomain.com`
+- **Longhorn Storage UI**: `https://longhorn.yourdomain.com`
 
 ## ➕ Adding New Applications
 
@@ -125,6 +174,13 @@ Services you'll see:
    - Replace all instances of `CHANGEME` with your app name
    - Update image, ports, environment variables, etc.
    - Adjust resource requests/limits as needed
+   - Add External-DNS annotations to the service for automatic DNS:
+     ```yaml
+     metadata:
+       annotations:
+         external-dns.alpha.kubernetes.io/hostname: myapp.yourdomain.com
+         external-dns.alpha.kubernetes.io/ttl: "300"
+     ```
 
 3. **Commit and push:**
    ```bash
@@ -173,6 +229,18 @@ kubectl get storageclass
 - Check Argo CD application status: `kubectl describe application APP_NAME -n argocd`
 - View application events in Argo CD UI
 - Verify repository URL and branch in ApplicationSets
+
+#### Cloudflare Tunnel not working
+- Check tunnel pod status: `kubectl get pods -n cloudflare-tunnel`
+- View tunnel logs: `kubectl logs -n cloudflare-tunnel deployment/cloudflared`
+- Verify tunnel credentials: `kubectl get secret cloudflared-tunnel-credentials -n cloudflare-tunnel -o yaml`
+- Test tunnel connectivity: `cloudflared tunnel list`
+
+#### External-DNS not creating DNS records
+- Check External-DNS pod status: `kubectl get pods -n external-dns`
+- View External-DNS logs: `kubectl logs -n external-dns deployment/external-dns`
+- Verify API token: `kubectl get secret cloudflare-api-token -n external-dns -o yaml`
+- Check service annotations: `kubectl get services --all-namespaces -o jsonpath='{range .items[*]}{.metadata.annotations.external-dns\.alpha\.kubernetes\.io/hostname}{"\n"}{end}'`
 
 ## 🎯 Customization
 

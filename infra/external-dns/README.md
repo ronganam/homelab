@@ -41,12 +41,34 @@ spec:
 
 ## Setup
 
-Run the setup script:
+### 1. Create Cloudflare API Token
+1. Go to https://dash.cloudflare.com/profile/api-tokens
+2. Create a custom token with:
+   - Zone:Zone:Read permissions
+   - Zone:DNS:Edit permissions
+   - Include: All zones (or just your domain)
+
+### 2. Get Your Zone ID
+1. Go to your domain in Cloudflare dashboard
+2. Copy the Zone ID from the right sidebar
+
+### 3. Create Kubernetes Resources
 ```bash
-./bootstrap/setup-cloudflare.sh
+# Create the secret with your API token
+kubectl create secret generic cloudflare-api-token \
+  --namespace=external-dns \
+  --from-literal=cloudflare_api_token=YOUR_ACTUAL_TOKEN_HERE
+
+# Create the configmap with your zone ID
+kubectl create configmap cloudflare-config \
+  --namespace=external-dns \
+  --from-literal=zone-id=YOUR_ACTUAL_ZONE_ID_HERE
 ```
 
-This will automatically configure External-DNS with your Cloudflare credentials and zone ID.
+### 4. Deploy External-DNS
+```bash
+kubectl apply -k infra/external-dns/
+```
 
 ## Benefits
 

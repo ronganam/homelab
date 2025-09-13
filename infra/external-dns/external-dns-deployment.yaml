@@ -38,7 +38,10 @@ spec:
               name: cloudflare-api-token
               key: cloudflare_api_token
         - name: CLOUDFLARE_ZONE_ID
-          value: "CHANGE_ME"  # Replace with your zone ID
+          valueFrom:
+            configMapKeyRef:
+              name: cloudflare-config
+              key: zone-id
         resources:
           limits:
             memory: 128Mi

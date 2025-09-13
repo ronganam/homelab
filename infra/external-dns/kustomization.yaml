@@ -8,9 +8,3 @@ resources:
   - namespace.yaml
   - external-dns-deployment.yaml
   - external-dns-rbac.yaml
-
-secretGenerator:
-  - name: cloudflare-api-token
-    literals:
-      - cloudflare_api_token=CHANGE_ME
-    type: Opaque

@@ -18,6 +18,19 @@ data:
       Applications:
         style: row
         columns: 3
+  skeleton-settings.yaml: |
+    title: Homelab Dashboard
+    favicon: https://gethomepage.dev/img/favicon.ico
+    theme: dark
+    color: slate
+    headerStyle: boxed
+    layout:
+      Infrastructure:
+        style: row
+        columns: 3
+      Applications:
+        style: row
+        columns: 3
   
   services.yaml: |
     - Infrastructure:
@@ -106,7 +119,7 @@ spec:
       initContainers:
       - name: init-config
         image: busybox:1.35
-        command: ['sh', '-c', 'cp -R /config/* /writable-config/']
+        command: ['sh', '-c', 'mkdir -p /writable-config/src/skeleton && cp /config/skeleton-settings.yaml /writable-config/src/skeleton/settings.yaml && cp /config/*.yaml /writable-config/']
         volumeMounts:
         - name: config
           mountPath: /config

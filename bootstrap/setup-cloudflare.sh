@@ -126,7 +126,7 @@ kubectl create configmap cloudflare-config \
 echo "🔐 Creating Cloudflare Tunnel secret..."
 kubectl create secret generic cloudflared-tunnel-credentials \
   --namespace=cloudflare-tunnel \
-  --from-literal=credentials.json="$CREDENTIALS_B64" \
+  --from-file=credentials.json=/tmp/tunnel-credentials.json \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Update domain filter in external-dns deployment

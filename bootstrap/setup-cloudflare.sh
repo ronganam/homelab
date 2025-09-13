@@ -45,7 +45,7 @@ fi
 echo "🔐 Creating Kubernetes secret..."
 kubectl create secret generic cloudflare-api-token \
   --namespace=external-dns \
-  --from-literal=cloudflare_api_token="$API_TOKEN" \
+  --from-literal=api-token="$API_TOKEN" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Create the configmap

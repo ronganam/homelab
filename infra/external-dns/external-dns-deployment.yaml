@@ -32,11 +32,11 @@ spec:
         - --log-format=json
         - --log-level=info
         env:
-        - name: CLOUDFLARE_API_TOKEN
+        - name: CF_API_TOKEN
           valueFrom:
             secretKeyRef:
               name: cloudflare-api-token
-              key: cloudflare_api_token
+              key: api-token
         - name: CLOUDFLARE_ZONE_ID
           valueFrom:
             configMapKeyRef:

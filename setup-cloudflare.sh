@@ -65,16 +65,21 @@ echo "✅ Got tunnel token"
 echo "🔐 Creating Kubernetes secret..."
 kubectl create namespace cloudflare-tunnel --dry-run=client -o yaml | kubectl apply -f -
 
+# Delete existing secret to avoid annotation warnings
+kubectl delete secret cloudflare-tunnel-token -n cloudflare-tunnel --ignore-not-found=true
+
+# Create the secret fresh
 kubectl create secret generic cloudflare-tunnel-token \
   --namespace=cloudflare-tunnel \
-  --from-literal=tunnel-token="$TUNNEL_TOKEN" \
-  --dry-run=client -o yaml | kubectl apply -f -
+  --from-literal=tunnel-token="${TUNNEL_TOKEN}"
 
 echo "✅ Kubernetes secret created"
 
-# Deploy the tunnel and controller
+# Deploy the tunnel and controller (excluding the secret we just created)
 echo "🚀 Deploying Cloudflare tunnel and controller..."
-kubectl apply -k infra/cloudflare-tunnel/
+kubectl apply -f infra/cloudflare-tunnel/namespace.yaml
+kubectl apply -f infra/cloudflare-tunnel/cloudflare-tunnel.yaml
+kubectl apply -f infra/cloudflare-tunnel/tunnel-controller.yaml
 
 echo ""
 echo "🎉 Setup complete!"

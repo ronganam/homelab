@@ -6,10 +6,8 @@ metadata:
   namespace: homepage
   labels:
     app: homepage
-  # DNS records are managed by external-dns using dedicated DNS services
-  # annotations:
-  #   external-dns.alpha.kubernetes.io/hostname: homepage.buildin.group
-  #   external-dns.alpha.kubernetes.io/ttl: "300"
+  annotations:
+    cloudflare.com/tunnel-hostname: "homepage.buildin.group"
 spec:
   type: ClusterIP
   ports:

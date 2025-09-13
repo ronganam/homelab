@@ -57,7 +57,7 @@ spec:
 # Create the secret with your API token
 kubectl create secret generic cloudflare-api-token \
   --namespace=external-dns \
-  --from-literal=cloudflare_api_token=YOUR_ACTUAL_TOKEN_HERE
+  --from-literal=api-token=YOUR_ACTUAL_TOKEN_HERE
 
 # Create the configmap with your zone ID
 kubectl create configmap cloudflare-config \

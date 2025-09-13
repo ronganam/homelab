@@ -1,0 +1,79 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-tunnel-dns-records
+  namespace: cloudflare-tunnel
+spec:
+  template:
+    spec:
+      containers:
+      - name: tunnel-dns-creator
+        image: curlimages/curl:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          # Get Cloudflare API token and zone ID
+          API_TOKEN=$(cat /etc/cloudflare/token)
+          ZONE_ID=$(cat /etc/zone/zone-id)
+          
+          # Your tunnel ID (from the logs)
+          TUNNEL_ID="2bfc09ce-9b60-4e29-9490-66f3d737c3cf"
+          TUNNEL_HOSTNAME="${TUNNEL_ID}.cfargotunnel.com"
+          
+          # Function to create CNAME record
+          create_cname_record() {
+            local hostname=$1
+            echo "Creating CNAME record for $hostname -> $TUNNEL_HOSTNAME"
+            
+            curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+              -H "Authorization: Bearer $API_TOKEN" \
+              -H "Content-Type: application/json" \
+              --data "{
+                \"type\": \"CNAME\",
+                \"name\": \"$hostname\",
+                \"content\": \"$TUNNEL_HOSTNAME\",
+                \"ttl\": 1,
+                \"proxied\": true,
+                \"comment\": \"Created for Cloudflare Tunnel\"
+              }"
+            echo ""
+          }
+          
+          # Create CNAME records for all your services
+          create_cname_record "homepage.buildin.group"
+          create_cname_record "n9n.buildin.group"
+          create_cname_record "argocd.buildin.group"
+          create_cname_record "longhorn.buildin.group"
+          
+          echo "Tunnel DNS records created successfully!"
+        env:
+        - name: CF_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-api-token
+              key: api-token
+        - name: CLOUDFLARE_ZONE_ID
+          valueFrom:
+            configMapKeyRef:
+              name: cloudflare-config
+              key: zone-id
+        volumeMounts:
+        - name: cloudflare-config
+          mountPath: /etc/cloudflare
+          readOnly: true
+        - name: zone-config
+          mountPath: /etc/zone
+          readOnly: true
+      volumes:
+      - name: cloudflare-config
+        secret:
+          secretName: cloudflare-api-token
+          items:
+          - key: api-token
+            path: token
+      - name: zone-config
+        configMap:
+          name: cloudflare-config
+      restartPolicy: OnFailure

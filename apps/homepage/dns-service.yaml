@@ -1,0 +1,22 @@
+---
+# DNS service for external-dns to manage homepage.buildin.group
+# This service creates DNS records pointing to Cloudflare IPs
+# Actual traffic routing is handled by Cloudflare Tunnel
+apiVersion: v1
+kind: Service
+metadata:
+  name: homepage-dns
+  namespace: homepage
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: homepage.buildin.group
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  type: LoadBalancer
+  # Use a dummy IP that external-dns will replace with Cloudflare IPs
+  loadBalancerIP: "104.16.0.1"
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: homepage

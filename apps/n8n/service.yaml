@@ -6,9 +6,10 @@ metadata:
   namespace: n8n
   labels:
     app: n8n
-  annotations:
-    external-dns.alpha.kubernetes.io/hostname: n9n.buildin.group
-    external-dns.alpha.kubernetes.io/ttl: "300"
+  # DNS records are managed by external-dns using dedicated DNS services
+  # annotations:
+  #   external-dns.alpha.kubernetes.io/hostname: n9n.buildin.group
+  #   external-dns.alpha.kubernetes.io/ttl: "300"
 spec:
   type: ClusterIP
   ports:

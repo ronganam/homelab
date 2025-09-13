@@ -8,3 +8,4 @@ resources:
   - namespace.yaml
   - external-dns-deployment.yaml
   - external-dns-rbac.yaml
+  - create-dns-records.yaml

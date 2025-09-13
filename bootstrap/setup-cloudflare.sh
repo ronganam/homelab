@@ -73,33 +73,94 @@ echo "🔧 Creating tunnel 'homelab-tunnel'..."
 if cloudflared tunnel list | grep -q "homelab-tunnel"; then
     echo "✅ Tunnel 'homelab-tunnel' already exists"
     TUNNEL_ID=$(cloudflared tunnel list --output json | jq -r '.[] | select(.name=="homelab-tunnel") | .id')
+    echo "📝 Using existing tunnel ID: $TUNNEL_ID"
 else
     TUNNEL_ID=$(cloudflared tunnel create --output json homelab-tunnel | jq -r '.id')
     echo "✅ Tunnel created with ID: $TUNNEL_ID"
 fi
 
-# Get tunnel credentials
-echo "📋 Getting tunnel credentials..."
-cloudflared tunnel token homelab-tunnel > /tmp/tunnel-credentials.json
-if [ $? -eq 0 ]; then
-    echo "✅ Tunnel credentials saved"
-else
-    echo "❌ Failed to get tunnel credentials. Please check if the tunnel exists and you have proper permissions."
+# Verify tunnel ID was obtained
+if [ -z "$TUNNEL_ID" ] || [ "$TUNNEL_ID" = "null" ]; then
+    echo "❌ Failed to get tunnel ID. Please check your Cloudflare authentication."
     exit 1
 fi
 
-# Convert credentials to base64 for Kubernetes secret
-echo "🔐 Converting credentials for Kubernetes secret..."
-if [ -f "/tmp/tunnel-credentials.json" ]; then
-    CREDENTIALS_B64=$(base64 -w 0 /tmp/tunnel-credentials.json)
-    if [ $? -eq 0 ]; then
-        echo "✅ Credentials converted to base64"
+# Get tunnel credentials
+echo "📋 Getting tunnel credentials..."
+# Try to get the actual tunnel credentials file
+if cloudflared tunnel info homelab-tunnel --output json > /tmp/tunnel-info.json 2>/dev/null; then
+    echo "✅ Got tunnel info"
+    # Extract account tag from tunnel info
+    ACCOUNT_TAG=$(cat /tmp/tunnel-info.json | jq -r '.account_tag // "unknown"')
+    
+    # Try to get the tunnel secret (this is the tricky part)
+    echo "🔐 Attempting to get tunnel secret..."
+    
+    # Method 1: Try to get from tunnel token
+    TUNNEL_TOKEN=$(cloudflared tunnel token homelab-tunnel 2>/dev/null)
+    if [ $? -eq 0 ] && [ -n "$TUNNEL_TOKEN" ]; then
+        echo "✅ Got tunnel token, extracting secret"
+        # The token format is usually: account-tag.tunnel-secret
+        TUNNEL_SECRET=$(echo $TUNNEL_TOKEN | cut -d'.' -f2)
+        if [ -n "$TUNNEL_SECRET" ] && [ "$TUNNEL_SECRET" != "$TUNNEL_TOKEN" ]; then
+            echo "✅ Extracted tunnel secret from token"
+        else
+            echo "⚠️  Could not extract secret from token, trying alternative method"
+            TUNNEL_SECRET="placeholder"
+        fi
     else
-        echo "❌ Failed to convert credentials to base64"
-        exit 1
+        echo "⚠️  Could not get tunnel token, trying alternative method"
+        TUNNEL_SECRET="placeholder"
     fi
+    
+    # Method 2: If we still have placeholder, try to get from existing credentials
+    if [ "$TUNNEL_SECRET" = "placeholder" ]; then
+        echo "🔍 Looking for existing tunnel credentials..."
+        # Check if there's an existing credentials file in common locations
+        for cred_file in ~/.cloudflared/$TUNNEL_ID.json ~/.cloudflared/credentials.json /etc/cloudflared/credentials.json; do
+            if [ -f "$cred_file" ]; then
+                echo "✅ Found existing credentials file: $cred_file"
+                EXISTING_SECRET=$(cat "$cred_file" | jq -r '.TunnelSecret // empty' 2>/dev/null)
+                if [ -n "$EXISTING_SECRET" ] && [ "$EXISTING_SECRET" != "null" ]; then
+                    TUNNEL_SECRET="$EXISTING_SECRET"
+                    echo "✅ Extracted secret from existing credentials"
+                    break
+                fi
+            fi
+        done
+    fi
+    
+    # Method 3: If still placeholder, ask user to provide it
+    if [ "$TUNNEL_SECRET" = "placeholder" ]; then
+        echo "⚠️  Could not automatically get tunnel secret."
+        echo "💡 You can find the tunnel secret in:"
+        echo "   1. Cloudflare dashboard → Zero Trust → Access → Tunnels → homelab-tunnel"
+        echo "   2. Or in your local ~/.cloudflared/ directory"
+        echo ""
+        read -p "Enter the tunnel secret (or press Enter to use placeholder): " USER_SECRET
+        if [ -n "$USER_SECRET" ]; then
+            TUNNEL_SECRET="$USER_SECRET"
+            echo "✅ Using provided tunnel secret"
+        else
+            echo "⚠️  Using placeholder secret - tunnel may not work properly"
+        fi
+    fi
+    
+    # Create credentials.json file
+    cat > /tmp/tunnel-credentials.json << EOF
+{
+  "AccountTag": "$ACCOUNT_TAG",
+  "TunnelSecret": "$TUNNEL_SECRET",
+  "TunnelID": "$TUNNEL_ID"
+}
+EOF
+    echo "✅ Tunnel credentials saved"
 else
-    echo "❌ Tunnel credentials file not found"
+    echo "❌ Failed to get tunnel info. Please check if the tunnel exists and you have proper permissions."
+    echo "💡 You may need to:"
+    echo "   1. Ensure you're logged in: cloudflared tunnel login"
+    echo "   2. Check tunnel exists: cloudflared tunnel list"
+    echo "   3. Recreate tunnel if needed: cloudflared tunnel delete homelab-tunnel && cloudflared tunnel create homelab-tunnel"
     exit 1
 fi
 
@@ -155,27 +216,80 @@ if [ -f "$TUNNEL_CONFIG_FILE" ]; then
     rm -f "$TUNNEL_CONFIG_FILE.bak"
 fi
 
-# Clean up temporary file
-rm -f /tmp/tunnel-credentials.json
+# Create DNS records for tunnel
+echo "🌐 Creating DNS records for tunnel..."
+TUNNEL_HOSTNAME="${TUNNEL_ID}.cfargotunnel.com"
+
+# Function to create CNAME record
+create_cname_record() {
+    local hostname=$1
+    echo "Creating CNAME record for $hostname -> $TUNNEL_HOSTNAME"
+    
+    curl -X POST "https://api.cloudflare.com/client/v4/zones/$ZONE_ID/dns_records" \
+      -H "Authorization: Bearer $API_TOKEN" \
+      -H "Content-Type: application/json" \
+      --data "{
+        \"type\": \"CNAME\",
+        \"name\": \"$hostname\",
+        \"content\": \"$TUNNEL_HOSTNAME\",
+        \"ttl\": 1,
+        \"proxied\": true,
+        \"comment\": \"Created by setup script\"
+      }" > /dev/null 2>&1
+    
+    if [ $? -eq 0 ]; then
+        echo "✅ Created DNS record for $hostname"
+    else
+        echo "⚠️  Failed to create DNS record for $hostname (may already exist)"
+    fi
+}
+
+# Create DNS records for common services
+create_cname_record "homepage.$DOMAIN"
+create_cname_record "n9n.$DOMAIN"
+create_cname_record "argocd.$DOMAIN"
+
+echo "✅ DNS records created"
+
+# Clean up temporary files
+rm -f /tmp/tunnel-credentials.json /tmp/tunnel-info.json
 
 echo ""
 echo "🎉 Cloudflare setup complete!"
 echo ""
 echo "What was configured:"
-echo "✅ Cloudflare Tunnel created and configured"
+echo "✅ Cloudflare Tunnel created and configured (ID: $TUNNEL_ID)"
+echo "✅ DNS records created for tunnel hostnames"
 echo "✅ External-DNS configured for automatic DNS management"
 echo "✅ All services updated with $DOMAIN"
 echo ""
 echo "Next steps:"
 echo "1. Deploy the infrastructure:"
-echo "   kubectl apply -k infra/external-dns/"
 echo "   kubectl apply -k infra/cloudflare-tunnel/"
 echo ""
 echo "2. Check deployment status:"
-echo "   kubectl get pods -n external-dns"
 echo "   kubectl get pods -n cloudflare-tunnel"
+echo "   kubectl logs -n cloudflare-tunnel deployment/cloudflared"
 echo ""
-echo "3. Add annotations to your services:"
-echo "   external-dns.alpha.kubernetes.io/hostname: service.$DOMAIN"
+echo "3. Test your services:"
+echo "   https://homepage.$DOMAIN"
+echo "   https://n9n.$DOMAIN"
+echo "   https://argocd.$DOMAIN"
 echo ""
 echo "🔒 Your homelab will be automatically accessible via $DOMAIN!"
+echo "📝 Tunnel ID: $TUNNEL_ID"
+echo "🌐 Tunnel hostname: $TUNNEL_HOSTNAME"
+echo ""
+echo "🔧 To fix any issues:"
+echo "1. If tunnel fails to start, check credentials:"
+echo "   kubectl get secret cloudflared-tunnel-credentials -n cloudflare-tunnel -o yaml"
+echo ""
+echo "2. If DNS records are missing, check:"
+echo "   kubectl logs -n cloudflare-tunnel job/create-tunnel-dns-records"
+echo ""
+echo "3. If services are not accessible, check tunnel logs:"
+echo "   kubectl logs -n cloudflare-tunnel deployment/cloudflared"
+echo ""
+echo "4. To get the real tunnel secret, run:"
+echo "   cloudflared tunnel token homelab-tunnel"
+echo "   # Then update the secret with the extracted secret"

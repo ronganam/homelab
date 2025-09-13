@@ -27,16 +27,6 @@ spec:
           set -e
           echo "🔍 Tunnel Controller started - watching for services with cloudflare.com/tunnel-hostname annotation"
           
-          # Process existing services with annotations on startup
-          echo "🔍 Processing existing services with annotations..."
-          kubectl get services --all-namespaces -o json | \
-          jq -r '.items[] | select(.metadata.annotations["cloudflare.com/tunnel-hostname"]) | 
-                 "EXISTING|\(.metadata.name)|\(.metadata.namespace)|\(.metadata.annotations["cloudflare.com/tunnel-hostname"])"' | \
-          while IFS='|' read -r event_type service_name namespace hostname; do
-            echo "📋 Found existing service: $service_name.$namespace with hostname $hostname"
-            create_route "$service_name" "$hostname" "$namespace"
-          done
-          
           # Function to create tunnel route
           create_route() {
             local service_name=$1
@@ -60,6 +50,16 @@ spec:
             # Note: cloudflared doesn't have a direct delete command, routes are managed automatically
             echo "ℹ️  Route will be cleaned up automatically by Cloudflare"
           }
+          
+          # Process existing services with annotations on startup
+          echo "🔍 Processing existing services with annotations..."
+          kubectl get services --all-namespaces -o json | \
+          jq -r '.items[] | select(.metadata.annotations["cloudflare.com/tunnel-hostname"]) | 
+                 "EXISTING|\(.metadata.name)|\(.metadata.namespace)|\(.metadata.annotations["cloudflare.com/tunnel-hostname"])"' | \
+          while IFS='|' read -r event_type service_name namespace hostname; do
+            echo "📋 Found existing service: $service_name.$namespace with hostname $hostname"
+            create_route "$service_name" "$hostname" "$namespace"
+          done
           
           # Watch for services with the annotation
           kubectl get services --all-namespaces --watch --output-watch-events -o json | \

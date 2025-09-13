@@ -59,7 +59,7 @@ A complete, ready-to-deploy homelab setup using GitOps principles with Argo CD. 
 
 6. **Access your services:**
    - **Homepage Dashboard**: `https://homepage.yourdomain.com`
-   - **n8n Workflow Automation**: `https://n8n.yourdomain.com`
+   - **n8n Workflow Automation**: `https://n9n.yourdomain.com`
    - **Argo CD GitOps**: `https://argocd.yourdomain.com`
    - **Longhorn Storage UI**: `https://longhorn.yourdomain.com`
 
@@ -159,7 +159,7 @@ This script will:
 
 After setting up Cloudflare Tunnel, your services will be available at:
 - **Homepage Dashboard**: `https://homepage.yourdomain.com`
-- **n8n Workflow Automation**: `https://n8n.yourdomain.com`
+- **n8n Workflow Automation**: `https://n9n.yourdomain.com`
 - **Argo CD GitOps**: `https://argocd.yourdomain.com`
 - **Longhorn Storage UI**: `https://longhorn.yourdomain.com`
 

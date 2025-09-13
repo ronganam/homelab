@@ -1,13 +1,40 @@
 #!/bin/bash
 
-# Simple Cloudflare Setup Script for External-DNS
-# This script creates the necessary Kubernetes resources for External-DNS
+# Cloudflare Setup Script for Homelab
+# This script sets up both External-DNS and Cloudflare Tunnel
 
 set -e
 
-echo "🚀 Cloudflare Setup for External-DNS"
-echo "===================================="
+echo "🚀 Cloudflare Setup for Homelab"
+echo "==============================="
 echo ""
+
+# Check if cloudflared is installed
+if ! command -v cloudflared &> /dev/null; then
+    echo "❌ cloudflared is not installed. Please install it first:"
+    echo "   macOS: brew install cloudflared"
+    echo "   Linux: Download from https://github.com/cloudflare/cloudflared/releases"
+    exit 1
+fi
+
+echo "✅ cloudflared is installed"
+
+# Check if user is logged in to Cloudflare
+echo "🔐 Checking Cloudflare authentication..."
+if ! cloudflared tunnel list &> /dev/null; then
+    echo "❌ Not authenticated with Cloudflare. Please log in first:"
+    echo "   cloudflared tunnel login"
+    echo ""
+    read -p "Press Enter after you've logged in..."
+    
+    # Verify authentication again
+    if ! cloudflared tunnel list &> /dev/null; then
+        echo "❌ Still not authenticated. Please run 'cloudflared tunnel login' and try again."
+        exit 1
+    fi
+fi
+
+echo "✅ Cloudflare authentication verified"
 
 # Get domain from user
 read -p "Enter your domain (e.g., buildin.group): " DOMAIN
@@ -41,18 +68,60 @@ if [ -z "$API_TOKEN" ]; then
     exit 1
 fi
 
-# Create the secret
-echo "🔐 Creating Kubernetes secret..."
+# Create tunnel (check if it already exists)
+echo "🔧 Creating tunnel 'homelab-tunnel'..."
+if cloudflared tunnel list | grep -q "homelab-tunnel"; then
+    echo "✅ Tunnel 'homelab-tunnel' already exists"
+    TUNNEL_ID=$(cloudflared tunnel list --output json | jq -r '.[] | select(.name=="homelab-tunnel") | .id')
+else
+    TUNNEL_ID=$(cloudflared tunnel create --output json homelab-tunnel | jq -r '.id')
+    echo "✅ Tunnel created with ID: $TUNNEL_ID"
+fi
+
+# Get tunnel credentials
+echo "📋 Getting tunnel credentials..."
+cloudflared tunnel token homelab-tunnel > /tmp/tunnel-credentials.json
+if [ $? -eq 0 ]; then
+    echo "✅ Tunnel credentials saved"
+else
+    echo "❌ Failed to get tunnel credentials. Please check if the tunnel exists and you have proper permissions."
+    exit 1
+fi
+
+# Convert credentials to base64 for Kubernetes secret
+echo "🔐 Converting credentials for Kubernetes secret..."
+if [ -f "/tmp/tunnel-credentials.json" ]; then
+    CREDENTIALS_B64=$(base64 -w 0 /tmp/tunnel-credentials.json)
+    if [ $? -eq 0 ]; then
+        echo "✅ Credentials converted to base64"
+    else
+        echo "❌ Failed to convert credentials to base64"
+        exit 1
+    fi
+else
+    echo "❌ Tunnel credentials file not found"
+    exit 1
+fi
+
+# Create External-DNS secret
+echo "🔐 Creating External-DNS secret..."
 kubectl create secret generic cloudflare-api-token \
   --namespace=external-dns \
   --from-literal=api-token="$API_TOKEN" \
   --dry-run=client -o yaml | kubectl apply -f -
 
-# Create the configmap
-echo "📋 Creating Kubernetes configmap..."
+# Create External-DNS configmap
+echo "📋 Creating External-DNS configmap..."
 kubectl create configmap cloudflare-config \
   --namespace=external-dns \
   --from-literal=zone-id="$ZONE_ID" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
+# Create Cloudflare Tunnel secret
+echo "🔐 Creating Cloudflare Tunnel secret..."
+kubectl create secret generic cloudflared-tunnel-credentials \
+  --namespace=cloudflare-tunnel \
+  --from-literal=credentials.json="$CREDENTIALS_B64" \
   --dry-run=client -o yaml | kubectl apply -f -
 
 # Update domain filter in external-dns deployment
@@ -64,23 +133,35 @@ if [ -f "$EXTERNAL_DNS_FILE" ]; then
     rm -f "$EXTERNAL_DNS_FILE.bak"
 fi
 
+# Update tunnel config with the correct domain
+TUNNEL_CONFIG_FILE="infra/cloudflare-tunnel/cloudflared-config.yaml"
+if [ -f "$TUNNEL_CONFIG_FILE" ]; then
+    sed -i.bak "s/buildin.group/$DOMAIN/g" "$TUNNEL_CONFIG_FILE"
+    echo "✅ Updated tunnel configuration"
+    rm -f "$TUNNEL_CONFIG_FILE.bak"
+fi
+
+# Clean up temporary file
+rm -f /tmp/tunnel-credentials.json
+
 echo ""
 echo "🎉 Cloudflare setup complete!"
 echo ""
 echo "What was configured:"
-echo "✅ Kubernetes secret: cloudflare-api-token"
-echo "✅ Kubernetes configmap: cloudflare-config"
-echo "✅ External-DNS domain filter: $DOMAIN"
+echo "✅ Cloudflare Tunnel created and configured"
+echo "✅ External-DNS configured for automatic DNS management"
+echo "✅ All services updated with $DOMAIN"
 echo ""
 echo "Next steps:"
-echo "1. Deploy External-DNS:"
+echo "1. Deploy the infrastructure:"
 echo "   kubectl apply -k infra/external-dns/"
+echo "   kubectl apply -k infra/cloudflare-tunnel/"
 echo ""
 echo "2. Check deployment status:"
 echo "   kubectl get pods -n external-dns"
-echo "   kubectl logs -n external-dns deployment/external-dns"
+echo "   kubectl get pods -n cloudflare-tunnel"
 echo ""
 echo "3. Add annotations to your services:"
 echo "   external-dns.alpha.kubernetes.io/hostname: service.$DOMAIN"
 echo ""
-echo "🔒 External-DNS is ready to manage DNS records for $DOMAIN!"
+echo "🔒 Your homelab will be automatically accessible via $DOMAIN!"

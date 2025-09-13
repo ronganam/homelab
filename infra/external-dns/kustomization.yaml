@@ -8,7 +8,6 @@ resources:
   - namespace.yaml
   - external-dns-deployment.yaml
   - external-dns-rbac.yaml
-  - external-dns-secret.yaml
 
 secretGenerator:
   - name: cloudflare-api-token

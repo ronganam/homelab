@@ -17,6 +17,7 @@ data:
   config.yaml: |
     tunnel: homelab-tunnel
     credentials-file: /etc/cloudflared/credentials/credentials.json
+    origincert: /etc/cloudflared/cert.pem
     
     # Ingress rules will be managed by the tunnel controller
     ingress:
@@ -62,6 +63,10 @@ spec:
         - name: credentials
           mountPath: /etc/cloudflared/credentials
           readOnly: true
+        - name: origin-cert
+          mountPath: /etc/cloudflared/cert.pem
+          subPath: cert.pem
+          readOnly: true
         resources:
           limits:
             memory: 128Mi
@@ -86,6 +91,9 @@ spec:
         configMap:
           name: cloudflared-config
       - name: credentials
+        secret:
+          secretName: cloudflare-tunnel-credentials
+      - name: origin-cert
         secret:
           secretName: cloudflare-tunnel-credentials
 ---

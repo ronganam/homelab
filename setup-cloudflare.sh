@@ -71,6 +71,16 @@ fi
 
 echo "✅ Found credentials file"
 
+# Check if origin certificate exists
+ORIGIN_CERT_FILE="$HOME/.cloudflared/cert.pem"
+if [ ! -f "$ORIGIN_CERT_FILE" ]; then
+    echo "❌ Origin certificate not found at $ORIGIN_CERT_FILE"
+    echo "Please ensure you've logged in with: cloudflared tunnel login"
+    exit 1
+fi
+
+echo "✅ Found origin certificate"
+
 # Create namespace and secret
 echo "🔐 Creating Kubernetes secret..."
 kubectl create namespace cloudflare-tunnel --dry-run=client -o yaml | kubectl apply -f -
@@ -78,10 +88,11 @@ kubectl create namespace cloudflare-tunnel --dry-run=client -o yaml | kubectl ap
 # Delete existing secret to avoid annotation warnings
 kubectl delete secret cloudflare-tunnel-credentials -n cloudflare-tunnel --ignore-not-found=true
 
-# Create the secret with credentials file
+# Create the secret with credentials file and origin certificate
 kubectl create secret generic cloudflare-tunnel-credentials \
   --namespace=cloudflare-tunnel \
-  --from-file=credentials.json="$CREDENTIALS_FILE"
+  --from-file=credentials.json="$CREDENTIALS_FILE" \
+  --from-file=cert.pem="$ORIGIN_CERT_FILE"
 
 echo "✅ Kubernetes secret created"
 

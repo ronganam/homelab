@@ -21,7 +21,7 @@ spec:
       - name: tunnel-controller
         image: bitnami/kubectl:latest
         command:
-        - /bin/bash
+        - /bin/sh
         - -c
         - |
           set -e
@@ -39,8 +39,8 @@ spec:
             domain=$(echo "$hostname" | cut -d'.' -f2-)
             service_subdomain=$(echo "$hostname" | cut -d'.' -f1)
             
-            # Create the tunnel route
-            if cloudflared tunnel route dns homelab-tunnel "$service_subdomain" "$domain" 2>/dev/null; then
+            # Create the tunnel route using kubectl exec to run cloudflared in the cloudflared pod
+            if kubectl exec -n cloudflare-tunnel deployment/cloudflared -- cloudflared tunnel route dns homelab-tunnel "$service_subdomain" "$domain" 2>/dev/null; then
               echo "✅ Created route for $hostname"
             else
               echo "⚠️  Route may already exist for $hostname"
@@ -70,15 +70,6 @@ spec:
                 ;;
             esac
           done
-        env:
-        - name: TUNNEL_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-tunnel-credentials
-              key: credentials.json
-        volumeMounts:
-        - name: cloudflared-config
-          mountPath: /etc/cloudflared
         resources:
           limits:
             memory: 128Mi
@@ -86,29 +77,6 @@ spec:
           requests:
             memory: 64Mi
             cpu: 50m
-      volumes:
-      - name: cloudflared-config
-        emptyDir: {}
-      initContainers:
-      - name: cloudflared-init
-        image: cloudflare/cloudflared:latest
-        command:
-        - /bin/bash
-        - -c
-        - |
-          echo "🔧 Initializing cloudflared..."
-          cloudflared tunnel --token "$TUNNEL_TOKEN" run --no-autoupdate &
-          sleep 5
-          echo "✅ cloudflared initialized"
-        env:
-        - name: TUNNEL_TOKEN
-          valueFrom:
-            secretKeyRef:
-              name: cloudflare-tunnel-credentials
-              key: credentials.json
-        volumeMounts:
-        - name: cloudflared-config
-          mountPath: /etc/cloudflared
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -124,6 +92,12 @@ rules:
 - apiGroups: [""]
   resources: ["services"]
   verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

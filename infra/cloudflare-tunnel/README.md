@@ -8,6 +8,7 @@ This is a clean, simple Cloudflare Tunnel setup for your homelab with **annotati
 - **Annotation-based control** - Add/remove services with simple annotations
 - **Automatic DNS management** - No manual DNS route creation needed
 - **Internal/External separation** - Control which services are internet-accessible
+- **ArgoCD compatible** - Works with GitOps workflow
 
 ## Quick Setup
 
@@ -30,6 +31,13 @@ This is a clean, simple Cloudflare Tunnel setup for your homelab with **annotati
      annotations:
        cloudflare.com/tunnel-hostname: "myservice.example.com"
    ```
+
+## How It Works
+
+1. **Cloudflare Tunnel** creates a secure connection from your cluster to Cloudflare
+2. **Tunnel Controller** watches for services with the `cloudflare.com/tunnel-hostname` annotation
+3. **Automatic DNS routes** are created when you add the annotation
+4. **Internal services** (without annotation) remain accessible only through MetalLB/port-forwarding
 
 ## Adding/Removing Services
 
@@ -87,7 +95,7 @@ kubectl get services --all-namespaces -o jsonpath='{range .items[*]}{.metadata.n
 🔒 **Selective Exposure** - Only services with annotations are exposed to internet  
 🔒 **Internal Services Protected** - Services without annotations remain internal-only  
 🔒 **Secure Storage** - Tokens stored in Kubernetes secrets  
-🔒 **No Token Exposure** - Tokens never appear in configuration files  
+🔒 **No Token Exposure** - Tokens never appear in configuration files or git  
 
 ## Benefits
 
@@ -98,3 +106,15 @@ kubectl get services --all-namespaces -o jsonpath='{range .items[*]}{.metadata.n
 ✅ **Maintainable** - Clear, minimal configuration  
 ✅ **Safe** - No hardcoded credentials in version control  
 ✅ **Flexible** - Easy to add/remove services with annotations
+✅ **GitOps Compatible** - Works with ArgoCD without exposing secrets
+
+## ArgoCD Integration
+
+This setup is designed to work with ArgoCD:
+
+1. **Setup script** creates the secret locally (not in git)
+2. **ArgoCD manages** all other resources from the repository
+3. **No credentials in git** - Secrets are created manually for security
+4. **GitOps workflow** - All configuration changes go through git
+
+The secret is created manually by the setup script and is not managed by ArgoCD to ensure credentials never end up in your repository.

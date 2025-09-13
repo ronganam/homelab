@@ -1,0 +1,107 @@
+---
+# DNS records for Cloudflare Tunnel
+# These services create DNS A records pointing to Cloudflare IPs
+# External-DNS will manage these records automatically
+apiVersion: v1
+kind: Service
+metadata:
+  name: homepage-dns
+  namespace: external-dns
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: homepage.buildin.group
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  type: LoadBalancer
+  # This will get an IP from MetalLB, but we'll override it with Cloudflare IP
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: cloudflare-dns
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: n9n-dns
+  namespace: external-dns
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: n9n.buildin.group
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: cloudflare-dns
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: argocd-dns
+  namespace: external-dns
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: argocd.buildin.group
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: cloudflare-dns
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: longhorn-dns
+  namespace: external-dns
+  annotations:
+    external-dns.alpha.kubernetes.io/hostname: longhorn.buildin.group
+    external-dns.alpha.kubernetes.io/ttl: "300"
+spec:
+  type: LoadBalancer
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+  selector:
+    app: cloudflare-dns
+
+---
+# Dummy deployment for the DNS services to route to
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudflare-dns
+  namespace: external-dns
+  labels:
+    app: cloudflare-dns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloudflare-dns
+  template:
+    metadata:
+      labels:
+        app: cloudflare-dns
+    spec:
+      containers:
+      - name: nginx
+        image: nginx:alpine
+        ports:
+        - containerPort: 80
+        resources:
+          limits:
+            memory: 64Mi
+            cpu: 50m
+          requests:
+            memory: 32Mi
+            cpu: 25m

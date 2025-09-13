@@ -31,9 +31,9 @@ spec:
         command:
         - cloudflared
         - tunnel
+        - run
         - --token
         - $(TUNNEL_TOKEN)
-        - run
         env:
         - name: TUNNEL_TOKEN
           valueFrom:

@@ -20,11 +20,18 @@ fi
 echo "✅ cloudflared is installed"
 
 # Check if user is logged in to Cloudflare
+echo "🔐 Checking Cloudflare authentication..."
 if ! cloudflared tunnel list &> /dev/null; then
-    echo "🔐 Please log in to Cloudflare first:"
+    echo "❌ Not authenticated with Cloudflare. Please log in first:"
     echo "   cloudflared tunnel login"
     echo ""
     read -p "Press Enter after you've logged in..."
+    
+    # Verify authentication again
+    if ! cloudflared tunnel list &> /dev/null; then
+        echo "❌ Still not authenticated. Please run 'cloudflared tunnel login' and try again."
+        exit 1
+    fi
 fi
 
 echo "✅ Cloudflare authentication verified"
@@ -60,19 +67,40 @@ if [ -z "$API_TOKEN" ]; then
     exit 1
 fi
 
-# Create tunnel
+# Create tunnel (check if it already exists)
 echo "🔧 Creating tunnel 'homelab-tunnel'..."
-TUNNEL_ID=$(cloudflared tunnel create homelab-tunnel --output json | jq -r '.id')
-echo "✅ Tunnel created with ID: $TUNNEL_ID"
+if cloudflared tunnel list | grep -q "homelab-tunnel"; then
+    echo "✅ Tunnel 'homelab-tunnel' already exists"
+    TUNNEL_ID=$(cloudflared tunnel list --output json | jq -r '.[] | select(.name=="homelab-tunnel") | .id')
+else
+    TUNNEL_ID=$(cloudflared tunnel create --output json homelab-tunnel | jq -r '.id')
+    echo "✅ Tunnel created with ID: $TUNNEL_ID"
+fi
 
 # Get tunnel credentials
 echo "📋 Getting tunnel credentials..."
 cloudflared tunnel token homelab-tunnel > /tmp/tunnel-credentials.json
-echo "✅ Tunnel credentials saved"
+if [ $? -eq 0 ]; then
+    echo "✅ Tunnel credentials saved"
+else
+    echo "❌ Failed to get tunnel credentials. Please check if the tunnel exists and you have proper permissions."
+    exit 1
+fi
 
 # Convert credentials to base64 for Kubernetes secret
 echo "🔐 Converting credentials for Kubernetes secret..."
-CREDENTIALS_B64=$(base64 -w 0 /tmp/tunnel-credentials.json)
+if [ -f "/tmp/tunnel-credentials.json" ]; then
+    CREDENTIALS_B64=$(base64 -w 0 /tmp/tunnel-credentials.json)
+    if [ $? -eq 0 ]; then
+        echo "✅ Credentials converted to base64"
+    else
+        echo "❌ Failed to convert credentials to base64"
+        exit 1
+    fi
+else
+    echo "❌ Tunnel credentials file not found"
+    exit 1
+fi
 
 # Update the tunnel secret file
 TUNNEL_SECRET_FILE="infra/cloudflare-tunnel/cloudflared-secret.yaml"
@@ -123,8 +151,8 @@ fi
 # Update n8n service
 N8N_SERVICE="apps/n8n/service.yaml"
 if [ -f "$N8N_SERVICE" ]; then
-    sed -i.bak "s/n9n.buildin.group/n8n.$DOMAIN/g" "$N8N_SERVICE"
-    echo "✅ Updated n8n service annotation"
+    sed -i.bak "s/n8n.buildin.group/n9n.$DOMAIN/g" "$N8N_SERVICE"
+    echo "✅ Updated n8n service annotation to use n9n domain"
     rm -f "$N8N_SERVICE.bak"
 fi
 
@@ -147,8 +175,8 @@ fi
 # Update n8n config with the correct domain
 N8N_CONFIG_FILE="apps/n8n/deployment.yaml"
 if [ -f "$N8N_CONFIG_FILE" ]; then
-    sed -i.bak "s/buildin.group/$DOMAIN/g" "$N8N_CONFIG_FILE"
-    echo "✅ Updated n8n configuration"
+    sed -i.bak "s/n8n.buildin.group/n9n.$DOMAIN/g" "$N8N_CONFIG_FILE"
+    echo "✅ Updated n8n configuration to use n9n domain"
     rm -f "$N8N_CONFIG_FILE.bak"
 fi
 
@@ -176,7 +204,7 @@ echo "   - All your applications"
 echo ""
 echo "3. External-DNS will automatically create DNS records for:"
 echo "   - https://homepage.$DOMAIN"
-echo "   - https://n8n.$DOMAIN"
+echo "   - https://n9n.$DOMAIN"
 echo "   - https://argocd.$DOMAIN"
 echo "   - https://longhorn.$DOMAIN"
 echo ""

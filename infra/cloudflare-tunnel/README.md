@@ -25,7 +25,7 @@ This will automatically create the tunnel and configure all credentials.
 The tunnel is configured to route traffic to these services:
 
 - `homepage.yourdomain.com` → Homepage dashboard
-- `n8n.yourdomain.com` → n8n workflow automation
+- `n9n.yourdomain.com` → n8n workflow automation
 - `argocd.yourdomain.com` → Argo CD GitOps
 - `longhorn.yourdomain.com` → Longhorn storage UI
 

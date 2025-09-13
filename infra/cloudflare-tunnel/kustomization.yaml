@@ -9,3 +9,4 @@ resources:
   - cloudflared-deployment.yaml
   - cloudflared-config.yaml
   - cloudflared-service.yaml
+  - create-tunnel-dns.yaml

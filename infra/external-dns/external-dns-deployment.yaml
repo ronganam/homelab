@@ -25,12 +25,14 @@ spec:
         - --source=ingress
         - --domain-filter=buildin.group
         - --provider=cloudflare
-        - --cloudflare-proxied
+        - --cloudflare-proxied=false
         - --zone-id-filter=$(CLOUDFLARE_ZONE_ID)
         - --registry=txt
         - --txt-owner-id=homelab
         - --log-format=json
         - --log-level=info
+        - --cloudflare-dns-records-per-page=5000
+        - --cloudflare-record-comment="provisioned by external-dns"
         env:
         - name: CF_API_TOKEN
           valueFrom:

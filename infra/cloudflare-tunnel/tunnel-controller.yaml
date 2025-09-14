@@ -33,7 +33,7 @@ spec:
           pip install kubernetes pyyaml --quiet
           
           echo "🔍 Starting Simple Tunnel Controller..."
-          python /app/controller.py
+          python -u /app/controller.py
         volumeMounts:
         - name: controller-script
           mountPath: /app
@@ -192,15 +192,20 @@ data:
         """Main controller loop"""
         try:
             print("🔍 Loading Kubernetes config...")
+            import sys
+            sys.stdout.flush()
             # Load kubeconfig
             config.load_incluster_config()
             print("✅ Kubernetes config loaded")
+            sys.stdout.flush()
             
             v1 = client.CoreV1Api()
             print("✅ Kubernetes client created")
+            sys.stdout.flush()
             
             # Process existing services
             print("🔍 Processing existing services with annotations...")
+            sys.stdout.flush()
             services = v1.list_service_for_all_namespaces()
             for service in services.items:
                 if service.metadata.annotations and "cloudflare.com/tunnel-hostname" in service.metadata.annotations:
@@ -208,6 +213,7 @@ data:
             
             # Watch for changes
             print("👀 Watching for service changes...")
+            sys.stdout.flush()
             w = watch.Watch()
             for event in w.stream(v1.list_service_for_all_namespaces):
                 process_service_event(event["type"], event["object"])

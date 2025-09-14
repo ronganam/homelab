@@ -191,9 +191,10 @@ kubectl get services --all-namespaces -l dns.service-controller.io/enabled=true
 ## Key Improvements
 
 ### 🚀 **Performance Optimizations**
-- **Smart restarts**: Only restarts cloudflared when tunnel config actually changes
+- **No unnecessary restarts**: cloudflared automatically reloads config when ConfigMap changes
 - **Efficient queries**: Uses label selectors instead of processing all services
-- **Config hashing**: Prevents unnecessary updates and restarts
+- **Config hashing**: Prevents unnecessary updates
+- **Limited revision history**: Prevents ReplicaSet accumulation
 
 ### 🏷️ **Label-Based Configuration**
 - **Intuitive labels**: Clear, self-documenting label names

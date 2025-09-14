@@ -388,15 +388,11 @@ data:
                     self.tunnel_config_hash = new_hash
                     self.last_config_update = time.time()
                     
-                    # Restart cloudflared deployment only when config actually changes
-                    print(f"🔄 Restarting cloudflared deployment due to config changes")
-                    self.apps_v1.patch_namespaced_deployment(
-                        name="cloudflared",
-                        namespace="cloudflare-tunnel",
-                        body={"spec": {"template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": str(int(time.time()))}}}}}
-                    )
+                    # Note: cloudflared will automatically reload config when ConfigMap changes
+                    # No need to restart the deployment manually
+                    print(f"ℹ️  Config updated, cloudflared will automatically reload")
                     
-                    print(f"✅ Updated tunnel config and restarted cloudflared for {hostname}")
+                    print(f"✅ Updated tunnel config for {hostname}")
                 else:
                     print(f"ℹ️  Tunnel config unchanged for {hostname}, skipping restart")
                 

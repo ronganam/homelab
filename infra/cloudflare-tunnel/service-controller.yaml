@@ -542,17 +542,6 @@ data:
         controller.main()
 ---
 apiVersion: v1
-kind: Secret
-metadata:
-  name: cloudflare-api-token
-  namespace: cloudflare-tunnel
-type: Opaque
-data:
-  # Base64 encoded Cloudflare API token
-  # To create: echo -n "your-api-token" | base64
-  token: ""  # Replace with your base64 encoded API token
----
-apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: service-controller

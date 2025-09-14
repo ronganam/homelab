@@ -1,0 +1,66 @@
+---
+# Example: Internal Service with MetalLB LoadBalancer
+# This service will be accessible via internal DNS using MetalLB IP
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-internal-service
+  namespace: example-namespace
+  labels:
+    app: example-internal-service
+    # DNS Management Labels for Internal Service
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "internal.example.com"
+    exposure.service-controller.io/type: "internal"
+spec:
+  type: LoadBalancer  # Required for MetalLB to assign external IP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: example-internal-service
+---
+# Example: Public Service with Cloudflare Tunnel
+# This service will be accessible via public DNS through Cloudflare tunnel
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-public-service
+  namespace: example-namespace
+  labels:
+    app: example-public-service
+    # DNS Management Labels for Public Service
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "public.example.com"
+    exposure.service-controller.io/type: "public"
+spec:
+  type: ClusterIP  # Use ClusterIP for tunneled services
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: example-public-service
+---
+# Example: Cluster-Only Service (No DNS Management)
+# This service will only be accessible within the cluster
+apiVersion: v1
+kind: Service
+metadata:
+  name: example-cluster-service
+  namespace: example-namespace
+  labels:
+    app: example-cluster-service
+    # No DNS management labels = internal cluster access only
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  selector:
+    app: example-cluster-service

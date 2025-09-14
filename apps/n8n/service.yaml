@@ -6,8 +6,9 @@ metadata:
   namespace: n8n
   labels:
     app: n8n
-  annotations:
-    cloudflare.com/tunnel-hostname: "n9n.buildin.group"
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "n9n.buildin.group"
+    exposure.service-controller.io/type: "public"
 spec:
   type: ClusterIP
   ports:

@@ -81,26 +81,31 @@ data:
         """Create DNS route using cloudflared"""
         try:
             print(f"🌐 Creating DNS route for {hostname}")
-            # Extract subdomain and domain
-            parts = hostname.split('.')
-            if len(parts) >= 2:
-                subdomain = parts[0]
-                domain = '.'.join(parts[1:])
-                
-                # Create DNS route
-                cmd = [
+            
+            # Create DNS route with overwrite flag to replace existing records
+            cmd = [
+                'kubectl', 'exec', '-n', 'cloudflare-tunnel', 
+                'deployment/cloudflared', '--', 'cloudflared', 
+                'tunnel', 'route', 'dns', 'homelab-tunnel', 
+                hostname, '--overwrite-dns'
+            ]
+            result = subprocess.run(cmd, capture_output=True, text=True)
+            if result.returncode == 0:
+                print(f"✅ Created DNS route for {hostname}")
+            else:
+                print(f"⚠️  DNS route creation failed for {hostname}: {result.stderr}")
+                # Try without overwrite flag as fallback
+                cmd_fallback = [
                     'kubectl', 'exec', '-n', 'cloudflare-tunnel', 
                     'deployment/cloudflared', '--', 'cloudflared', 
                     'tunnel', 'route', 'dns', 'homelab-tunnel', 
-                    subdomain, domain
+                    hostname
                 ]
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                if result.returncode == 0:
-                    print(f"✅ Created DNS route for {hostname}")
+                result_fallback = subprocess.run(cmd_fallback, capture_output=True, text=True)
+                if result_fallback.returncode == 0:
+                    print(f"✅ Created DNS route for {hostname} (fallback)")
                 else:
-                    print(f"⚠️  DNS route may already exist for {hostname}")
-            else:
-                print(f"❌ Invalid hostname format: {hostname}")
+                    print(f"❌ Failed to create DNS route for {hostname}: {result_fallback.stderr}")
         except Exception as e:
             print(f"❌ Error creating DNS route for {hostname}: {e}")
     

@@ -37,10 +37,47 @@ spec:
             
             # Create the tunnel route using kubectl exec to run cloudflared in the cloudflared pod
             if kubectl exec -n cloudflare-tunnel deployment/cloudflared -- cloudflared tunnel route dns homelab-tunnel "$hostname" 2>/dev/null; then
-              echo "✅ Created route for $hostname"
+              echo "✅ Created DNS route for $hostname"
             else
-              echo "⚠️  Route may already exist for $hostname"
+              echo "⚠️  DNS route may already exist for $hostname"
             fi
+            
+            # Update tunnel configuration with ingress rule
+            update_tunnel_config "$service_name" "$hostname" "$namespace"
+          }
+          
+          # Function to update tunnel configuration
+          update_tunnel_config() {
+            local service_name=$1
+            local hostname=$2
+            local namespace=$3
+            
+            echo "🔧 Updating tunnel configuration for $hostname"
+            
+            # Get current config
+            current_config=$(kubectl get configmap cloudflared-config -n cloudflare-tunnel -o jsonpath='{.data.config\.yaml}')
+            
+            # Create new ingress rule
+            new_rule="      - hostname: $hostname
+        service: http://$service_name.$namespace.svc.cluster.local:80"
+            
+            # Check if rule already exists
+            if echo "$current_config" | grep -q "hostname: $hostname"; then
+              echo "⚠️  Ingress rule for $hostname already exists"
+              return
+            fi
+            
+            # Add the new rule before the catch-all rule
+            updated_config=$(echo "$current_config" | sed "/service: http_status:404/i\\
+$new_rule")
+            
+            # Update the configmap
+            echo "$updated_config" | kubectl patch configmap cloudflared-config -n cloudflare-tunnel --patch "{\"data\":{\"config.yaml\":\"$(echo "$updated_config" | sed 's/"/\\"/g' | tr '\n' '\\n')\"}}"
+            
+            # Restart cloudflared to pick up new config
+            kubectl rollout restart deployment/cloudflared -n cloudflare-tunnel
+            
+            echo "✅ Updated tunnel configuration for $hostname"
           }
           
           # Function to delete tunnel route
@@ -104,9 +141,12 @@ rules:
 - apiGroups: [""]
   resources: ["pods/exec"]
   verbs: ["create"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "patch"]
 - apiGroups: ["apps"]
   resources: ["deployments"]
-  verbs: ["get", "list"]
+  verbs: ["get", "list", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

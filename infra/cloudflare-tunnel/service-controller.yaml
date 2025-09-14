@@ -30,10 +30,16 @@ spec:
           curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
           chmod +x kubectl
           mv kubectl /usr/local/bin/
-          pip install kubernetes pyyaml --quiet
+          pip install kubernetes pyyaml requests --quiet
           
           echo "🔍 Starting Service Controller..."
           python -u /app/controller.py
+        env:
+        - name: CLOUDFLARE_API_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: cloudflare-api-token
+              key: token
         volumeMounts:
         - name: controller-script
           mountPath: /app
@@ -140,21 +146,192 @@ data:
                 return False
         
         def create_internal_dns_entry(self, hostname, ip_address):
-            """Create internal DNS entry using MetalLB IP"""
+            """Create internal DNS entry using MetalLB IP via Cloudflare API"""
             try:
                 print(f"🏠 Creating internal DNS entry for {hostname} -> {ip_address}")
                 
-                # For internal services, we could integrate with external-dns or create custom DNS records
-                # For now, we'll log the information and could extend this to work with your DNS provider
-                print(f"📝 Internal DNS mapping: {hostname} -> {ip_address}")
-                print(f"💡 Consider configuring your DNS provider to point {hostname} to {ip_address}")
+                # Get Cloudflare API credentials from environment or secret
+                api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+                if not api_token:
+                    print("⚠️  CLOUDFLARE_API_TOKEN not found in environment variables")
+                    return False
                 
-                # TODO: Implement actual DNS record creation for internal services
-                # This could integrate with external-dns, your DNS provider's API, or a custom DNS solution
+                # Extract domain from hostname (e.g., "service.internal.example.com" -> "example.com")
+                domain_parts = hostname.split('.')
+                if len(domain_parts) < 2:
+                    print(f"⚠️  Invalid hostname format: {hostname}")
+                    return False
                 
-                return True
+                # Get domain (last two parts: example.com)
+                domain = '.'.join(domain_parts[-2:])
+                subdomain = '.'.join(domain_parts[:-2]) if len(domain_parts) > 2 else '@'
+                
+                print(f"🔍 Domain: {domain}, Subdomain: {subdomain}")
+                
+                # Get zone ID for the domain
+                zone_id = self.get_cloudflare_zone_id(domain, api_token)
+                if not zone_id:
+                    print(f"❌ Could not find zone ID for domain: {domain}")
+                    return False
+                
+                # Check if record already exists
+                existing_record = self.get_existing_dns_record(zone_id, subdomain, domain, api_token)
+                
+                if existing_record:
+                    # Update existing record if IP is different
+                    if existing_record.get('content') != ip_address:
+                        print(f"🔄 Updating existing DNS record for {hostname}")
+                        success = self.update_dns_record(zone_id, existing_record['id'], subdomain, ip_address, api_token)
+                        if success:
+                            print(f"✅ Updated DNS record for {hostname} -> {ip_address}")
+                        return success
+                    else:
+                        print(f"ℹ️  DNS record for {hostname} already exists with correct IP")
+                        return True
+                else:
+                    # Create new record
+                    print(f"🆕 Creating new DNS record for {hostname}")
+                    success = self.create_dns_record(zone_id, subdomain, ip_address, api_token, domain)
+                    if success:
+                        print(f"✅ Created DNS record for {hostname} -> {ip_address}")
+                    return success
+                
             except Exception as e:
                 print(f"❌ Error creating internal DNS entry for {hostname}: {e}")
+                return False
+        
+        def get_cloudflare_zone_id(self, domain, api_token):
+            """Get Cloudflare zone ID for a domain"""
+            try:
+                import requests
+                
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+                
+                url = f'https://api.cloudflare.com/client/v4/zones?name={domain}'
+                response = requests.get(url, headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('success') and data.get('result'):
+                        zone_id = data['result'][0]['id']
+                        print(f"✅ Found zone ID for {domain}: {zone_id}")
+                        return zone_id
+                    else:
+                        print(f"❌ No zone found for domain: {domain}")
+                        return None
+                else:
+                    print(f"❌ Failed to get zone ID: {response.status_code} - {response.text}")
+                    return None
+                    
+            except Exception as e:
+                print(f"❌ Error getting zone ID: {e}")
+                return None
+        
+        def get_existing_dns_record(self, zone_id, subdomain, domain, api_token):
+            """Get existing DNS record if it exists"""
+            try:
+                import requests
+                
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+                
+                # Construct the full name for the record
+                record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
+                
+                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={record_name}&type=A'
+                response = requests.get(url, headers=headers, timeout=10)
+                
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('success') and data.get('result'):
+                        return data['result'][0]  # Return first matching record
+                    else:
+                        return None
+                else:
+                    print(f"❌ Failed to check existing records: {response.status_code}")
+                    return None
+                    
+            except Exception as e:
+                print(f"❌ Error checking existing DNS record: {e}")
+                return None
+        
+        def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):
+            """Create a new DNS A record"""
+            try:
+                import requests
+                
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+                
+                # Construct the full name for the record
+                record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
+                
+                data = {
+                    'type': 'A',
+                    'name': record_name,
+                    'content': ip_address,
+                    'ttl': 300,  # 5 minutes TTL
+                    'proxied': False  # Don't proxy internal services
+                }
+                
+                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
+                response = requests.post(url, headers=headers, json=data, timeout=10)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get('success'):
+                        return True
+                    else:
+                        print(f"❌ Failed to create DNS record: {result.get('errors', [])}")
+                        return False
+                else:
+                    print(f"❌ Failed to create DNS record: {response.status_code} - {response.text}")
+                    return False
+                    
+            except Exception as e:
+                print(f"❌ Error creating DNS record: {e}")
+                return False
+        
+        def update_dns_record(self, zone_id, record_id, subdomain, ip_address, api_token):
+            """Update an existing DNS A record"""
+            try:
+                import requests
+                
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+                
+                data = {
+                    'type': 'A',
+                    'content': ip_address,
+                    'ttl': 300,  # 5 minutes TTL
+                    'proxied': False  # Don't proxy internal services
+                }
+                
+                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}'
+                response = requests.put(url, headers=headers, json=data, timeout=10)
+                
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get('success'):
+                        return True
+                    else:
+                        print(f"❌ Failed to update DNS record: {result.get('errors', [])}")
+                        return False
+                else:
+                    print(f"❌ Failed to update DNS record: {response.status_code} - {response.text}")
+                    return False
+                    
+            except Exception as e:
+                print(f"❌ Error updating DNS record: {e}")
                 return False
         
         def calculate_config_hash(self, config_data):
@@ -212,12 +389,12 @@ data:
                     self.last_config_update = time.time()
                     
                     # Restart cloudflared deployment only when config actually changes
-                    print(f"🔄 Restarting cloudflared deployment due to config changes")
-                    self.apps_v1.patch_namespaced_deployment(
-                        name="cloudflared",
-                        namespace="cloudflare-tunnel",
-                        body={"spec": {"template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": str(int(time.time()))}}}}}
-                    )
+                    print(f"🔄 Restarting cloudflared deployment due to config changes (disabled)")
+                    # self.apps_v1.patch_namespaced_deployment(
+                    #     name="cloudflared",
+                    #     namespace="cloudflare-tunnel",
+                    #     body={"spec": {"template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": str(int(time.time()))}}}}}
+                    # )
                     
                     print(f"✅ Updated tunnel config and restarted cloudflared for {hostname}")
                 else:
@@ -363,6 +540,17 @@ data:
     if __name__ == "__main__":
         controller = ServiceController()
         controller.main()
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloudflare-api-token
+  namespace: cloudflare-tunnel
+type: Opaque
+data:
+  # Base64 encoded Cloudflare API token
+  # To create: echo -n "your-api-token" | base64
+  token: ""  # Replace with your base64 encoded API token
 ---
 apiVersion: v1
 kind: ServiceAccount

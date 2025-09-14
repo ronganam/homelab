@@ -19,18 +19,21 @@ spec:
       serviceAccountName: tunnel-controller
       containers:
       - name: tunnel-controller
-        image: bitnami/kubectl:latest
+        image: python:3.11-alpine
         command:
         - /bin/sh
         - -c
         - |
           set -e
-          echo "🔍 Installing Python dependencies..."
-          apk add --no-cache python3 py3-pip
-          pip3 install kubernetes pyyaml --quiet
+          echo "🔍 Installing dependencies..."
+          apk add --no-cache curl
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin/
+          pip install kubernetes pyyaml --quiet
           
           echo "🔍 Starting Simple Tunnel Controller..."
-          python3 /app/controller.py
+          python /app/controller.py
         volumeMounts:
         - name: controller-script
           mountPath: /app

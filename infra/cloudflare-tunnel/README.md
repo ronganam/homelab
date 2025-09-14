@@ -170,7 +170,7 @@ kubectl get services --all-namespaces -l exposure.service-controller.io/type=int
 - **Public services not accessible?** Verify labels are correct and check tunnel status
 - **Internal services not accessible?** Ensure MetalLB is running and service has LoadBalancer type
 - **DNS not working?** Check if the appropriate DNS route was created
-- **ArgoCD conflicts?** Verify that the `Prune=false` annotation is present on the ConfigMap
+- **ArgoCD conflicts?** Verify that the `ignoreDifferences` configuration is present in the ApplicationSet
 
 ### Debugging Commands
 
@@ -212,33 +212,34 @@ kubectl get services --all-namespaces -l dns.service-controller.io/enabled=true
 
 ## ArgoCD Integration
 
-This setup is designed to work with ArgoCD using a **simple annotation approach**:
+This setup is designed to work with ArgoCD using the **ignoreDifferences** feature:
 
 ### GitOps Conflict Resolution
 
-The `cloudflared-config` ConfigMap is managed by ArgoCD but can be modified by the service-controller using the `Prune=false` annotation:
+The `cloudflared-config` ConfigMap is managed by ArgoCD but the service-controller can modify it without conflicts using ArgoCD's `ignoreDifferences` configuration in the ApplicationSet:
 
 ```yaml
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cloudflared-config
-  namespace: cloudflare-tunnel
-  annotations:
-    argocd.argoproj.io/sync-options: Prune=false
+# In bootstrap/root-applicationsets.yaml
+spec:
+  ignoreDifferences:
+  - group: ""
+    kind: ConfigMap
+    name: cloudflared-config
+    jsonPointers:
+    - /data/config.yaml
 ```
 
-This annotation tells ArgoCD:
-- **Don't prune** the ConfigMap if it's not in Git
-- **Allow modifications** by other controllers
-- **Don't override** changes made by the service-controller
+This configuration tells ArgoCD:
+- **Ignore changes** to the `config.yaml` data field in the `cloudflared-config` ConfigMap
+- **Allow service-controller** to modify the ConfigMap content
+- **Don't override** changes made by the service-controller during sync
 
 ### GitOps Workflow
 
 1. **Setup script** creates the secret locally (not in git)
-2. **ArgoCD manages** the ConfigMap from Git but allows modifications
+2. **ArgoCD manages** the ConfigMap from Git but ignores content changes
 3. **Service-controller** can modify the ConfigMap without conflicts
 4. **No credentials in git** - Secrets are created manually for security
-5. **Simple solution** - No complex config merging or multiple ConfigMaps
+5. **Clean solution** - Uses ArgoCD's built-in ignoreDifferences feature
 
 The secret is created manually by the setup script and is not managed by ArgoCD to ensure credentials never end up in your repository.

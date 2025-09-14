@@ -340,19 +340,24 @@ data:
             return hashlib.md5(config_str.encode()).hexdigest()
         
         def update_tunnel_config(self, service_name, hostname, namespace, port):
-            """Update the tunnel configuration for public services"""
+            """Update the dynamic tunnel ingress configuration for public services"""
             try:
                 print(f"🔧 Adding tunnel ingress rule for {hostname}")
                 
-                # Get current config
-                configmap = self.v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
-                current_config = configmap.data["config.yaml"]
+                # Get current dynamic ingress config
+                try:
+                    ingress_configmap = self.v1.read_namespaced_config_map("cloudflared-ingress-config", "cloudflare-tunnel")
+                    current_ingress_config = ingress_configmap.data["ingress.yaml"]
+                except Exception as e:
+                    print(f"⚠️  Could not read ingress config, creating new one: {e}")
+                    # Create new ingress config if it doesn't exist
+                    current_ingress_config = "ingress:\n  - service: http_status:404"
                 
                 # Parse the YAML config
-                config_data = yaml.safe_load(current_config)
+                ingress_data = yaml.safe_load(current_ingress_config)
                 
                 # Check if rule already exists
-                for rule in config_data.get("ingress", []):
+                for rule in ingress_data.get("ingress", []):
                     if isinstance(rule, dict) and rule.get("hostname") == hostname:
                         print(f"⚠️  Tunnel ingress rule for {hostname} already exists")
                         return True
@@ -364,7 +369,7 @@ data:
                 }
                 
                 # Insert before the catch-all rule
-                ingress_rules = config_data.get("ingress", [])
+                ingress_rules = ingress_data.get("ingress", [])
                 for i, rule in enumerate(ingress_rules):
                     if isinstance(rule, dict) and rule.get("service") == "http_status:404":
                         ingress_rules.insert(i, new_rule)
@@ -372,38 +377,53 @@ data:
                 else:
                     ingress_rules.append(new_rule)
                 
-                config_data["ingress"] = ingress_rules
+                ingress_data["ingress"] = ingress_rules
                 
                 # Calculate new config hash
-                new_hash = self.calculate_config_hash(config_data)
+                new_hash = self.calculate_config_hash(ingress_data)
                 
                 # Only update if config actually changed
                 if new_hash != self.tunnel_config_hash:
-                    # Update the configmap
-                    updated_config = yaml.dump(config_data, default_flow_style=False)
-                    configmap.data["config.yaml"] = updated_config
-                    self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
+                    # Update the dynamic ingress configmap
+                    updated_ingress_config = yaml.dump(ingress_data, default_flow_style=False)
+                    
+                    # Create or update the ingress configmap
+                    try:
+                        ingress_configmap.data["ingress.yaml"] = updated_ingress_config
+                        self.v1.patch_namespaced_config_map("cloudflared-ingress-config", "cloudflare-tunnel", ingress_configmap)
+                    except Exception as e:
+                        print(f"⚠️  ConfigMap doesn't exist, creating new one: {e}")
+                        # Create new ConfigMap if it doesn't exist
+                        new_configmap = client.V1ConfigMap(
+                            metadata=client.V1ObjectMeta(
+                                name="cloudflared-ingress-config",
+                                namespace="cloudflare-tunnel",
+                                labels={"app.kubernetes.io/managed-by": "service-controller"}
+                            ),
+                            data={"ingress.yaml": updated_ingress_config}
+                        )
+                        self.v1.create_namespaced_config_map("cloudflare-tunnel", new_configmap)
                     
                     # Update hash and timestamp
                     self.tunnel_config_hash = new_hash
                     self.last_config_update = time.time()
                     
-                    # Restart cloudflared deployment only when config actually changes
-                    print(f"🔄 Restarting cloudflared deployment due to config changes (disabled)")
-                    # self.apps_v1.patch_namespaced_deployment(
-                    #     name="cloudflared",
-                    #     namespace="cloudflare-tunnel",
-                    #     body={"spec": {"template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": str(int(time.time()))}}}}}
-                    # )
+                    # Restart cloudflared deployment to pick up new config
+                    print(f"🔄 Restarting cloudflared deployment due to config changes")
+                    self.apps_v1.patch_namespaced_deployment(
+                        name="cloudflared",
+                        namespace="cloudflare-tunnel",
+                        body={"spec": {"template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": str(int(time.time()))}}}}}
+                    )
                     
-                    print(f"✅ Updated tunnel config and restarted cloudflared for {hostname}")
+                    print(f"✅ Updated tunnel ingress config and restarted cloudflared for {hostname}")
                 else:
-                    print(f"ℹ️  Tunnel config unchanged for {hostname}, skipping restart")
+                    print(f"ℹ️  Tunnel ingress config unchanged for {hostname}, skipping restart")
                 
                 return True
                 
             except Exception as e:
-                print(f"❌ Error updating tunnel config: {e}")
+                print(f"❌ Error updating tunnel ingress config: {e}")
                 return False
         
         def process_service_event(self, event_type, service):
@@ -560,7 +580,7 @@ rules:
   verbs: ["get", "list"]
 - apiGroups: [""]
   resources: ["configmaps"]
-  verbs: ["get", "patch"]
+  verbs: ["get", "patch", "create"]
 - apiGroups: [""]
   resources: ["pods"]
   verbs: ["get", "list"]

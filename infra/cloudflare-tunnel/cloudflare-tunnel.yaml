@@ -11,16 +11,29 @@ data:
     credentials-file: /etc/cloudflared/credentials/credentials.json
     origincert: /etc/cloudflared/cert.pem
     
-    # Ingress rules will be managed by the tunnel controller
-    ingress:
-      # Catch-all rule (returns 404 for unmatched requests)
-      - service: http_status:404
+    # Static configuration - managed by ArgoCD
+    # Dynamic ingress rules are managed by service-controller in cloudflared-ingress-config
     
     # Optional: Enable metrics
     metrics: 0.0.0.0:8080
     
     # Optional: Enable logging
     loglevel: info
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudflared-ingress-config
+  namespace: cloudflare-tunnel
+  labels:
+    app.kubernetes.io/managed-by: service-controller
+data:
+  ingress.yaml: |
+    # Dynamic ingress rules managed by service-controller
+    # This file is automatically updated when services are added/removed
+    ingress:
+      # Catch-all rule (returns 404 for unmatched requests)
+      - service: http_status:404
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -39,6 +52,25 @@ spec:
       labels:
         app: cloudflared
     spec:
+      initContainers:
+      - name: config-merger
+        image: mikefarah/yq:latest
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "🔧 Merging static and dynamic configurations..."
+          yq eval-all 'select(fileIndex == 0) * select(fileIndex == 1)' /etc/cloudflared/config/config.yaml /etc/cloudflared/ingress/ingress.yaml > /shared/merged-config.yaml
+          echo "✅ Configuration merged successfully"
+        volumeMounts:
+        - name: config
+          mountPath: /etc/cloudflared/config
+          readOnly: true
+        - name: ingress-config
+          mountPath: /etc/cloudflared/ingress
+          readOnly: true
+        - name: shared-config
+          mountPath: /shared
       containers:
       - name: cloudflared
         image: cloudflare/cloudflared:latest
@@ -46,11 +78,11 @@ spec:
         - cloudflared
         - tunnel
         - --config
-        - /etc/cloudflared/config/config.yaml
+        - /etc/cloudflared/merged/merged-config.yaml
         - run
         volumeMounts:
-        - name: config
-          mountPath: /etc/cloudflared/config
+        - name: shared-config
+          mountPath: /etc/cloudflared/merged
           readOnly: true
         - name: credentials
           mountPath: /etc/cloudflared/credentials
@@ -82,6 +114,11 @@ spec:
       - name: config
         configMap:
           name: cloudflared-config
+      - name: ingress-config
+        configMap:
+          name: cloudflared-ingress-config
+      - name: shared-config
+        emptyDir: {}
       - name: credentials
         secret:
           secretName: cloudflare-tunnel-credentials

@@ -170,6 +170,27 @@ kubectl get services --all-namespaces -l exposure.service-controller.io/type=int
 - **Public services not accessible?** Verify labels are correct and check tunnel status
 - **Internal services not accessible?** Ensure MetalLB is running and service has LoadBalancer type
 - **DNS not working?** Check if the appropriate DNS route was created
+- **Config merging issues?** Check init container logs for yq errors
+- **ArgoCD conflicts?** Verify that `cloudflared-config` is managed by ArgoCD and `cloudflared-ingress-config` is managed by service-controller
+
+### Debugging Commands
+
+```bash
+# Check if configs are properly separated
+kubectl get configmaps -n cloudflare-tunnel
+
+# View static config (managed by ArgoCD)
+kubectl get configmap cloudflared-config -n cloudflare-tunnel -o yaml
+
+# View dynamic config (managed by service-controller)
+kubectl get configmap cloudflared-ingress-config -n cloudflare-tunnel -o yaml
+
+# Check init container logs for config merging
+kubectl logs -n cloudflare-tunnel deployment/cloudflared -c config-merger
+
+# Check service-controller logs
+kubectl logs -n cloudflare-tunnel deployment/service-controller
+```
 
 ## Key Improvements
 
@@ -195,11 +216,32 @@ kubectl get services --all-namespaces -l exposure.service-controller.io/type=int
 
 ## ArgoCD Integration
 
-This setup is designed to work with ArgoCD:
+This setup is designed to work seamlessly with ArgoCD using a **separation of concerns** approach:
+
+### Static vs Dynamic Configuration
+
+1. **Static ConfigMap** (`cloudflared-config`):
+   - Managed by ArgoCD from Git
+   - Contains base tunnel configuration (tunnel ID, credentials, metrics, logging)
+   - Never modified by the service-controller
+
+2. **Dynamic ConfigMap** (`cloudflared-ingress-config`):
+   - Managed by the service-controller
+   - Contains only ingress rules for services
+   - Automatically updated when services are added/removed
+   - Labeled with `app.kubernetes.io/managed-by: service-controller`
+
+3. **Config Merging**:
+   - Init container merges static and dynamic configs using `yq`
+   - Cloudflared uses the merged configuration
+   - No GitOps conflicts between ArgoCD and service-controller
+
+### GitOps Workflow
 
 1. **Setup script** creates the secret locally (not in git)
-2. **ArgoCD manages** all other resources from the repository
-3. **No credentials in git** - Secrets are created manually for security
-4. **GitOps workflow** - All configuration changes go through git
+2. **ArgoCD manages** static resources from the repository
+3. **Service-controller manages** dynamic ingress rules
+4. **No credentials in git** - Secrets are created manually for security
+5. **No conflicts** - Each component manages its own resources
 
 The secret is created manually by the setup script and is not managed by ArgoCD to ensure credentials never end up in your repository.

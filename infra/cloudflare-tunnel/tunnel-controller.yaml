@@ -83,11 +83,12 @@ data:
             print(f"🌐 Creating DNS route for {hostname}")
             
             # Create DNS route with overwrite flag to replace existing records
+            # Correct syntax: flags before arguments
             cmd = [
                 'kubectl', 'exec', '-n', 'cloudflare-tunnel', 
                 'deployment/cloudflared', '--', 'cloudflared', 
-                'tunnel', 'route', 'dns', 'homelab-tunnel', 
-                hostname, '--overwrite-dns'
+                'tunnel', 'route', 'dns', '--overwrite-dns', 
+                'homelab-tunnel', hostname
             ]
             result = subprocess.run(cmd, capture_output=True, text=True)
             if result.returncode == 0:

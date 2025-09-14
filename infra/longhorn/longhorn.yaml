@@ -21,6 +21,9 @@ metadata:
     app.kubernetes.io/name: longhorn
     app.kubernetes.io/instance: longhorn
     app.kubernetes.io/component: frontend
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "longhorn.buildin.group"
+    exposure.service-controller.io/type: "internal"
 spec:
   type: LoadBalancer
   ports:

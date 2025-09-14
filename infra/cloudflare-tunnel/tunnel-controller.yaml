@@ -26,6 +26,10 @@ spec:
         - |
           set -e
           echo "🔍 Installing dependencies..."
+          apk add --no-cache curl
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin/
           pip install kubernetes pyyaml --quiet
           
           echo "🔍 Starting Simple Tunnel Controller..."
@@ -158,9 +162,12 @@ data:
     def process_service_event(event_type, service):
         """Process service events"""
         try:
+            if not service or not service.metadata:
+                return
+                
             service_name = service.metadata.name
             namespace = service.metadata.namespace
-            hostname = service.metadata.annotations.get("cloudflare.com/tunnel-hostname")
+            hostname = service.metadata.annotations.get("cloudflare.com/tunnel-hostname") if service.metadata.annotations else None
             
             if not hostname:
                 return

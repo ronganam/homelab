@@ -1,0 +1,367 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: service-controller
+  namespace: cloudflare-tunnel
+  labels:
+    app: service-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: service-controller
+  template:
+    metadata:
+      labels:
+        app: service-controller
+    spec:
+      serviceAccountName: service-controller
+      containers:
+      - name: service-controller
+        image: python:3.11-alpine
+        command:
+        - /bin/sh
+        - -c
+        - |
+          set -e
+          echo "🔍 Installing dependencies..."
+          apk add --no-cache curl
+          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+          chmod +x kubectl
+          mv kubectl /usr/local/bin/
+          pip install kubernetes pyyaml --quiet
+          
+          echo "🔍 Starting Service Controller..."
+          python -u /app/controller.py
+        volumeMounts:
+        - name: controller-script
+          mountPath: /app
+        resources:
+          limits:
+            memory: 256Mi
+            cpu: 200m
+          requests:
+            memory: 128Mi
+            cpu: 100m
+      volumes:
+      - name: controller-script
+        configMap:
+          name: service-controller-script
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-controller-script
+  namespace: cloudflare-tunnel
+data:
+  controller.py: |
+    #!/usr/bin/env python3
+    
+    import os
+    import time
+    import yaml
+    import json
+    import subprocess
+    import hashlib
+    from kubernetes import client, config, watch
+    
+    # Label constants
+    DNS_ENABLED_LABEL = "dns.service-controller.io/enabled"
+    DNS_HOSTNAME_LABEL = "dns.service-controller.io/hostname"
+    EXPOSURE_TYPE_LABEL = "exposure.service-controller.io/type"  # "public" or "internal"
+    
+    # Exposure types
+    EXPOSURE_PUBLIC = "public"
+    EXPOSURE_INTERNAL = "internal"
+    
+    class ServiceController:
+        def __init__(self):
+            self.v1 = client.CoreV1Api()
+            self.apps_v1 = client.AppsV1Api()
+            self.tunnel_config_hash = None
+            self.last_config_update = 0
+            
+        def get_service_port(self, service_name, namespace):
+            """Get the port of a service"""
+            try:
+                service = self.v1.read_namespaced_service(service_name, namespace)
+                if service.spec.ports:
+                    return service.spec.ports[0].port
+                return 80
+            except Exception as e:
+                print(f"⚠️  Error getting port for {service_name}.{namespace}: {e}")
+                return 80
+        
+        def get_service_external_ip(self, service_name, namespace):
+            """Get the external IP of a service (for MetalLB)"""
+            try:
+                service = self.v1.read_namespaced_service(service_name, namespace)
+                if service.status.load_balancer and service.status.load_balancer.ingress:
+                    return service.status.load_balancer.ingress[0].ip
+                return None
+            except Exception as e:
+                print(f"⚠️  Error getting external IP for {service_name}.{namespace}: {e}")
+                return None
+        
+        def create_cloudflare_dns_route(self, hostname):
+            """Create DNS route using cloudflared for public services"""
+            try:
+                print(f"🌐 Creating Cloudflare DNS route for {hostname}")
+                
+                cmd = [
+                    'kubectl', 'exec', '-n', 'cloudflare-tunnel', 
+                    'deployment/cloudflared', '--', 'cloudflared', 
+                    'tunnel', 'route', 'dns', '--overwrite-dns', 
+                    'homelab-tunnel', hostname
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode == 0:
+                    print(f"✅ Created Cloudflare DNS route for {hostname}")
+                    return True
+                else:
+                    print(f"⚠️  Cloudflare DNS route creation failed for {hostname}: {result.stderr}")
+                    # Try without overwrite flag as fallback
+                    cmd_fallback = [
+                        'kubectl', 'exec', '-n', 'cloudflare-tunnel', 
+                        'deployment/cloudflared', '--', 'cloudflared', 
+                        'tunnel', 'route', 'dns', 'homelab-tunnel', 
+                        hostname
+                    ]
+                    result_fallback = subprocess.run(cmd_fallback, capture_output=True, text=True)
+                    if result_fallback.returncode == 0:
+                        print(f"✅ Created Cloudflare DNS route for {hostname} (fallback)")
+                        return True
+                    else:
+                        print(f"❌ Failed to create Cloudflare DNS route for {hostname}: {result_fallback.stderr}")
+                        return False
+            except Exception as e:
+                print(f"❌ Error creating Cloudflare DNS route for {hostname}: {e}")
+                return False
+        
+        def create_internal_dns_entry(self, hostname, ip_address):
+            """Create internal DNS entry using MetalLB IP"""
+            try:
+                print(f"🏠 Creating internal DNS entry for {hostname} -> {ip_address}")
+                
+                # For internal services, we could integrate with external-dns or create custom DNS records
+                # For now, we'll log the information and could extend this to work with your DNS provider
+                print(f"📝 Internal DNS mapping: {hostname} -> {ip_address}")
+                print(f"💡 Consider configuring your DNS provider to point {hostname} to {ip_address}")
+                
+                # TODO: Implement actual DNS record creation for internal services
+                # This could integrate with external-dns, your DNS provider's API, or a custom DNS solution
+                
+                return True
+            except Exception as e:
+                print(f"❌ Error creating internal DNS entry for {hostname}: {e}")
+                return False
+        
+        def calculate_config_hash(self, config_data):
+            """Calculate hash of tunnel configuration to detect changes"""
+            config_str = yaml.dump(config_data, default_flow_style=False, sort_keys=True)
+            return hashlib.md5(config_str.encode()).hexdigest()
+        
+        def update_tunnel_config(self, service_name, hostname, namespace, port):
+            """Update the tunnel configuration for public services"""
+            try:
+                print(f"🔧 Adding tunnel ingress rule for {hostname}")
+                
+                # Get current config
+                configmap = self.v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
+                current_config = configmap.data["config.yaml"]
+                
+                # Parse the YAML config
+                config_data = yaml.safe_load(current_config)
+                
+                # Check if rule already exists
+                for rule in config_data.get("ingress", []):
+                    if isinstance(rule, dict) and rule.get("hostname") == hostname:
+                        print(f"⚠️  Tunnel ingress rule for {hostname} already exists")
+                        return True
+                
+                # Add new rule before catch-all
+                new_rule = {
+                    "hostname": hostname,
+                    "service": f"http://{service_name}.{namespace}.svc.cluster.local:{port}"
+                }
+                
+                # Insert before the catch-all rule
+                ingress_rules = config_data.get("ingress", [])
+                for i, rule in enumerate(ingress_rules):
+                    if isinstance(rule, dict) and rule.get("service") == "http_status:404":
+                        ingress_rules.insert(i, new_rule)
+                        break
+                else:
+                    ingress_rules.append(new_rule)
+                
+                config_data["ingress"] = ingress_rules
+                
+                # Calculate new config hash
+                new_hash = self.calculate_config_hash(config_data)
+                
+                # Only update if config actually changed
+                if new_hash != self.tunnel_config_hash:
+                    # Update the configmap
+                    updated_config = yaml.dump(config_data, default_flow_style=False)
+                    configmap.data["config.yaml"] = updated_config
+                    self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
+                    
+                    # Update hash and timestamp
+                    self.tunnel_config_hash = new_hash
+                    self.last_config_update = time.time()
+                    
+                    # Restart cloudflared deployment only when config actually changes
+                    print(f"🔄 Restarting cloudflared deployment due to config changes")
+                    self.apps_v1.patch_namespaced_deployment(
+                        name="cloudflared",
+                        namespace="cloudflare-tunnel",
+                        body={"spec": {"template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": str(int(time.time()))}}}}}
+                    )
+                    
+                    print(f"✅ Updated tunnel config and restarted cloudflared for {hostname}")
+                else:
+                    print(f"ℹ️  Tunnel config unchanged for {hostname}, skipping restart")
+                
+                return True
+                
+            except Exception as e:
+                print(f"❌ Error updating tunnel config: {e}")
+                return False
+        
+        def process_service_event(self, event_type, service):
+            """Process service events"""
+            try:
+                if not service or not service.metadata:
+                    return
+                    
+                service_name = service.metadata.name
+                namespace = service.metadata.namespace
+                labels = service.metadata.labels or {}
+                
+                # Check if DNS is enabled for this service
+                if labels.get(DNS_ENABLED_LABEL) != "true":
+                    return
+                
+                hostname = labels.get(DNS_HOSTNAME_LABEL)
+                exposure_type = labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC)
+                
+                if not hostname:
+                    print(f"⚠️  Service {service_name}.{namespace} has DNS enabled but no hostname specified")
+                    return
+                
+                print(f"🔍 Processing {event_type} event for {service_name}.{namespace} -> {hostname} (exposure: {exposure_type})")
+                
+                if event_type in ["ADDED", "MODIFIED", "EXISTING"]:
+                    if exposure_type == EXPOSURE_PUBLIC:
+                        # Handle public services (tunneled)
+                        port = self.get_service_port(service_name, namespace)
+                        dns_success = self.create_cloudflare_dns_route(hostname)
+                        if dns_success:
+                            self.update_tunnel_config(service_name, hostname, namespace, port)
+                    elif exposure_type == EXPOSURE_INTERNAL:
+                        # Handle internal services (MetalLB)
+                        external_ip = self.get_service_external_ip(service_name, namespace)
+                        if external_ip:
+                            self.create_internal_dns_entry(hostname, external_ip)
+                        else:
+                            print(f"⚠️  Service {service_name}.{namespace} is marked as internal but has no external IP")
+                    else:
+                        print(f"⚠️  Unknown exposure type '{exposure_type}' for service {service_name}.{namespace}")
+                        
+            except Exception as e:
+                print(f"❌ Error processing service event: {e}")
+        
+        def get_services_with_dns_label(self):
+            """Get all services that have DNS enabled using label selector"""
+            try:
+                # Use label selector for efficient querying
+                label_selector = f"{DNS_ENABLED_LABEL}=true"
+                services = self.v1.list_service_for_all_namespaces(label_selector=label_selector)
+                return services.items
+            except Exception as e:
+                print(f"❌ Error getting services with DNS label: {e}")
+                return []
+        
+        def main(self):
+            """Main controller loop"""
+            try:
+                print("🔍 Loading Kubernetes config...")
+                import sys
+                sys.stdout.flush()
+                
+                # Load kubeconfig
+                config.load_incluster_config()
+                print("✅ Kubernetes config loaded")
+                sys.stdout.flush()
+                
+                print("✅ Service Controller initialized")
+                sys.stdout.flush()
+                
+                # Process existing services with DNS enabled
+                print("🔍 Processing existing services with DNS enabled...")
+                sys.stdout.flush()
+                existing_services = self.get_services_with_dns_label()
+                for service in existing_services:
+                    self.process_service_event("EXISTING", service)
+                
+                # Watch for changes using label selector for efficiency
+                print("👀 Watching for service changes with DNS enabled...")
+                sys.stdout.flush()
+                w = watch.Watch()
+                
+                # Watch only services with DNS enabled label
+                label_selector = f"{DNS_ENABLED_LABEL}=true"
+                for event in w.stream(self.v1.list_service_for_all_namespaces, label_selector=label_selector):
+                    self.process_service_event(event["type"], event["object"])
+                    
+            except Exception as e:
+                print(f"❌ Controller error: {e}")
+                import traceback
+                traceback.print_exc()
+                time.sleep(10)
+                self.main()
+    
+    if __name__ == "__main__":
+        controller = ServiceController()
+        controller.main()
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: service-controller
+  namespace: cloudflare-tunnel
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: service-controller
+rules:
+- apiGroups: [""]
+  resources: ["services"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["configmaps"]
+  verbs: ["get", "patch"]
+- apiGroups: [""]
+  resources: ["pods"]
+  verbs: ["get", "list"]
+- apiGroups: [""]
+  resources: ["pods/exec"]
+  verbs: ["create"]
+- apiGroups: ["apps"]
+  resources: ["deployments"]
+  verbs: ["get", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: service-controller
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: service-controller
+subjects:
+- kind: ServiceAccount
+  name: service-controller
+  namespace: cloudflare-tunnel

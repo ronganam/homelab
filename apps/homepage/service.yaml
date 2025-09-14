@@ -6,8 +6,9 @@ metadata:
   namespace: homepage
   labels:
     app: homepage
-  annotations:
-    cloudflare.com/tunnel-hostname: "homepage.buildin.group"
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "homepage.buildin.group"
+    exposure.service-controller.io/type: "public"
 spec:
   type: ClusterIP
   ports:

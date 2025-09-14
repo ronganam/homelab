@@ -7,4 +7,4 @@ namespace: cloudflare-tunnel
 resources:
   - namespace.yaml
   - cloudflare-tunnel.yaml
-  - tunnel-controller.yaml
+  - service-controller.yaml

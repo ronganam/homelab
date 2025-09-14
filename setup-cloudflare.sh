@@ -97,25 +97,31 @@ kubectl create secret generic cloudflare-tunnel-credentials \
 echo "✅ Kubernetes secret created"
 
 # Deploy the tunnel and controller (excluding the secret we just created)
-echo "🚀 Deploying Cloudflare tunnel and controller..."
-kubectl apply -f infra/cloudflare-tunnel/namespace.yaml
-kubectl apply -f infra/cloudflare-tunnel/cloudflare-tunnel.yaml
-kubectl apply -f infra/cloudflare-tunnel/tunnel-controller.yaml
+echo "🚀 Deploying Cloudflare tunnel and service controller..."
+kubectl apply -k infra/cloudflare-tunnel/
 
 echo ""
 echo "🎉 Setup complete!"
 echo ""
 echo "What was configured:"
 echo "✅ Cloudflare Tunnel created and configured"
-echo "✅ Tunnel controller deployed (watches for annotations)"
-echo "✅ Ready to expose services with annotations"
+echo "✅ Service controller deployed (manages both public and internal services)"
+echo "✅ Ready to manage services with labels"
 echo ""
-echo "📝 To expose a service to the internet, add this annotation to your Service:"
-echo "   cloudflare.com/tunnel-hostname: \"service.$DOMAIN\""
+echo "📝 To expose a service to the internet (public), add these labels to your Service:"
+echo "   dns.service-controller.io/enabled: \"true\""
+echo "   dns.service-controller.io/hostname: \"service.$DOMAIN\""
+echo "   exposure.service-controller.io/type: \"public\""
 echo ""
-echo "🔒 To keep a service internal-only, don't add the annotation"
+echo "🏠 To expose a service internally (MetalLB), add these labels to your Service:"
+echo "   dns.service-controller.io/enabled: \"true\""
+echo "   dns.service-controller.io/hostname: \"service.internal.$DOMAIN\""
+echo "   exposure.service-controller.io/type: \"internal\""
+echo "   (and set spec.type: LoadBalancer)"
+echo ""
+echo "🔒 To keep a service cluster-only, don't add DNS management labels"
 echo ""
 echo "🔧 To check status:"
 echo "   kubectl get pods -n cloudflare-tunnel"
 echo "   kubectl logs -n cloudflare-tunnel deployment/cloudflared"
-echo "   kubectl logs -n cloudflare-tunnel deployment/tunnel-controller"
+echo "   kubectl logs -n cloudflare-tunnel deployment/service-controller"

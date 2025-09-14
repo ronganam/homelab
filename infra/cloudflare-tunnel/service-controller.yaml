@@ -77,8 +77,8 @@ data:
     
     class ServiceController:
         def __init__(self):
-            self.v1 = client.CoreV1Api()
-            self.apps_v1 = client.AppsV1Api()
+            self.v1 = None
+            self.apps_v1 = None
             self.tunnel_config_hash = None
             self.last_config_update = 0
             
@@ -290,13 +290,44 @@ data:
                 import sys
                 sys.stdout.flush()
                 
-                # Load kubeconfig
-                config.load_incluster_config()
-                print("✅ Kubernetes config loaded")
+                # Debug environment variables
+                print(f"🔍 KUBERNETES_SERVICE_HOST: {os.environ.get('KUBERNETES_SERVICE_HOST', 'Not set')}")
+                print(f"🔍 KUBERNETES_SERVICE_PORT: {os.environ.get('KUBERNETES_SERVICE_PORT', 'Not set')}")
+                print(f"🔍 KUBECONFIG: {os.environ.get('KUBECONFIG', 'Not set')}")
+                
+                # Load kubeconfig - try in-cluster first, then fallback to kubeconfig
+                try:
+                    config.load_incluster_config()
+                    print("✅ Kubernetes in-cluster config loaded")
+                except Exception as e:
+                    print(f"⚠️  In-cluster config failed: {e}")
+                    print("🔄 Trying kubeconfig...")
+                    config.load_kube_config()
+                    print("✅ Kubernetes kubeconfig loaded")
+                
+                # Initialize Kubernetes clients after config is loaded
+                self.v1 = client.CoreV1Api()
+                self.apps_v1 = client.AppsV1Api()
+                
                 sys.stdout.flush()
                 
                 print("✅ Service Controller initialized")
                 sys.stdout.flush()
+                
+                # Test Kubernetes API connection
+                try:
+                    print("🔍 Testing Kubernetes API connection...")
+                    sys.stdout.flush()
+                    # Try a simple API call to test connection
+                    self.v1.list_namespace()
+                    print("✅ Kubernetes API connection successful")
+                    sys.stdout.flush()
+                except Exception as e:
+                    print(f"❌ Kubernetes API connection failed: {e}")
+                    print("🔄 Retrying in 10 seconds...")
+                    sys.stdout.flush()
+                    time.sleep(10)
+                    return self.main()
                 
                 # Process existing services with DNS enabled
                 print("🔍 Processing existing services with DNS enabled...")
@@ -312,8 +343,15 @@ data:
                 
                 # Watch only services with DNS enabled label
                 label_selector = f"{DNS_ENABLED_LABEL}=true"
-                for event in w.stream(self.v1.list_service_for_all_namespaces, label_selector=label_selector):
-                    self.process_service_event(event["type"], event["object"])
+                try:
+                    for event in w.stream(self.v1.list_service_for_all_namespaces, label_selector=label_selector):
+                        self.process_service_event(event["type"], event["object"])
+                except Exception as e:
+                    print(f"❌ Watch stream error: {e}")
+                    print("🔄 Restarting watch in 5 seconds...")
+                    sys.stdout.flush()
+                    time.sleep(5)
+                    return self.main()
                     
             except Exception as e:
                 print(f"❌ Controller error: {e}")

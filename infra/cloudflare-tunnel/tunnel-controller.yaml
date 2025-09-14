@@ -185,10 +185,13 @@ data:
     def main():
         """Main controller loop"""
         try:
+            print("🔍 Loading Kubernetes config...")
             # Load kubeconfig
             config.load_incluster_config()
+            print("✅ Kubernetes config loaded")
             
             v1 = client.CoreV1Api()
+            print("✅ Kubernetes client created")
             
             # Process existing services
             print("🔍 Processing existing services with annotations...")
@@ -205,6 +208,8 @@ data:
                 
         except Exception as e:
             print(f"❌ Controller error: {e}")
+            import traceback
+            traceback.print_exc()
             time.sleep(10)
             main()
     

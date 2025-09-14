@@ -42,6 +42,14 @@ if [ -z "$DOMAIN" ]; then
     exit 1
 fi
 
+# Get Cloudflare API token for internal DNS management
+echo ""
+echo "🔑 For internal DNS management, you'll need a Cloudflare API token."
+echo "   Create one at: https://dash.cloudflare.com/profile/api-tokens"
+echo "   Required permissions: Zone:Read, DNS:Edit"
+echo ""
+read -p "Enter your Cloudflare API token (or press Enter to skip): " API_TOKEN
+
 # Create tunnel (check if it already exists)
 echo "🔧 Creating tunnel 'homelab-tunnel'..."
 if cloudflared tunnel list | grep -q "homelab-tunnel"; then
@@ -96,7 +104,19 @@ kubectl create secret generic cloudflare-tunnel-credentials \
 
 echo "✅ Kubernetes secret created"
 
-# Deploy the tunnel and controller (excluding the secret we just created)
+# Create Cloudflare API token secret if provided
+if [ -n "$API_TOKEN" ]; then
+    echo "🔑 Creating Cloudflare API token secret..."
+    kubectl create secret generic cloudflare-api-token \
+        --from-literal=token="$API_TOKEN" \
+        --namespace=cloudflare-tunnel \
+        --dry-run=client -o yaml | kubectl apply -f -
+    echo "✅ Cloudflare API token secret created"
+else
+    echo "⚠️  No API token provided - internal DNS management will be disabled"
+fi
+
+# Deploy the tunnel and service controller (excluding the secrets we just created)
 echo "🚀 Deploying Cloudflare tunnel and service controller..."
 kubectl apply -k infra/cloudflare-tunnel/
 
@@ -118,6 +138,7 @@ echo "   dns.service-controller.io/enabled: \"true\""
 echo "   dns.service-controller.io/hostname: \"service.internal.$DOMAIN\""
 echo "   exposure.service-controller.io/type: \"internal\""
 echo "   (and set spec.type: LoadBalancer)"
+echo "   Note: Internal services will create DNS A records pointing to MetalLB IPs"
 echo ""
 echo "🔒 To keep a service cluster-only, don't add DNS management labels"
 echo ""

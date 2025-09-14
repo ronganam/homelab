@@ -19,113 +19,190 @@ spec:
       serviceAccountName: tunnel-controller
       containers:
       - name: tunnel-controller
-        image: bitnami/kubectl:latest
+        image: python:3.11-alpine
         command:
         - /bin/sh
         - -c
         - |
           set -e
-          echo "🔍 Simple Tunnel Controller started"
+          echo "🔍 Installing dependencies..."
+          pip install kubernetes pyyaml --quiet
           
-          # Function to create DNS route
-          create_dns_route() {
-            local hostname=$1
-            echo "🌐 Creating DNS route for $hostname"
-            
-            # Extract subdomain and domain
-            subdomain=$(echo "$hostname" | cut -d'.' -f1)
-            domain=$(echo "$hostname" | cut -d'.' -f2-)
-            
-            # Create DNS route
-            if kubectl exec -n cloudflare-tunnel deployment/cloudflared -- cloudflared tunnel route dns homelab-tunnel "$subdomain" "$domain" 2>/dev/null; then
-              echo "✅ Created DNS route for $hostname"
-            else
-              echo "⚠️  DNS route may already exist for $hostname"
-            fi
-          }
-          
-          # Function to add ingress rule
-          add_ingress_rule() {
-            local service_name=$1
-            local hostname=$2
-            local namespace=$3
-            local port=$4
-            
-            echo "🔧 Adding ingress rule for $hostname"
-            
-            # Get current config
-            current_config=$(kubectl get configmap cloudflared-config -n cloudflare-tunnel -o jsonpath='{.data.config\.yaml}')
-            
-            # Check if rule already exists
-            if echo "$current_config" | grep -q "hostname: $hostname"; then
-              echo "⚠️  Ingress rule for $hostname already exists"
-              return
-            fi
-            
-            # Create new rule
-            new_rule="      - hostname: $hostname"$'\n'"        service: http://$service_name.$namespace.svc.cluster.local:$port"
-            
-            # Add rule before catch-all (simple approach)
-            updated_config=$(echo "$current_config" | sed "s|service: http_status:404|$new_rule"$'\n'"      - service: http_status:404|")
-            
-            # Update configmap
-            kubectl patch configmap cloudflared-config -n cloudflare-tunnel --type merge --patch "{\"data\":{\"config.yaml\":\"$(echo "$updated_config" | sed 's/"/\\"/g' | tr '\n' '\\n')\"}}"
-            
-            # Restart cloudflared
-            kubectl rollout restart deployment/cloudflared -n cloudflare-tunnel
-            
-            echo "✅ Added ingress rule for $hostname"
-          }
-          
-          # Function to process service
-          process_service() {
-            local service_name=$1
-            local hostname=$2
-            local namespace=$3
-            
-            echo "🔍 Processing service: $service_name.$namespace -> $hostname"
-            
-            # Get service port
-            port=$(kubectl get service "$service_name" -n "$namespace" -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || echo "80")
-            
-            # Create DNS route
-            create_dns_route "$hostname"
-            
-            # Add ingress rule
-            add_ingress_rule "$service_name" "$hostname" "$namespace" "$port"
-          }
-          
-          # Process existing services
-          echo "🔍 Processing existing services with annotations..."
-          kubectl get services --all-namespaces -o json | \
-          jq -r '.items[] | select(.metadata.annotations["cloudflare.com/tunnel-hostname"]) | 
-                 "\(.metadata.name)|\(.metadata.namespace)|\(.metadata.annotations["cloudflare.com/tunnel-hostname"])"' | \
-          while IFS='|' read -r service_name namespace hostname; do
-            if [ -n "$service_name" ] && [ -n "$namespace" ] && [ -n "$hostname" ]; then
-              echo "📋 Found existing service: $service_name.$namespace with hostname $hostname"
-              process_service "$service_name" "$hostname" "$namespace"
-            fi
-          done
-          
-          # Watch for new services
-          echo "👀 Watching for service changes..."
-          kubectl get services --all-namespaces --watch --output-watch-events -o json | \
-          jq -r 'select(.type == "ADDED" or .type == "MODIFIED") | 
-                 select(.object.metadata.annotations["cloudflare.com/tunnel-hostname"]) |
-                 "\(.type)|\(.object.metadata.name)|\(.object.metadata.namespace)|\(.object.metadata.annotations["cloudflare.com/tunnel-hostname"])"' | \
-          while IFS='|' read -r event_type service_name namespace hostname; do
-            if [ -n "$service_name" ] && [ -n "$namespace" ] && [ -n "$hostname" ]; then
-              echo "📋 $event_type event for: $service_name.$namespace with hostname $hostname"
-              process_service "$service_name" "$hostname" "$namespace"
-            fi
-          done
+          echo "🔍 Starting Simple Tunnel Controller..."
+          python /app/controller.py
+        volumeMounts:
+        - name: controller-script
+          mountPath: /app
         resources:
           limits:
+            memory: 256Mi
+            cpu: 200m
+          requests:
             memory: 128Mi
             cpu: 100m
-          requests:
-            memory: 64Mi
-            cpu: 50m
+      volumes:
+      - name: controller-script
+        configMap:
+          name: tunnel-controller-script
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tunnel-controller-script
+  namespace: cloudflare-tunnel
+data:
+  controller.py: |
+    #!/usr/bin/env python3
+    
+    import os
+    import time
+    import yaml
+    import json
+    import subprocess
+    from kubernetes import client, config, watch
+    
+    def get_service_port(service_name, namespace):
+        """Get the port of a service"""
+        try:
+            v1 = client.CoreV1Api()
+            service = v1.read_namespaced_service(service_name, namespace)
+            if service.spec.ports:
+                return service.spec.ports[0].port
+            return 80
+        except Exception as e:
+            print(f"⚠️  Error getting port for {service_name}.{namespace}: {e}")
+            return 80
+    
+    def create_dns_route(hostname):
+        """Create DNS route using cloudflared"""
+        try:
+            print(f"🌐 Creating DNS route for {hostname}")
+            # Extract subdomain and domain
+            parts = hostname.split('.')
+            if len(parts) >= 2:
+                subdomain = parts[0]
+                domain = '.'.join(parts[1:])
+                
+                # Create DNS route
+                cmd = [
+                    'kubectl', 'exec', '-n', 'cloudflare-tunnel', 
+                    'deployment/cloudflared', '--', 'cloudflared', 
+                    'tunnel', 'route', 'dns', 'homelab-tunnel', 
+                    subdomain, domain
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode == 0:
+                    print(f"✅ Created DNS route for {hostname}")
+                else:
+                    print(f"⚠️  DNS route may already exist for {hostname}")
+            else:
+                print(f"❌ Invalid hostname format: {hostname}")
+        except Exception as e:
+            print(f"❌ Error creating DNS route for {hostname}: {e}")
+    
+    def update_tunnel_config(service_name, hostname, namespace, port):
+        """Update the tunnel configuration"""
+        try:
+            print(f"🔧 Adding ingress rule for {hostname}")
+            
+            v1 = client.CoreV1Api()
+            
+            # Get current config
+            configmap = v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
+            current_config = configmap.data["config.yaml"]
+            
+            # Parse the YAML config
+            config_data = yaml.safe_load(current_config)
+            
+            # Check if rule already exists
+            for rule in config_data.get("ingress", []):
+                if isinstance(rule, dict) and rule.get("hostname") == hostname:
+                    print(f"⚠️  Ingress rule for {hostname} already exists")
+                    return
+            
+            # Add new rule before catch-all
+            new_rule = {
+                "hostname": hostname,
+                "service": f"http://{service_name}.{namespace}.svc.cluster.local:{port}"
+            }
+            
+            # Insert before the catch-all rule
+            ingress_rules = config_data.get("ingress", [])
+            for i, rule in enumerate(ingress_rules):
+                if isinstance(rule, dict) and rule.get("service") == "http_status:404":
+                    ingress_rules.insert(i, new_rule)
+                    break
+            else:
+                ingress_rules.append(new_rule)
+            
+            config_data["ingress"] = ingress_rules
+            
+            # Update the configmap
+            updated_config = yaml.dump(config_data, default_flow_style=False)
+            configmap.data["config.yaml"] = updated_config
+            v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
+            
+            # Restart cloudflared deployment
+            apps_v1 = client.AppsV1Api()
+            apps_v1.patch_namespaced_deployment(
+                name="cloudflared",
+                namespace="cloudflare-tunnel",
+                body={"spec": {"template": {"metadata": {"annotations": {"kubectl.kubernetes.io/restartedAt": str(int(time.time()))}}}}}
+            )
+            
+            print(f"✅ Added ingress rule for {hostname}")
+            
+        except Exception as e:
+            print(f"❌ Error updating tunnel config: {e}")
+    
+    def process_service_event(event_type, service):
+        """Process service events"""
+        try:
+            service_name = service.metadata.name
+            namespace = service.metadata.namespace
+            hostname = service.metadata.annotations.get("cloudflare.com/tunnel-hostname")
+            
+            if not hostname:
+                return
+            
+            print(f"🔍 Processing {event_type} event for {service_name}.{namespace} -> {hostname}")
+            
+            if event_type in ["ADDED", "MODIFIED", "EXISTING"]:
+                port = get_service_port(service_name, namespace)
+                create_dns_route(hostname)
+                update_tunnel_config(service_name, hostname, namespace, port)
+                
+        except Exception as e:
+            print(f"❌ Error processing service event: {e}")
+    
+    def main():
+        """Main controller loop"""
+        try:
+            # Load kubeconfig
+            config.load_incluster_config()
+            
+            v1 = client.CoreV1Api()
+            
+            # Process existing services
+            print("🔍 Processing existing services with annotations...")
+            services = v1.list_service_for_all_namespaces()
+            for service in services.items:
+                if service.metadata.annotations and "cloudflare.com/tunnel-hostname" in service.metadata.annotations:
+                    process_service_event("EXISTING", service)
+            
+            # Watch for changes
+            print("👀 Watching for service changes...")
+            w = watch.Watch()
+            for event in w.stream(v1.list_service_for_all_namespaces):
+                process_service_event(event["type"], event["object"])
+                
+        except Exception as e:
+            print(f"❌ Controller error: {e}")
+            time.sleep(10)
+            main()
+    
+    if __name__ == "__main__":
+        main()
 ---
 apiVersion: v1
 kind: ServiceAccount

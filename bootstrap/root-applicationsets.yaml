@@ -52,6 +52,12 @@ spec:
         syncOptions:
         - CreateNamespace=true
         - ServerSideApply=true
+      ignoreDifferences:
+      - group: ""
+        kind: ConfigMap
+        name: cloudflared-config
+        jsonPointers:
+        - /data/config.yaml
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet

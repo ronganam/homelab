@@ -9,10 +9,10 @@ metadata:
   annotations:
     cloudflare.com/tunnel-hostname: "homepage.buildin.group"
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
   - name: http
-    port: 80
+    port: 3000
     targetPort: 3000
     protocol: TCP
   selector:

@@ -1,4 +1,12 @@
 kube-prometheus-stack:
+  # Disable admission controller to fix ArgoCD compatibility
+  admissionWebhooks:
+    enabled: false
+  
+  # Disable pre-upgrade hooks for ArgoCD compatibility
+  preUpgradeHook:
+    enabled: false
+  
   grafana:
     enabled: true
     adminPassword: "admin"

@@ -21,33 +21,32 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: infra-kustomize
+  name: infra
   namespace: argocd
 spec:
   generators:
   - git:
       repoURL: https://github.com/ronganam/homelab
       revision: HEAD
-      directories:
-      - path: infra/metallb
-      - path: infra/longhorn
-      - path: infra/cloudflare-tunnel
+      files:
+      - path: infra/*/app.yaml
+      - path: infra/*/helm/app.yaml
   template:
     metadata:
-      name: '{{path.basename}}'
+      name: '{{values.name}}'
       namespace: argocd
       labels:
         type: infrastructure
-        deployment-type: kustomize
+        deployment-type: autodetect
     spec:
       project: homelab
       source:
         repoURL: https://github.com/ronganam/homelab
         targetRevision: HEAD
-        path: '{{path}}'
+        path: '{{values.path}}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{path.basename}}'
+        namespace: '{{values.namespace}}'
       syncPolicy:
         automated:
           prune: true
@@ -61,45 +60,6 @@ spec:
         name: cloudflared-config
         jsonPointers:
         - /data/config.yaml
----
-apiVersion: argoproj.io/v1alpha1
-kind: ApplicationSet
-metadata:
-  name: infra-helm
-  namespace: argocd
-spec:
-  generators:
-  - git:
-      repoURL: https://github.com/ronganam/homelab
-      revision: HEAD
-      directories:
-      - path: infra/monitoring/helm
-  template:
-    metadata:
-      name: monitoring
-      namespace: argocd
-      labels:
-        type: infrastructure
-        deployment-type: helm
-    spec:
-      project: homelab
-      source:
-        repoURL: https://github.com/ronganam/homelab
-        targetRevision: HEAD
-        path: '{{path}}'
-        helm:
-          valueFiles:
-            - values.yaml
-      destination:
-        server: https://kubernetes.default.svc
-        namespace: monitoring
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-        - CreateNamespace=true
-        - ServerSideApply=true
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet

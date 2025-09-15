@@ -1,29 +1,15 @@
 longhorn:
-  # Disable pre-upgrade hook for ArgoCD compatibility
-  preUpgradeHook: false
-  
-  # Enable Longhorn UI
-  ui:
-    enabled: true
-    service:
-      type: LoadBalancer
-      port: 80
-      targetPort: 8000
-      labels:
-        dns.service-controller.io/enabled: "true"
-        dns.service-controller.io/hostname: "longhorn.buildin.group"
-        exposure.service-controller.io/type: "internal"
+  preUpgradeChecker:
+    jobEnabled: false
+    upgradeVersionCheck: true
 
-  # Storage configuration
   persistence:
     defaultClass: true
     defaultClassReplicaCount: 1
 
-  # Resource limits
   csi:
     kubeletRootDir: /var/lib/kubelet
 
-  # Enable default storage class
   defaultSettings:
     defaultDataPath: /var/lib/longhorn/
     replicaSoftAntiAffinity: true
@@ -31,5 +17,22 @@ longhorn:
     storageMinimalAvailablePercentage: 25
     upgradeChecker: false
     defaultReplicaCount: 1
-    guaranteedEngineManagerCPU: 12
-    guaranteedReplicaManagerCPU: 12
+    guaranteedInstanceManagerCPU: 12
+
+  extraObjects:
+    - apiVersion: v1
+      kind: Service
+      metadata:
+        name: longhorn-ui-lb
+        labels:
+          dns.service-controller.io/enabled: "true"
+          dns.service-controller.io/hostname: "longhorn.buildin.group"
+          exposure.service-controller.io/type: "internal"
+      spec:
+        type: LoadBalancer
+        ports:
+          - name: http
+            port: 80
+            targetPort: 8000
+        selector:
+          app: longhorn-ui

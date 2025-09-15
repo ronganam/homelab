@@ -135,9 +135,27 @@ spec:
         app: prometheus
     spec:
       serviceAccountName: prometheus
+      securityContext:
+        fsGroup: 65534
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+      initContainers:
+      - name: init-permissions
+        image: busybox:1.35
+        command: ['sh', '-c', 'chown -R 65534:65534 /prometheus && chmod -R 755 /prometheus']
+        volumeMounts:
+        - name: prometheus-storage-volume
+          mountPath: /prometheus
+        securityContext:
+          runAsUser: 0
       containers:
       - name: prometheus
         image: prom/prometheus:v2.45.0
+        securityContext:
+          runAsUser: 65534
+          runAsGroup: 65534
+          runAsNonRoot: true
         args:
           - '--config.file=/etc/prometheus/prometheus.yml'
           - '--storage.tsdb.path=/prometheus/'

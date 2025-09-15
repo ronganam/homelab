@@ -144,8 +144,8 @@ metadata:
 spec:
   type: LoadBalancer
   ports:
-  - name: http
-    port: 3000
+  - name: https
+    port: 443
     targetPort: 3000
     protocol: TCP
   selector:

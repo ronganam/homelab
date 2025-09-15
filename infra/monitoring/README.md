@@ -98,11 +98,19 @@ This monitoring stack follows **Helm best practices** and the **proper ArgoCD wa
 ### **File Structure:**
 ```
 infra/monitoring/
-├── namespace.yaml              # Namespace definition
-├── monitoring-application.yaml # ArgoCD Application with Helm values
-├── kustomization.yaml         # Kustomize configuration
+├── helm/                       # Helm chart directory
+│   ├── Chart.yaml             # Helm chart metadata
+│   ├── values.yaml            # Helm values for kube-prometheus-stack
+│   ├── namespace.yaml         # Namespace definition
+│   └── kustomization.yaml     # Kustomize configuration
 └── README.md                  # This documentation
 ```
+
+### **How It Works:**
+1. **ArgoCD ApplicationSet** automatically discovers `infra/*/helm` directories
+2. **Helm chart** references the `kube-prometheus-stack` as a dependency
+3. **Values file** customizes the chart for your homelab
+4. **GitOps workflow** - changes trigger automatic updates
 
 This follows the **Helm principle** of keeping things simple and maintainable while leveraging ArgoCD's GitOps capabilities.
 

@@ -21,7 +21,7 @@ spec:
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
 metadata:
-  name: infra
+  name: infra-kustomize
   namespace: argocd
 spec:
   generators:
@@ -29,13 +29,16 @@ spec:
       repoURL: https://github.com/ronganam/homelab
       revision: HEAD
       directories:
-      - path: infra/*
+      - path: infra/metallb
+      - path: infra/longhorn
+      - path: infra/cloudflare-tunnel
   template:
     metadata:
       name: '{{path.basename}}'
       namespace: argocd
       labels:
         type: infrastructure
+        deployment-type: kustomize
     spec:
       project: homelab
       source:
@@ -58,6 +61,42 @@ spec:
         name: cloudflared-config
         jsonPointers:
         - /data/config.yaml
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: infra-helm
+  namespace: argocd
+spec:
+  generators:
+  - git:
+      repoURL: https://github.com/ronganam/homelab
+      revision: HEAD
+      directories:
+      - path: infra/*/helm
+  template:
+    metadata:
+      name: '{{path.basename}}'
+      namespace: argocd
+      labels:
+        type: infrastructure
+        deployment-type: helm
+    spec:
+      project: homelab
+      source:
+        repoURL: https://github.com/ronganam/homelab
+        targetRevision: HEAD
+        path: '{{path}}'
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: '{{path.basename}}'
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+        - CreateNamespace=true
+        - ServerSideApply=true
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet

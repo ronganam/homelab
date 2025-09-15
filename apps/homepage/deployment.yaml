@@ -49,11 +49,11 @@ data:
     
     - Monitoring:
         - Prometheus:
-            href: https://prometheus.buildin.group
+            href: http://prometheus.buildin.group
             description: Metrics Collection
             icon: prometheus
         - Grafana:
-            href: https://grafana.buildin.group
+            href: http://grafana.buildin.group
             description: Monitoring Dashboards
             icon: grafana
     

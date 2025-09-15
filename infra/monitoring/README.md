@@ -15,8 +15,8 @@ A simple monitoring solution for your homelab using Prometheus and Grafana.
 
 After deployment, your monitoring services will be available at:
 
-- **Prometheus**: `https://prometheus.buildin.group` (internal access via MetalLB)
-- **Grafana**: `https://grafana.buildin.group` (internal access via MetalLB)
+- **Prometheus**: `http://prometheus.buildin.group` (internal access via MetalLB)
+- **Grafana**: `http://grafana.buildin.group` (internal access via MetalLB)
   - Default login: `admin` / `admin`
   - **Change the default password after first login!**
 
@@ -91,12 +91,12 @@ If you see permission errors like "permission denied" or "not writable":
 - Both use proper security contexts and fsGroup settings
 
 ### Check Prometheus targets:
-1. Go to `https://prometheus.buildin.group`
+1. Go to `http://prometheus.buildin.group`
 2. Click "Status" → "Targets"
 3. Verify all targets are "UP"
 
 ### Check Grafana datasource:
-1. Go to `https://grafana.buildin.group`
+1. Go to `http://grafana.buildin.group`
 2. Login with admin/admin
 3. Go to "Configuration" → "Data Sources"
 4. Verify Prometheus datasource is working

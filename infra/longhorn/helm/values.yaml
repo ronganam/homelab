@@ -1,0 +1,32 @@
+longhorn:
+  # Enable Longhorn UI
+  ui:
+    enabled: true
+    service:
+      type: LoadBalancer
+      port: 80
+      targetPort: 8000
+      labels:
+        dns.service-controller.io/enabled: "true"
+        dns.service-controller.io/hostname: "longhorn.buildin.group"
+        exposure.service-controller.io/type: "internal"
+
+  # Storage configuration
+  persistence:
+    defaultClass: true
+    defaultClassReplicaCount: 1
+
+  # Resource limits
+  csi:
+    kubeletRootDir: /var/lib/kubelet
+
+  # Enable default storage class
+  defaultSettings:
+    defaultDataPath: /var/lib/longhorn/
+    replicaSoftAntiAffinity: true
+    storageOverProvisioningPercentage: 200
+    storageMinimalAvailablePercentage: 25
+    upgradeChecker: false
+    defaultReplicaCount: 1
+    guaranteedEngineManagerCPU: 12
+    guaranteedReplicaManagerCPU: 12

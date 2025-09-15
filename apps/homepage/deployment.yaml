@@ -35,7 +35,7 @@ data:
   services.yaml: |
     - Infrastructure:
         - Argo CD:
-            href: https://argocd.buildin.group
+            href: https://argo.buildin.group
             description: GitOps Continuous Delivery
             icon: argocd
         - Longhorn:

@@ -1,0 +1,4 @@
+name: metallb
+namespace: metallb-system
+path: infra/metallb
+

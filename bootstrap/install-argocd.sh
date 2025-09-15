@@ -31,6 +31,11 @@ kubectl create namespace argocd --dry-run=client -o yaml | kubectl apply -f -
 echo "🔧 Installing Argo CD to cluster..."
 kubectl apply -f "${MANIFEST_FILE}" -n argocd
 
+# Configure argocd-server Service as LoadBalancer with standard labels
+echo "🌐 Configuring argocd-server Service as LoadBalancer with DNS labels..."
+kubectl -n argocd patch service argocd-server \
+  -p '{"spec":{"type":"LoadBalancer"},"metadata":{"labels":{"dns.service-controller.io/enabled":"true","dns.service-controller.io/hostname":"argocd.buildin.group","exposure.service-controller.io/type":"internal"}}}'
+
 # Wait for Argo CD to be ready
 echo "⏳ Waiting for Argo CD to be ready..."
 kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd

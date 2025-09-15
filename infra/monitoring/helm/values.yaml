@@ -21,6 +21,10 @@ grafana:
 # Prometheus Configuration
 prometheus:
   enabled: true
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 9090
   prometheusSpec:
     serviceMonitorSelectorNilUsesHelmValues: false
     podMonitorSelectorNilUsesHelmValues: false
@@ -34,10 +38,6 @@ prometheus:
           resources:
             requests:
               storage: 2Gi
-    service:
-      type: LoadBalancer
-      port: 80
-      targetPort: 9090
     securityContext:
       runAsUser: 65534
       runAsGroup: 65534

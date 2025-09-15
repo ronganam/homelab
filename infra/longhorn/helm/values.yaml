@@ -1,4 +1,7 @@
 longhorn:
+  # Disable pre-upgrade hook for ArgoCD compatibility
+  preUpgradeHook: false
+  
   # Enable Longhorn UI
   ui:
     enabled: true

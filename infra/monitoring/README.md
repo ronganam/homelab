@@ -77,22 +77,34 @@ The monitoring stack is designed to be lightweight:
 
 ## ArgoCD + Helm Integration
 
-This monitoring stack uses the **proper ArgoCD way** to deploy Helm charts:
+This monitoring stack follows **Helm best practices** and the **proper ArgoCD way** to deploy Helm charts:
 
 ### **How It Works:**
 - **ArgoCD Application** directly references the Helm chart repository
-- **Helm values** are embedded in the Application manifest
+- **Clean, organized Helm values** embedded in the Application manifest
 - **No manual Helm commands** - ArgoCD handles everything
 - **GitOps workflow** - changes to the Application manifest trigger updates
 - **Automatic sync** - ArgoCD keeps the deployment in sync
 
 ### **Benefits:**
+- **Simple and maintainable** - following [Helm Chart Template Guide](https://helm.sh/docs/chart_template_guide/getting_started/) best practices
 - **No manual configuration** - everything is pre-configured
 - **Automatic service discovery** - your homelab services are automatically monitored
 - **Pre-configured dashboards** - no need to import manually
 - **Proper networking** - Prometheus and Grafana communicate correctly
 - **GitOps native** - all configuration is in version control
 - **Easy updates** - modify the Application manifest and ArgoCD handles the rest
+
+### **File Structure:**
+```
+infra/monitoring/
+├── namespace.yaml              # Namespace definition
+├── monitoring-application.yaml # ArgoCD Application with Helm values
+├── kustomization.yaml         # Kustomize configuration
+└── README.md                  # This documentation
+```
+
+This follows the **Helm principle** of keeping things simple and maintainable while leveraging ArgoCD's GitOps capabilities.
 
 ## Troubleshooting
 

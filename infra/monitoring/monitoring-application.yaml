@@ -24,16 +24,11 @@ spec:
             type: LoadBalancer
             port: 80
             targetPort: 3000
-          serviceAccount:
-            create: true
           persistence:
             enabled: true
-            size: 5Gi
+            size: 1Gi
             storageClassName: longhorn
-          # Pre-configured dashboards
           defaultDashboardsEnabled: true
-          defaultDashboardsTimezone: UTC
-          # Additional plugins
           plugins:
             - grafana-piechart-panel
             - grafana-worldmap-panel
@@ -53,66 +48,44 @@ spec:
                   accessModes: ["ReadWriteOnce"]
                   resources:
                     requests:
-                      storage: 10Gi
+                      storage: 2Gi
             service:
               type: LoadBalancer
               port: 80
               targetPort: 9090
-            # Security context for non-root
             securityContext:
               runAsUser: 65534
               runAsGroup: 65534
               runAsNonRoot: true
               fsGroup: 65534
 
-        # Alertmanager (optional - can be disabled)
+        # Disable Alertmanager for simplicity
         alertmanager:
           enabled: false
 
-        # Node Exporter
+        # Enable essential components
         nodeExporter:
           enabled: true
-          service:
-            port: 9100
-            targetPort: 9100
-
-        # Kube State Metrics
         kubeStateMetrics:
           enabled: true
-
-        # Kubelet
         kubelet:
           enabled: true
-
-        # Kube API Server
         kubeApiServer:
           enabled: true
-
-        # Kube Controller Manager
         kubeControllerManager:
           enabled: true
-
-        # Kube Scheduler
         kubeScheduler:
           enabled: true
-
-        # Kube Proxy
         kubeProxy:
           enabled: true
-
-        # Kube Etcd
         kubeEtcd:
           enabled: true
-
-        # CoreDNS
         coreDns:
           enabled: true
-
-        # Kube DNS
         kubeDns:
           enabled: true
 
-        # Service monitors for additional services
+        # Monitor homelab services
         additionalServiceMonitors:
           - name: "homelab-services"
             selector:

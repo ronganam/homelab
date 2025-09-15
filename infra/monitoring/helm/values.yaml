@@ -11,7 +11,7 @@ kube-prometheus-stack:
         dns.service-controller.io/hostname: grafana.buildin.group
         exposure.service-controller.io/type: internal
     persistence:
-      enabled: true
+      enabled: false
       size: 1Gi
       storageClassName: longhorn
     defaultDashboardsEnabled: true
@@ -34,14 +34,7 @@ kube-prometheus-stack:
       podMonitorSelectorNilUsesHelmValues: false
       ruleSelectorNilUsesHelmValues: false
       retention: 200h
-      storageSpec:
-        volumeClaimTemplate:
-          spec:
-            storageClassName: longhorn
-            accessModes: ["ReadWriteOnce"]
-            resources:
-              requests:
-                storage: 2Gi
+      storageSpec: {}
       securityContext:
         runAsUser: 65534
         runAsGroup: 65534

@@ -82,6 +82,14 @@ That's it! Argo CD will automatically sync and deploy all infrastructure and app
 │   │   ├── namespace.yaml
 │   │   ├── kustomization.yaml
 │   │   └── longhorn.yaml
+│   ├── monitoring/           # Prometheus & Grafana monitoring
+│   │   ├── namespace.yaml
+│   │   ├── kustomization.yaml
+│   │   ├── prometheus.yaml
+│   │   ├── grafana.yaml
+│   │   ├── node-exporter.yaml
+│   │   ├── kube-state-metrics.yaml
+│   │   └── README.md
 │   ├── cloudflare-tunnel/    # Cloudflare Tunnel for secure access
 │   │   ├── namespace.yaml
 │   │   ├── kustomization.yaml
@@ -108,6 +116,7 @@ That's it! Argo CD will automatically sync and deploy all infrastructure and app
 - **Argo CD**: GitOps continuous delivery
 - **MetalLB**: Load balancer for bare metal clusters
 - **Longhorn**: Distributed block storage with web UI
+- **Monitoring**: Prometheus & Grafana for metrics and dashboards
 - **Cloudflare Tunnel**: Secure external access without exposing your network
 - **External-DNS**: Automatic DNS record management in Cloudflare
 

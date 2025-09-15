@@ -1,0 +1,135 @@
+---
+# ArgoCD Application for Monitoring Stack
+# This is the proper way to deploy Helm charts with ArgoCD
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: monitoring
+  namespace: argocd
+  labels:
+    type: infrastructure
+spec:
+  project: homelab
+  source:
+    repoURL: https://prometheus-community.github.io/helm-charts
+    chart: kube-prometheus-stack
+    targetRevision: 77.6.2
+    helm:
+      values: |
+        # Grafana Configuration
+        grafana:
+          enabled: true
+          adminPassword: "admin"
+          service:
+            type: LoadBalancer
+            port: 80
+            targetPort: 3000
+          serviceAccount:
+            create: true
+          persistence:
+            enabled: true
+            size: 5Gi
+            storageClassName: longhorn
+          # Pre-configured dashboards
+          defaultDashboardsEnabled: true
+          defaultDashboardsTimezone: UTC
+          # Additional plugins
+          plugins:
+            - grafana-piechart-panel
+            - grafana-worldmap-panel
+
+        # Prometheus Configuration
+        prometheus:
+          enabled: true
+          prometheusSpec:
+            serviceMonitorSelectorNilUsesHelmValues: false
+            podMonitorSelectorNilUsesHelmValues: false
+            ruleSelectorNilUsesHelmValues: false
+            retention: 200h
+            storageSpec:
+              volumeClaimTemplate:
+                spec:
+                  storageClassName: longhorn
+                  accessModes: ["ReadWriteOnce"]
+                  resources:
+                    requests:
+                      storage: 10Gi
+            service:
+              type: LoadBalancer
+              port: 80
+              targetPort: 9090
+            # Security context for non-root
+            securityContext:
+              runAsUser: 65534
+              runAsGroup: 65534
+              runAsNonRoot: true
+              fsGroup: 65534
+
+        # Alertmanager (optional - can be disabled)
+        alertmanager:
+          enabled: false
+
+        # Node Exporter
+        nodeExporter:
+          enabled: true
+          service:
+            port: 9100
+            targetPort: 9100
+
+        # Kube State Metrics
+        kubeStateMetrics:
+          enabled: true
+
+        # Kubelet
+        kubelet:
+          enabled: true
+
+        # Kube API Server
+        kubeApiServer:
+          enabled: true
+
+        # Kube Controller Manager
+        kubeControllerManager:
+          enabled: true
+
+        # Kube Scheduler
+        kubeScheduler:
+          enabled: true
+
+        # Kube Proxy
+        kubeProxy:
+          enabled: true
+
+        # Kube Etcd
+        kubeEtcd:
+          enabled: true
+
+        # CoreDNS
+        coreDns:
+          enabled: true
+
+        # Kube DNS
+        kubeDns:
+          enabled: true
+
+        # Service monitors for additional services
+        additionalServiceMonitors:
+          - name: "homelab-services"
+            selector:
+              matchLabels:
+                prometheus.io/scrape: "true"
+            namespaceSelector:
+              matchNames:
+                - "homepage"
+                - "n8n"
+                - "cloudflare-tunnel"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+    - CreateNamespace=true
+    - ServerSideApply=true

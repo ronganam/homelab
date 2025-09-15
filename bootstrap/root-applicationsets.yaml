@@ -24,6 +24,7 @@ metadata:
   name: infra
   namespace: argocd
 spec:
+  goTemplate: true
   generators:
   - git:
       repoURL: https://github.com/ronganam/homelab
@@ -33,22 +34,22 @@ spec:
       - path: infra/*/helm/app.yaml
   template:
     metadata:
-      name: '{{values.name}}'
+      name: '{{ .name }}'
       namespace: argocd
       labels:
         type: infrastructure
         deployment-type: autodetect
       annotations:
-        argocd.argoproj.io/sync-wave: '{{values.wave | default "5"}}'
+        argocd.argoproj.io/sync-wave: '{{ default "5" .wave }}'
     spec:
       project: homelab
       source:
         repoURL: https://github.com/ronganam/homelab
         targetRevision: HEAD
-        path: '{{values.path}}'
+        path: '{{ .path }}'
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{values.namespace}}'
+        namespace: '{{ .namespace }}'
       syncPolicy:
         automated:
           prune: true

@@ -87,9 +87,12 @@ spec:
         repoURL: https://github.com/ronganam/homelab
         targetRevision: HEAD
         path: '{{path}}'
+        helm:
+          valueFiles:
+            - values.yaml
       destination:
         server: https://kubernetes.default.svc
-        namespace: '{{path.basename}}'
+        namespace: '{{path.basename | replace "/helm" ""}}'
       syncPolicy:
         automated:
           prune: true

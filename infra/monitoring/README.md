@@ -83,6 +83,13 @@ kubectl logs -n monitoring deployment/prometheus
 kubectl logs -n monitoring deployment/grafana
 ```
 
+### Permission Issues (Fixed)
+If you see permission errors like "permission denied" or "not writable":
+- The manifests include init containers that fix permissions automatically
+- Prometheus runs as user 65534 (nobody)
+- Grafana runs as user 472 (grafana)
+- Both use proper security contexts and fsGroup settings
+
 ### Check Prometheus targets:
 1. Go to `https://prometheus.buildin.group`
 2. Click "Status" → "Targets"

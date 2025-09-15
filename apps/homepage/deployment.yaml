@@ -47,6 +47,16 @@ data:
             description: Kubernetes Management
             icon: kubernetes-dashboard
     
+    - Monitoring:
+        - Prometheus:
+            href: https://prometheus.buildin.group
+            description: Metrics Collection
+            icon: prometheus
+        - Grafana:
+            href: https://grafana.buildin.group
+            description: Monitoring Dashboards
+            icon: grafana
+    
     - Applications:
         - n8n:
             href: https://n9n.buildin.group

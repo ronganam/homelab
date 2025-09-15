@@ -39,7 +39,7 @@ data:
             description: GitOps Continuous Delivery
             icon: argocd
         - Longhorn:
-            href: https://longhorn.buildin.group
+            href: http://longhorn.buildin.group
             description: Distributed Block Storage
             icon: longhorn
         - Kubernetes Dashboard:

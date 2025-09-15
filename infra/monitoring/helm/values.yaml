@@ -6,6 +6,10 @@ kube-prometheus-stack:
       type: LoadBalancer
       port: 80
       targetPort: 3000
+      labels:
+        dns.service-controller.io/enabled: "true"
+        dns.service-controller.io/hostname: grafana.buildin.group
+        exposure.service-controller.io/type: internal
     persistence:
       enabled: true
       size: 1Gi
@@ -21,6 +25,10 @@ kube-prometheus-stack:
       type: LoadBalancer
       port: 80
       targetPort: 9090
+      labels:
+        dns.service-controller.io/enabled: "true"
+        dns.service-controller.io/hostname: prometheus.buildin.group
+        exposure.service-controller.io/type: internal
     prometheusSpec:
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false

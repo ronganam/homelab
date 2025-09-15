@@ -309,12 +309,18 @@ data:
                     'Content-Type': 'application/json'
                 }
                 
+                # Include the record name to avoid 9000 DNS name is invalid errors
+                # Cloudflare requires 'name' when updating certain records
                 data = {
                     'type': 'A',
+                    'name': subdomain if subdomain != '@' else None,
                     'content': ip_address,
-                    'ttl': 300,  # 5 minutes TTL
-                    'proxied': False  # Don't proxy internal services
+                    'ttl': 300,
+                    'proxied': False
                 }
+                # Remove name if it's None to avoid sending null
+                if data['name'] is None:
+                    del data['name']
                 
                 url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}'
                 response = requests.put(url, headers=headers, json=data, timeout=10)

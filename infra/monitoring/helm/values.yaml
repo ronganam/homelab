@@ -1,88 +1,81 @@
-# Monitoring Stack Values
-# This file contains the Helm values for the kube-prometheus-stack chart
-
-# Grafana Configuration
-grafana:
-  enabled: true
-  adminPassword: "admin"
-  service:
-    type: LoadBalancer
-    port: 80
-    targetPort: 3000
-  persistence:
+kube-prometheus-stack:
+  grafana:
     enabled: true
-    size: 1Gi
-    storageClassName: longhorn
-  defaultDashboardsEnabled: true
-  plugins:
-    - grafana-piechart-panel
-    - grafana-worldmap-panel
+    adminPassword: "admin"
+    service:
+      type: LoadBalancer
+      port: 80
+      targetPort: 3000
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClassName: longhorn
+    defaultDashboardsEnabled: true
+    plugins:
+      - grafana-piechart-panel
+      - grafana-worldmap-panel
 
-# Prometheus Configuration
-prometheus:
-  enabled: true
-  service:
-    type: LoadBalancer
-    port: 80
-    targetPort: 9090
-  prometheusSpec:
-    serviceMonitorSelectorNilUsesHelmValues: false
-    podMonitorSelectorNilUsesHelmValues: false
-    ruleSelectorNilUsesHelmValues: false
-    retention: 200h
-    storageSpec:
-      volumeClaimTemplate:
-        spec:
-          storageClassName: longhorn
-          accessModes: ["ReadWriteOnce"]
-          resources:
-            requests:
-              storage: 2Gi
-    securityContext:
-      runAsUser: 65534
-      runAsGroup: 65534
-      runAsNonRoot: true
-      fsGroup: 65534
+  prometheus:
+    enabled: true
+    service:
+      type: LoadBalancer
+      port: 80
+      targetPort: 9090
+    prometheusSpec:
+      serviceMonitorSelectorNilUsesHelmValues: false
+      podMonitorSelectorNilUsesHelmValues: false
+      ruleSelectorNilUsesHelmValues: false
+      retention: 200h
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            storageClassName: longhorn
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 2Gi
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        fsGroup: 65534
 
-# Disable Alertmanager for simplicity
-alertmanager:
-  enabled: false
+  # Disable Alertmanager for simplicity
+  alertmanager:
+    enabled: false
 
-# Enable essential components
-nodeExporter:
-  enabled: true
-  service:
-    port: 9100
-    targetPort: 9100
+  # Enable essential components
+  nodeExporter:
+    enabled: true
 
-kubeStateMetrics:
-  enabled: true
+  kubeStateMetrics:
+    enabled: true
 
-kubelet:
-  enabled: true
-kubeApiServer:
-  enabled: true
-kubeControllerManager:
-  enabled: true
-kubeScheduler:
-  enabled: true
-kubeProxy:
-  enabled: true
-kubeEtcd:
-  enabled: true
-coreDns:
-  enabled: true
-kubeDns:
-  enabled: true
+  kubelet:
+    enabled: true
+  kubeApiServer:
+    enabled: true
+  kubeControllerManager:
+    enabled: true
+  kubeScheduler:
+    enabled: true
+  kubeProxy:
+    enabled: true
+  kubeEtcd:
+    enabled: true
+  coreDns:
+    enabled: true
+  kubeDns:
+    enabled: true
 
-# Monitor homelab services
-additionalServiceMonitors:
-  - name: "homelab-services"
-    selector:
-      matchLabels:
-        prometheus.io/scrape: "true"
-    namespaceSelector:
-      matchNames:
-        - "homepage"
-        - "n8n"
-        - "cloudflare-tunnel"
+  # Monitor homelab services
+  additionalServiceMonitors:
+    - name: "homelab-services"
+      selector:
+        matchLabels:
+          prometheus.io/scrape: "true"
+      namespaceSelector:
+        matchNames:
+          - "homepage"
+          - "n8n"
+          - "cloudflare-tunnel"

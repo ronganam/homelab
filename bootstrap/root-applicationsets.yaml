@@ -38,6 +38,8 @@ spec:
       labels:
         type: infrastructure
         deployment-type: autodetect
+      annotations:
+        argocd.argoproj.io/sync-wave: '{{values.wave | default "5"}}'
     spec:
       project: homelab
       source:
@@ -54,6 +56,7 @@ spec:
         syncOptions:
         - CreateNamespace=true
         - ServerSideApply=true
+        - PrunePropagationPolicy=foreground
       ignoreDifferences:
       - group: ""
         kind: ConfigMap

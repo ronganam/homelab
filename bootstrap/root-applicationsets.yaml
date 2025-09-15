@@ -46,7 +46,7 @@ spec:
       source:
         repoURL: https://github.com/ronganam/homelab
         targetRevision: HEAD
-        path: '{{ .path }}'
+        path: '{{ .path.path }}'
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{ .namespace }}'

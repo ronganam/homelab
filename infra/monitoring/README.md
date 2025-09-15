@@ -1,15 +1,16 @@
 # Monitoring Stack
 
-A simple monitoring solution for your homelab using Prometheus and Grafana.
+A comprehensive monitoring solution for your homelab using the **kube-prometheus-stack** Helm chart.
 
 **Location**: `infra/monitoring/` - This is infrastructure that supports all applications in your homelab.
 
 ## What's Included
 
-- **Prometheus** - Metrics collection and storage
-- **Grafana** - Visualization and dashboards
+- **Prometheus** - Metrics collection and storage with pre-configured scraping
+- **Grafana** - Visualization with 20+ pre-configured dashboards
 - **Node Exporter** - Node-level metrics (CPU, memory, disk, network)
 - **Kube State Metrics** - Kubernetes cluster metrics (pods, deployments, services, etc.)
+- **Service Monitors** - Automatic discovery and monitoring of your homelab services
 
 ## Access
 
@@ -23,15 +24,21 @@ After deployment, your monitoring services will be available at:
 ## Features
 
 ### Prometheus
-- Collects metrics from all Kubernetes components
+- Collects metrics from all Kubernetes components automatically
 - Scrapes node metrics from Node Exporter
 - Scrapes cluster metrics from Kube State Metrics
+- **Automatic service discovery** for your homelab applications
 - 200-hour data retention (configurable)
 - Web UI for querying metrics
 
 ### Grafana
-- Pre-configured Prometheus datasource
-- Ready for custom dashboards
+- **Pre-configured Prometheus datasource** (no manual setup needed)
+- **20+ pre-configured dashboards** including:
+  - Kubernetes Cluster Overview
+  - Node Exporter Full
+  - Kubernetes Pod Monitoring
+  - Kubernetes Deployment State
+  - And many more!
 - Persistent storage for dashboards and settings
 - Plugin support (pie chart, world map panels included)
 
@@ -47,8 +54,8 @@ After deployment, your monitoring services will be available at:
 
 ## Storage
 
-- **Prometheus**: 10Gi persistent volume for metrics storage
-- **Grafana**: 5Gi persistent volume for dashboards and settings
+- **Prometheus**: 2Gi persistent volume for metrics storage
+- **Grafana**: 1Gi persistent volume for dashboards and settings
 - Both use Longhorn storage class
 
 ## Resource Usage
@@ -63,11 +70,29 @@ The monitoring stack is designed to be lightweight:
 ## Next Steps
 
 1. **Access Grafana** and change the default admin password
-2. **Import dashboards** from the Grafana community:
-   - Kubernetes Cluster Monitoring: https://grafana.com/grafana/dashboards/7249
-   - Node Exporter Full: https://grafana.com/grafana/dashboards/1860
-3. **Set up alerts** in Prometheus (optional)
-4. **Customize dashboards** for your specific needs
+2. **Explore pre-configured dashboards** - they're already imported and working!
+3. **Check the "Kubernetes Cluster Overview" dashboard** for a complete cluster view
+4. **Set up alerts** in Prometheus (optional)
+5. **Customize dashboards** for your specific needs
+
+## ArgoCD + Helm Integration
+
+This monitoring stack uses the **proper ArgoCD way** to deploy Helm charts:
+
+### **How It Works:**
+- **ArgoCD Application** directly references the Helm chart repository
+- **Helm values** are embedded in the Application manifest
+- **No manual Helm commands** - ArgoCD handles everything
+- **GitOps workflow** - changes to the Application manifest trigger updates
+- **Automatic sync** - ArgoCD keeps the deployment in sync
+
+### **Benefits:**
+- **No manual configuration** - everything is pre-configured
+- **Automatic service discovery** - your homelab services are automatically monitored
+- **Pre-configured dashboards** - no need to import manually
+- **Proper networking** - Prometheus and Grafana communicate correctly
+- **GitOps native** - all configuration is in version control
+- **Easy updates** - modify the Application manifest and ArgoCD handles the rest
 
 ## Troubleshooting
 

@@ -3,9 +3,6 @@ kind: Kustomization
 
 resources:
 - namespace.yaml
-- prometheus.yaml
-- grafana.yaml
-- node-exporter.yaml
-- kube-state-metrics.yaml
+- monitoring-application.yaml
 
 namespace: monitoring

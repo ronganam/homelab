@@ -41,7 +41,7 @@ kube-prometheus-stack:
     dashboards:
       longhorn:
         longhorn-dashboard:
-          gnetId: 22705
+          gnetId: 17626
           revision: 1
           datasource: Prometheus
           inputs:

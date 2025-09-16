@@ -20,6 +20,7 @@ After deployment, your monitoring services will be available at:
 - **Grafana**: `http://grafana.buildin.group` (internal access via MetalLB)
   - Default login: `admin` / `admin`
   - **Change the default password after first login!**
+  - **Longhorn Dashboard**: Pre-configured dashboard for storage monitoring
 
 ## Features
 
@@ -38,6 +39,7 @@ After deployment, your monitoring services will be available at:
   - Node Exporter Full
   - Kubernetes Pod Monitoring
   - Kubernetes Deployment State
+  - **Longhorn Dashboard** - Storage monitoring and health metrics
   - And many more!
 - Persistent storage for dashboards and settings
 - Plugin support (pie chart, world map panels included)
@@ -72,8 +74,9 @@ The monitoring stack is designed to be lightweight:
 1. **Access Grafana** and change the default admin password
 2. **Explore pre-configured dashboards** - they're already imported and working!
 3. **Check the "Kubernetes Cluster Overview" dashboard** for a complete cluster view
-4. **Set up alerts** in Prometheus (optional)
-5. **Customize dashboards** for your specific needs
+4. **Monitor Longhorn storage** using the dedicated Longhorn dashboard
+5. **Set up alerts** in Prometheus (optional)
+6. **Customize dashboards** for your specific needs
 
 ## ArgoCD + Helm Integration
 
@@ -145,3 +148,9 @@ If you see permission errors like "permission denied" or "not writable":
 2. Login with admin/admin
 3. Go to "Configuration" → "Data Sources"
 4. Verify Prometheus datasource is working
+
+### Check Longhorn monitoring:
+1. Go to `http://grafana.buildin.group`
+2. Look for the "Longhorn" folder in the dashboards
+3. Open the "Longhorn Dashboard" to view storage metrics
+4. Verify Longhorn metrics are being collected in Prometheus at `http://prometheus.buildin.group`

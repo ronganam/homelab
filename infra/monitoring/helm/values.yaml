@@ -55,6 +55,26 @@ kube-prometheus-stack:
         dns.service-controller.io/enabled: "true"
         dns.service-controller.io/hostname: prometheus.buildin.group
         exposure.service-controller.io/type: internal
+    additionalServiceMonitors:
+      - name: "homelab-services"
+        selector:
+          matchLabels:
+            prometheus.io/scrape: "true"
+        namespaceSelector:
+          matchNames:
+            - "homepage"
+            - "n8n"
+            - "cloudflare-tunnel"
+      - name: "longhorn-monitoring"
+        selector:
+          matchLabels:
+            app: longhorn-manager
+        namespaceSelector:
+          matchNames:
+            - "longhorn-system"
+        endpoints:
+          - port: manager
+            path: /metrics
     prometheusSpec:
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
@@ -102,24 +122,4 @@ kube-prometheus-stack:
   kubeDns:
     enabled: true
 
-  # Monitor homelab services
-  additionalServiceMonitors:
-    - name: "homelab-services"
-      selector:
-        matchLabels:
-          prometheus.io/scrape: "true"
-      namespaceSelector:
-        matchNames:
-          - "homepage"
-          - "n8n"
-          - "cloudflare-tunnel"
-    - name: "longhorn-monitoring"
-      selector:
-        matchLabels:
-          app: longhorn-manager
-      namespaceSelector:
-        matchNames:
-          - "longhorn-system"
-      endpoints:
-        - port: manager
-          path: /metrics
+  # (moved) additionalServiceMonitors now live under kube-prometheus-stack.prometheus

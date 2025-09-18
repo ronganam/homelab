@@ -113,6 +113,86 @@ spec:
       storage: 10Gi
 ```
 
+## Backup to OCI Object Storage (S3-compatible)
+
+### Configure backup target
+
+- In `infra/longhorn/helm/values.yaml` set:
+
+```yaml
+longhorn:
+  defaultBackupStore:
+    backupTarget: s3://TODO_BUCKET@TODO_REGION/
+    backupTargetCredentialSecret: longhorn-oci-s3-secret
+    pollInterval: 300
+```
+
+Examples:
+- `TODO_BUCKET`: your bucket (e.g. `homelab-ganam`)
+- `TODO_REGION`: OCI region (e.g. `il-jerusalem-1`)
+
+### Create Secret (outside git)
+
+#### Option 1: Automated Setup (Recommended)
+
+Run the provided script to automatically extract OCI values and create the Secret:
+
+```bash
+./infra/longhorn/setup-oci-backup.sh
+```
+
+The script will:
+- Extract your OCI namespace, region, and user information
+- List available buckets for selection
+- Create a new Customer Secret Key
+- Create the Kubernetes Secret with correct values
+- Restart the Longhorn manager
+
+#### Option 2: Manual Setup
+
+If you prefer manual setup, run this locally to create/update the Secret:
+
+```bash
+kubectl -n longhorn-system create secret generic longhorn-oci-s3-secret \
+  --from-literal=AWS_ACCESS_KEY_ID='TODO_CUSTOMER_SECRET_KEY_ID' \
+  --from-literal=AWS_SECRET_ACCESS_KEY='TODO_CUSTOMER_SECRET_KEY_SECRET' \
+  --from-literal=AWS_ENDPOINTS='https://TODO_NAMESPACE.compat.objectstorage.TODO_REGION.oraclecloud.com' \
+  --from-literal=AWS_S3_FORCE_PATH_STYLE='true' \
+  --from-literal=VIRTUAL_HOSTED_STYLE='false' \
+  --from-literal=AWS_REGION='TODO_REGION' \
+  --from-literal=AWS_DEFAULT_REGION='TODO_REGION' \
+  --dry-run=client -o yaml | kubectl apply -f -
+```
+
+Fill the TODOs:
+- `TODO_CUSTOMER_SECRET_KEY_ID`: OCI Customer Secret Key ID (not user OCID)
+- `TODO_CUSTOMER_SECRET_KEY_SECRET`: the Customer Secret Key secret value
+- `TODO_NAMESPACE`: your Object Storage namespace (e.g. `axpf1b4npys0`)
+- `TODO_REGION`: OCI region (e.g. `il-jerusalem-1`)
+
+Then restart the manager (or wait for the next poll):
+
+```bash
+kubectl -n longhorn-system rollout restart deploy/longhorn-manager
+```
+
+Open Longhorn UI → Settings → Backup Target and ensure status becomes Available, then test a backup from a volume.
+
+### Troubleshooting
+
+- TLS CN/SAN mismatch to bucket host:
+  - Ensure path-style addressing: keep `AWS_S3_FORCE_PATH_STYLE='true'` and use endpoint `https://<namespace>.compat.objectstorage.<region>.oraclecloud.com`.
+- SignatureDoesNotMatch / region required:
+  - Use an OCI Customer Secret Key pair (ID/secret), not user OCID. Include region via `AWS_REGION`/`AWS_DEFAULT_REGION`.
+- 403/AccessDenied:
+  - Verify user policy grants Object Storage access in the correct compartment; bucket exists in that region.
+- 404 on bucket path:
+  - Confirm `backupTarget` bucket/region and your endpoint namespace/region match.
+
+References:
+- Longhorn: Setting a Backup Target: https://longhorn.io/docs/1.9.1/snapshots-and-backups/backup-and-restore/set-backup-target/
+- OCI S3 Compatibility API (path-style URLs and customer secret keys): https://docs.oracle.com/en/learn/ocios-s3-api-cpp/index.html#task-3-create-a-customer-secret-key-to-access-the-s3-compatible-api
+
 ## Troubleshooting
 
 ### Check if Longhorn is running:

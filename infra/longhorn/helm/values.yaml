@@ -19,6 +19,15 @@ longhorn:
     defaultReplicaCount: 1
     guaranteedInstanceManagerCPU: 12
 
+  # Configure the default backup target (S3-compatible: OCI Object Storage)
+  defaultBackupStore:
+    # Longhorn S3 URL format: s3://<bucket>@<region>/
+    backupTarget: s3://homelab-ganam@il-jerusalem-1/
+    # Reference to the Secret named below (create manually, not stored in git)
+    backupTargetCredentialSecret: longhorn-oci-s3-secret
+    # Seconds between polling the backupstore for new backups
+    pollInterval: 300
+
   extraObjects:
     - apiVersion: v1
       kind: Service
@@ -36,3 +45,5 @@ longhorn:
             targetPort: 8000
         selector:
           app: longhorn-ui
+
+    # Secret longhorn-oci-s3-secret will be created manually outside of git

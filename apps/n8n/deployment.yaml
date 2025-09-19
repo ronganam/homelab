@@ -18,14 +18,14 @@ spec:
     spec:
       initContainers:
       - name: init-permissions
-        image: busybox:1.35
+        image: busybox:1.37
         command: ["sh", "-c", "chown -R 1000:1000 /home/node/.n8n && chmod -R 755 /home/node/.n8n"]
         volumeMounts:
         - name: n8n-data
           mountPath: /home/node/.n8n
       containers:
       - name: n8n
-        image: n8nio/n8n:1.110.1
+        image: n8nio/n8n:1.112.2
         ports:
         - containerPort: 5678
           name: http

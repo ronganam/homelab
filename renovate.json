@@ -25,7 +25,11 @@
     "enabled": true
   },
   "kubernetes": {
-    "enabled": true
+    "enabled": true,
+    "fileMatch": [
+      "**/*.yaml",
+      "**/*.yml"
+    ]
   },
   "platformAutomerge": true,
   "automerge": false,

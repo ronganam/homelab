@@ -24,6 +24,12 @@
   "docker": {
     "enabled": true
   },
+  "enabledManagers": [
+    "helmv3",
+    "helm-values",
+    "kustomize",
+    "kubernetes"
+  ],
   
   "platformAutomerge": true,
   "automerge": false,

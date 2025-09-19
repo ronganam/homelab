@@ -79,15 +79,15 @@ spec:
         persistentVolumeClaim:
           claimName: n8n-data
 ---
-# apiVersion: v1
-# kind: PersistentVolumeClaim
-# metadata:
-#   name: n8n-data
-#   namespace: n8n
-# spec:
-#   accessModes:
-#   - ReadWriteMany
-#   resources:
-#     requests:
-#       storage: 2Gi
-#   storageClassName: longhorn
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: n8n-data
+  namespace: n8n
+spec:
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: longhorn

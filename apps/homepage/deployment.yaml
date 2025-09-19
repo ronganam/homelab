@@ -128,7 +128,7 @@ spec:
       serviceAccountName: homepage
       initContainers:
       - name: init-config
-        image: busybox:1.35
+        image: busybox:1.37
         command: ['sh', '-c', 'mkdir -p /writable-config/src/skeleton && cp /config/skeleton-settings.yaml /writable-config/src/skeleton/settings.yaml && cp /config/*.yaml /writable-config/']
         volumeMounts:
         - name: config

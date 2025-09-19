@@ -19,7 +19,7 @@ spec:
       serviceAccountName: service-controller
       containers:
       - name: service-controller
-        image: python:3.11-alpine
+        image: python:3.13-alpine
         command:
         - /bin/sh
         - -c

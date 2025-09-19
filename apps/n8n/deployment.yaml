@@ -7,7 +7,9 @@ metadata:
   labels:
     app: n8n
 spec:
-  replicas: 0
+  replicas: 1
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: n8n
@@ -86,7 +88,7 @@ metadata:
   namespace: n8n
 spec:
   accessModes:
-  - ReadWriteMany
+  - ReadWriteOnce
   resources:
     requests:
       storage: 2Gi

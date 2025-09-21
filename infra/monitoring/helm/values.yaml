@@ -75,8 +75,18 @@ kube-prometheus-stack:
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
       ruleSelectorNilUsesHelmValues: false
-      retentionSize: 1.5GiB
+      retention: 7d
+      retentionSize: 2GiB
       walCompression: true
+      additionalArgs:
+        - name: storage.tsdb.min-block-duration
+          value: "30m"
+        - name: storage.tsdb.max-block-duration
+          value: "30m"
+        - name: storage.tsdb.wal-segment-size
+          value: "64MB"
+        - name: storage.tsdb.head-chunks-write-queue-size
+          value: "1000"
       storageSpec:
         volumeClaimTemplate:
           spec:
@@ -84,7 +94,7 @@ kube-prometheus-stack:
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:
-                storage: 2Gi
+                storage: 4Gi
       securityContext:
         runAsUser: 65534
         runAsGroup: 65534

@@ -1,10 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
 resources:
   # Use the official MetalLB installation manifest
   - https://raw.githubusercontent.com/metallb/metallb/v0.15.2/config/manifests/metallb-native.yaml
   # Then the custom resources that depend on the CRDs
   - address-pool.yaml
-
 namespace: metallb-system

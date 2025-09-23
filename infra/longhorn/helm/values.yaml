@@ -2,14 +2,11 @@ longhorn:
   preUpgradeChecker:
     jobEnabled: false
     upgradeVersionCheck: true
-
   persistence:
     defaultClass: true
     defaultClassReplicaCount: 1
-
   csi:
     kubeletRootDir: /var/lib/kubelet
-
   defaultSettings:
     defaultDataPath: /var/lib/longhorn/
     replicaSoftAntiAffinity: true
@@ -18,7 +15,6 @@ longhorn:
     upgradeChecker: false
     defaultReplicaCount: 1
     guaranteedInstanceManagerCPU: 12
-
   # Configure the default backup target (S3-compatible: OCI Object Storage)
   defaultBackupStore:
     # Longhorn S3 URL format: s3://<bucket>@<region>/
@@ -27,7 +23,6 @@ longhorn:
     backupTargetCredentialSecret: longhorn-oci-s3-secret
     # Seconds between polling the backupstore for new backups
     pollInterval: 300
-
   extraObjects:
     - apiVersion: v1
       kind: Service
@@ -64,4 +59,4 @@ longhorn:
                       port:
                         number: 80
 
-    # Secret longhorn-oci-s3-secret will be created manually outside of git
+# Secret longhorn-oci-s3-secret will be created manually outside of git

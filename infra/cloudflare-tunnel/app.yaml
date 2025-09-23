@@ -1,4 +1,3 @@
 name: cloudflare-tunnel
 namespace: cloudflare-tunnel
 path: infra/cloudflare-tunnel
-

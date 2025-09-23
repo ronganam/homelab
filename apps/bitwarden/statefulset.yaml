@@ -72,16 +72,18 @@ spec:
               memory: 256Mi
           livenessProbe:
             httpGet:
+              scheme: HTTPS
               path: /
-              port: http
+              port: https
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
+              scheme: HTTPS
               path: /
-              port: http
+              port: https
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3

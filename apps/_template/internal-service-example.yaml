@@ -1,4 +1,3 @@
----
 # Example: Internal Service with MetalLB LoadBalancer
 # This service will be accessible via internal DNS using MetalLB IP
 apiVersion: v1
@@ -13,12 +12,12 @@ metadata:
     dns.service-controller.io/hostname: "internal.example.com"
     exposure.service-controller.io/type: "internal"
 spec:
-  type: LoadBalancer  # Required for MetalLB to assign external IP
+  type: LoadBalancer # Required for MetalLB to assign external IP
   ports:
-  - name: http
-    port: 80
-    targetPort: 8080
-    protocol: TCP
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
   selector:
     app: example-internal-service
 ---
@@ -36,12 +35,12 @@ metadata:
     dns.service-controller.io/hostname: "public.example.com"
     exposure.service-controller.io/type: "public"
 spec:
-  type: ClusterIP  # Use ClusterIP for tunneled services
+  type: ClusterIP # Use ClusterIP for tunneled services
   ports:
-  - name: http
-    port: 80
-    targetPort: 8080
-    protocol: TCP
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
   selector:
     app: example-public-service
 ---
@@ -58,9 +57,9 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - name: http
-    port: 80
-    targetPort: 8080
-    protocol: TCP
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
   selector:
     app: example-cluster-service

@@ -1,74 +1,73 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: CHANGEME  # Replace with your app name
-  namespace: CHANGEME  # Replace with your app name
+  name: CHANGEME # Replace with your app name
+  namespace: CHANGEME # Replace with your app name
   labels:
-    app: CHANGEME  # Replace with your app name
+    app: CHANGEME # Replace with your app name
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: CHANGEME  # Replace with your app name
+      app: CHANGEME # Replace with your app name
   template:
     metadata:
       labels:
-        app: CHANGEME  # Replace with your app name
+        app: CHANGEME # Replace with your app name
     spec:
       containers:
-      - name: CHANGEME  # Replace with your app name
-        image: nginx:latest  # Replace with your app image
-        ports:
-        - containerPort: 80  # Replace with your app port
-          name: http
-        env:
-        # Add your environment variables here
-        - name: EXAMPLE_ENV
-          value: "example-value"
-        volumeMounts:
-        # Add volume mounts if needed
-        - name: data
-          mountPath: /data
-        resources:
-          limits:
-            memory: 512Mi
-            cpu: 200m
-          requests:
-            memory: 256Mi
-            cpu: 100m
-        livenessProbe:
-          httpGet:
-            path: /  # Change to your app's health check path
-            port: http
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /  # Change to your app's health check path
-            port: http
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
+        - name: CHANGEME # Replace with your app name
+          image: nginx:latest # Replace with your app image
+          ports:
+            - containerPort: 80 # Replace with your app port
+              name: http
+          env:
+            # Add your environment variables here
+            - name: EXAMPLE_ENV
+              value: "example-value"
+          volumeMounts:
+            # Add volume mounts if needed
+            - name: data
+              mountPath: /data
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 200m
+            requests:
+              memory: 256Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: / # Change to your app's health check path
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: / # Change to your app's health check path
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
       volumes:
-      # Add volumes if needed
-      - name: data
-        persistentVolumeClaim:
-          claimName: CHANGEME-data  # Replace with your app name
+        # Add volumes if needed
+        - name: data
+          persistentVolumeClaim:
+            claimName: CHANGEME-data # Replace with your app name
 ---
 # Optional: PersistentVolumeClaim for data storage
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: CHANGEME-data  # Replace with your app name
-  namespace: CHANGEME  # Replace with your app name
+  name: CHANGEME-data # Replace with your app name
+  namespace: CHANGEME # Replace with your app name
 spec:
   accessModes:
-  - ReadWriteOnce
+    - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi  # Adjust size as needed
-  storageClassName: longhorn  # Use Longhorn storage
+      storage: 5Gi # Adjust size as needed
+  storageClassName: longhorn # Use Longhorn storage

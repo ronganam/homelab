@@ -1,4 +1,3 @@
----
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -31,7 +30,6 @@ data:
       Applications:
         style: row
         columns: 3
-  
   services.yaml: |
     - Infrastructure:
         - Argo CD:
@@ -46,7 +44,7 @@ data:
             href: https://dashboard.buildin.group  # Update if you have k8s dashboard
             description: Kubernetes Management
             icon: kubernetes-dashboard
-    
+
     - Monitoring:
         - Prometheus:
             href: http://prometheus.buildin.group
@@ -56,7 +54,7 @@ data:
             href: http://grafana.buildin.group
             description: Monitoring Dashboards
             icon: grafana
-    
+
     - Applications:
         - n8n:
             href: https://n9n.buildin.group
@@ -66,7 +64,6 @@ data:
             href: https://homepage.buildin.group
             description: Homelab Dashboard
             icon: homepage
-  
   widgets.yaml: |
     - logo:
         icon: https://gethomepage.dev/img/favicon.ico
@@ -85,7 +82,6 @@ data:
         longitude: -73.9851
         timezone: America/New_York
         cache: 5
-  
   bookmarks.yaml: |
     - Homelab:
         - Documentation:
@@ -97,13 +93,10 @@ data:
         - Monitoring:
             - href: https://grafana.com/
               icon: grafana
-  
   docker.yaml: |
     # Docker integration disabled for K8s deployment
-  
   kubernetes.yaml: |
     mode: cluster
-  
   custom.css: |
     /* Custom CSS for Homepage */
     /* Add your custom styles here */
@@ -127,67 +120,67 @@ spec:
     spec:
       serviceAccountName: homepage
       initContainers:
-      - name: init-config
-        image: busybox:1.37
-        command: ['sh', '-c', 'mkdir -p /writable-config/src/skeleton && cp /config/skeleton-settings.yaml /writable-config/src/skeleton/settings.yaml && cp /config/*.yaml /writable-config/']
-        volumeMounts:
-        - name: config
-          mountPath: /config
-        - name: writable-config
-          mountPath: /writable-config
+        - name: init-config
+          image: busybox:1.37
+          command: ['sh', '-c', 'mkdir -p /writable-config/src/skeleton && cp /config/skeleton-settings.yaml /writable-config/src/skeleton/settings.yaml && cp /config/*.yaml /writable-config/']
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: writable-config
+              mountPath: /writable-config
       containers:
-      - name: homepage
-        image: ghcr.io/gethomepage/homepage:v1.4
-        ports:
-        - containerPort: 3000
-          name: http
-        env:
-        - name: HOMEPAGE_VAR_TITLE
-          value: "Homelab Dashboard"
-        - name: HOMEPAGE_VAR_SEARCH_PROVIDER
-          value: "duckduckgo"
-        - name: HOMEPAGE_VAR_HEADER_STYLE
-          value: "boxed"
-        - name: HOMEPAGE_VAR_WEATHER_API_KEY
-          value: ""  # Add your weather API key if desired
-        - name: HOMEPAGE_ALLOWED_HOSTS
-          value: "*"
-        volumeMounts:
-        - name: writable-config
-          mountPath: /app/config
-        - name: logs
-          mountPath: /app/config/logs
-        resources:
-          limits:
-            memory: 512Mi
-            cpu: 200m
-          requests:
-            memory: 256Mi
-            cpu: 100m
-        livenessProbe:
-          httpGet:
-            path: /
-            port: http
-          initialDelaySeconds: 30
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 3
-        readinessProbe:
-          httpGet:
-            path: /
-            port: http
-          initialDelaySeconds: 10
-          periodSeconds: 5
-          timeoutSeconds: 3
-          failureThreshold: 3
+        - name: homepage
+          image: ghcr.io/gethomepage/homepage:v1.4
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: HOMEPAGE_VAR_TITLE
+              value: "Homelab Dashboard"
+            - name: HOMEPAGE_VAR_SEARCH_PROVIDER
+              value: "duckduckgo"
+            - name: HOMEPAGE_VAR_HEADER_STYLE
+              value: "boxed"
+            - name: HOMEPAGE_VAR_WEATHER_API_KEY
+              value: "" # Add your weather API key if desired
+            - name: HOMEPAGE_ALLOWED_HOSTS
+              value: "*"
+          volumeMounts:
+            - name: writable-config
+              mountPath: /app/config
+            - name: logs
+              mountPath: /app/config/logs
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: 200m
+            requests:
+              memory: 256Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
       volumes:
-      - name: config
-        configMap:
-          name: homepage-config
-      - name: writable-config
-        emptyDir: {}
-      - name: logs
-        emptyDir: {}
+        - name: config
+          configMap:
+            name: homepage-config
+        - name: writable-config
+          emptyDir: {}
+        - name: logs
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -202,38 +195,38 @@ kind: ClusterRole
 metadata:
   name: homepage
 rules:
-- apiGroups:
-  - ""
-  resources:
-  - namespaces
-  - pods
-  - nodes
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - extensions
-  - networking.k8s.io
-  resources:
-  - ingresses
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - traefik.containo.us
-  resources:
-  - ingressroutes
-  verbs:
-  - get
-  - list
-- apiGroups:
-  - metrics.k8s.io
-  resources:
-  - nodes
-  - pods
-  verbs:
-  - get
-  - list
+  - apiGroups:
+      - ""
+    resources:
+      - namespaces
+      - pods
+      - nodes
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - extensions
+      - networking.k8s.io
+    resources:
+      - ingresses
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - traefik.containo.us
+    resources:
+      - ingressroutes
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - metrics.k8s.io
+    resources:
+      - nodes
+      - pods
+    verbs:
+      - get
+      - list
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
@@ -244,6 +237,6 @@ roleRef:
   kind: ClusterRole
   name: homepage
 subjects:
-- kind: ServiceAccount
-  name: homepage
-  namespace: homepage
+  - kind: ServiceAccount
+    name: homepage
+    namespace: homepage

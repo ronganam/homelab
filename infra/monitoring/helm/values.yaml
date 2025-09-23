@@ -2,11 +2,9 @@ kube-prometheus-stack:
   # Disable admission controller to fix ArgoCD compatibility
   admissionWebhooks:
     enabled: false
-  
   # Disable pre-upgrade hooks for ArgoCD compatibility
   preUpgradeHook:
     enabled: false
-  
   grafana:
     enabled: true
     adminPassword: "admin"
@@ -35,14 +33,14 @@ kube-prometheus-stack:
       dashboardproviders.yaml:
         apiVersion: 1
         providers:
-        - name: 'longhorn-dashboards'
-          orgId: 1
-          folder: 'Longhorn'
-          type: file
-          disableDeletion: false
-          editable: true
-          options:
-            path: /var/lib/grafana/dashboards/longhorn
+          - name: 'longhorn-dashboards'
+            orgId: 1
+            folder: 'Longhorn'
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards/longhorn
     dashboards:
       longhorn:
         longhorn-dashboard:
@@ -54,7 +52,6 @@ kube-prometheus-stack:
               type: datasource
               pluginId: prometheus
               value: Prometheus
-
   prometheus:
     enabled: true
     ingress:
@@ -110,18 +107,14 @@ kube-prometheus-stack:
         runAsGroup: 65534
         runAsNonRoot: true
         fsGroup: 65534
-
   # Disable Alertmanager for simplicity
   alertmanager:
     enabled: false
-
   # Enable essential components
   nodeExporter:
     enabled: true
-
   kubeStateMetrics:
     enabled: true
-
   kubelet:
     enabled: true
   kubeApiServer:
@@ -139,4 +132,4 @@ kube-prometheus-stack:
   kubeDns:
     enabled: true
 
-  # (moved) additionalServiceMonitors now live under kube-prometheus-stack.prometheus
+# (moved) additionalServiceMonitors now live under kube-prometheus-stack.prometheus

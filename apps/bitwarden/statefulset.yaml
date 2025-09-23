@@ -88,6 +88,10 @@ spec:
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
+      volumes:
+        - name: tls-certs
+          secret:
+            secretName: vaultwarden-tls
   volumeClaimTemplates:
     - metadata:
         name: data
@@ -98,7 +102,3 @@ spec:
           requests:
             storage: 1Gi
         storageClassName: longhorn
-  volumes:
-    - name: tls-certs
-      secret:
-        secretName: vaultwarden-tls

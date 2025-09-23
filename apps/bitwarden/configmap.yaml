@@ -11,7 +11,7 @@ data:
   DOMAIN: "https://bitwarden.buildin.group"
   ROCKET_ADDRESS: "0.0.0.0"
   ROCKET_TLS: "{certs=\"/tls/tls.crt\",key=\"/tls/tls.key\"}"
-  SIGNUPS_ALLOWED: "true"
+  SIGNUPS_ALLOWED: "false"
   WEBSOCKET_ENABLED: "true"
   WEBSOCKET_ADDRESS: "0.0.0.0"
   WEBSOCKET_PORT: "3012"

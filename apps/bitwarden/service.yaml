@@ -1,0 +1,24 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bitwarden
+  namespace: bitwarden
+  labels:
+    app: bitwarden
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "bitwarden.buildin.group"
+    exposure.service-controller.io/type: "internal"
+spec:
+  type: LoadBalancer
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+    - name: websocket
+      port: 3012
+      targetPort: 3012
+      protocol: TCP
+  selector:
+    app: bitwarden

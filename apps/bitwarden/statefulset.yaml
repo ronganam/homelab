@@ -92,7 +92,9 @@ spec:
           secret:
             secretName: vaultwarden-tls
   volumeClaimTemplates:
-    - metadata:
+    - apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
         name: data
       spec:
         accessModes:

@@ -14,9 +14,9 @@ data:
   WEBSOCKET_ADDRESS: "0.0.0.0"
   WEBSOCKET_PORT: "3012"
   DATA_FOLDER: "/data"
-  # Optional SMTP config (set corresponding secret for username/password)
-  SMTP_FROM: ""
-  SMTP_HOST: ""
-  SMTP_PORT: "587"
-  SMTP_SECURITY: "starttls" # tls|starttls|off
+  # SMTP config removed - add back to enable email support
+  # SMTP_FROM: "noreply@example.com"
+  # SMTP_HOST: "smtp.example.com"
+  # SMTP_PORT: "587"
+  # SMTP_SECURITY: "starttls" # tls|starttls|off
 

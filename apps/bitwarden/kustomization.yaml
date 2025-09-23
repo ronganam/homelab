@@ -3,7 +3,8 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
-  - deployment.yaml
+  - statefulset.yaml
   - service.yaml
+  - configmap.yaml
 
-namespace: homepage
+namespace: bitwarden

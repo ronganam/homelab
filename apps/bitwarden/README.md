@@ -22,15 +22,27 @@ kubectl -n bitwarden create secret generic vaultwarden-admin \
   --from-literal=token='REPLACE_WITH_STRONG_RANDOM_TOKEN'
 ```
 
-## Optional secret: SMTP credentials
+## Optional: SMTP email support
 
-Non-secret SMTP fields (host, from, port, security) are configured in the `ConfigMap` (`configmap.yaml`). Only username and password go into a Secret.
+To enable email features, you need to set both `SMTP_HOST` and `SMTP_FROM` in the ConfigMap, plus create the SMTP secret with credentials.
 
+**Step 1: Enable SMTP in ConfigMap**
+Edit `configmap.yaml` and uncomment the SMTP lines, then set your values:
+```yaml
+SMTP_FROM: "noreply@example.com"
+SMTP_HOST: "smtp.example.com"
+SMTP_PORT: "587"
+SMTP_SECURITY: "starttls"
+```
+
+**Step 2: Create SMTP secret with credentials**
 ```bash
 kubectl -n bitwarden create secret generic vaultwarden-smtp \
   --from-literal=username='REPLACE_WITH_SMTP_USERNAME' \
   --from-literal=password='REPLACE_WITH_SMTP_PASSWORD'
 ```
+
+**To disable email features:** SMTP environment variables are commented out in the ConfigMap (default state).
 
 Update later:
 ```bash
@@ -42,10 +54,7 @@ kubectl -n bitwarden create secret generic vaultwarden-smtp \
 
 ## Apply changes
 
-After creating or updating secrets/config, restart the StatefulSet to pick up changes:
-```bash
-kubectl -n bitwarden rollout restart statefulset/bitwarden
-```
+After editing the ConfigMap or creating/updating secrets, ArgoCD will automatically sync the changes. The StatefulSet will restart automatically when the ConfigMap changes.
 
 ## Verify
 ```bash

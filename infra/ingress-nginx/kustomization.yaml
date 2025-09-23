@@ -10,3 +10,6 @@ patchesJson6902:
       kind: Deployment
       name: ingress-nginx-controller
     path: controller-args-add-default-cert.json
+patches:
+  - path: patch-job-admission-create.yaml
+  - path: patch-job-admission-patch.yaml

@@ -5,6 +5,7 @@ metadata:
   namespace: bitwarden
   annotations:
     kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
 spec:
   rules:
     - host: bitwarden.buildin.group

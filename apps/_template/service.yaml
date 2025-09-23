@@ -15,9 +15,9 @@ metadata:
     # dns.service-controller.io/enabled: "true"
     # dns.service-controller.io/hostname: "CHANGEME.internal.yourdomain.com"  # Replace with your domain
     # exposure.service-controller.io/type: "internal"
+# Option 3: No DNS management (internal cluster access only)
+# Remove all dns.service-controller.io labels
 
-    # Option 3: No DNS management (internal cluster access only)
-    # Remove all dns.service-controller.io labels
 spec:
   type: ClusterIP # Use ClusterIP for public services, LoadBalancer for internal services
   ports:

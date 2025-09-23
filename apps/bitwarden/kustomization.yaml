@@ -5,4 +5,5 @@ resources:
   - statefulset.yaml
   - service.yaml
   - configmap.yaml
+  - ingress.yaml
 namespace: bitwarden

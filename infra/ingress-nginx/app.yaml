@@ -1,0 +1,6 @@
+name: ingress-nginx
+namespace: ingress-nginx
+path: infra/ingress-nginx
+
+
+

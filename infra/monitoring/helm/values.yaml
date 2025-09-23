@@ -10,8 +10,13 @@ kube-prometheus-stack:
   grafana:
     enabled: true
     adminPassword: "admin"
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - grafana.buildin.group
     service:
-      type: LoadBalancer
+      type: ClusterIP
       port: 80
       targetPort: 3000
       labels:
@@ -52,8 +57,13 @@ kube-prometheus-stack:
 
   prometheus:
     enabled: true
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - prometheus.buildin.group
     service:
-      type: LoadBalancer
+      type: ClusterIP
       port: 80
       targetPort: 9090
       labels:

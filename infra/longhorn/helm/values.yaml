@@ -32,18 +32,36 @@ longhorn:
     - apiVersion: v1
       kind: Service
       metadata:
-        name: longhorn-ui-lb
+        name: longhorn-ui
         labels:
           dns.service-controller.io/enabled: "true"
           dns.service-controller.io/hostname: "longhorn.buildin.group"
           exposure.service-controller.io/type: "internal"
       spec:
-        type: LoadBalancer
+        type: ClusterIP
         ports:
           - name: http
             port: 80
             targetPort: 8000
         selector:
           app: longhorn-ui
+    - apiVersion: networking.k8s.io/v1
+      kind: Ingress
+      metadata:
+        name: longhorn-ui
+        annotations:
+          kubernetes.io/ingress.class: nginx
+      spec:
+        rules:
+          - host: longhorn.buildin.group
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: longhorn-ui
+                      port:
+                        number: 80
 
     # Secret longhorn-oci-s3-secret will be created manually outside of git

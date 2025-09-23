@@ -10,9 +10,17 @@ Generate a strong random token and store it in the `vaultwarden-admin` secret (k
 # Example: generate a 64-char hex token
 openssl rand -hex 32
 
-# Create the secret
+# Create the secret with a secure Argon2 hash (recommended)
+# First generate the hash:
+docker run --rm vaultwarden/server:1.34.3 vaultwarden hash
+
+# Then create the secret with the generated hash:
 kubectl -n bitwarden create secret generic vaultwarden-admin \
-  --from-literal=token='REPLACE_WITH_STRONG_RANDOM_TOKEN'
+  --from-literal=token='REPLACE_WITH_ARCON2_HASH'
+
+# Alternative: use a simple random token (less secure)
+# kubectl -n bitwarden create secret generic vaultwarden-admin \
+#   --from-literal=token='REPLACE_WITH_STRONG_RANDOM_TOKEN'
 ```
 
 Update later:

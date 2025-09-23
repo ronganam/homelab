@@ -6,9 +6,12 @@ metadata:
   namespace: bitwarden
 data:
   # Non-secret Vaultwarden settings
-  ROCKET_PORT: "80"
+  ROCKET_PORT: "8443"
   ROCKET_WORKERS: "2"
   DOMAIN: "https://bitwarden.buildin.group"
+  ROCKET_TLS: "true"
+  ROCKET_TLS_CERT: "/tls/tls.crt"
+  ROCKET_TLS_KEY: "/tls/tls.key"
   SIGNUPS_ALLOWED: "false"
   WEBSOCKET_ENABLED: "true"
   WEBSOCKET_ADDRESS: "0.0.0.0"
@@ -19,4 +22,3 @@ data:
   # SMTP_HOST: "smtp.example.com"
   # SMTP_PORT: "587"
   # SMTP_SECURITY: "starttls" # tls|starttls|off
-

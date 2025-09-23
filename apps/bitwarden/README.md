@@ -2,7 +2,9 @@
 
 This app uses Vaultwarden with Longhorn storage and exposes an internal LoadBalancer. Create the required secrets before or right after ArgoCD sync.
 
-## Required secret: Admin token
+## Required secrets
+
+### Admin token
 
 Generate a strong random token and store it in the `vaultwarden-admin` secret (key `token`).
 
@@ -23,11 +25,40 @@ kubectl -n bitwarden create secret generic vaultwarden-admin \
 #   --from-literal=token='REPLACE_WITH_STRONG_RANDOM_TOKEN'
 ```
 
-Update later:
+### TLS certificates
+
+**For testing (self-signed certificate):**
+```bash
+# Generate self-signed certificate
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+  -keyout tls.key -out tls.crt \
+  -subj "/CN=bitwarden.buildin.group"
+
+# Create the secret
+kubectl -n bitwarden create secret tls vaultwarden-tls \
+  --cert=tls.crt --key=tls.key
+
+# Clean up local files
+rm tls.crt tls.key
+```
+
+**For production (real certificates):**
+```bash
+kubectl -n bitwarden create secret tls vaultwarden-tls \
+  --cert=path/to/tls.crt \
+  --key=path/to/tls.key
+```
+
+Update secrets later:
 ```bash
 kubectl -n bitwarden delete secret vaultwarden-admin
 kubectl -n bitwarden create secret generic vaultwarden-admin \
   --from-literal=token='REPLACE_WITH_STRONG_RANDOM_TOKEN'
+
+kubectl -n bitwarden delete secret vaultwarden-tls
+kubectl -n bitwarden create secret tls vaultwarden-tls \
+  --cert=path/to/tls.crt \
+  --key=path/to/tls.key
 ```
 
 ## Optional: SMTP email support

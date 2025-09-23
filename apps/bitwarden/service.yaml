@@ -10,7 +10,7 @@ metadata:
     dns.service-controller.io/hostname: "bitwarden.buildin.group"
     exposure.service-controller.io/type: "internal"
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   ports:
     - name: https
       port: 443

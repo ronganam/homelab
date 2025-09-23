@@ -40,6 +40,10 @@ spec:
             secretKeyRef:
               name: cloudflare-api-token
               key: token
+        - name: INGRESS_NAMESPACE
+          value: ingress-nginx
+        - name: INGRESS_SERVICE_NAME
+          value: ingress-nginx-controller
         volumeMounts:
         - name: controller-script
           mountPath: /app
@@ -87,6 +91,9 @@ data:
             self.apps_v1 = None
             self.tunnel_config_hash = None
             self.last_config_update = 0
+            # Ingress settings for internal services
+            self.ingress_namespace = os.environ.get('INGRESS_NAMESPACE', 'ingress-nginx')
+            self.ingress_service_name = os.environ.get('INGRESS_SERVICE_NAME', 'ingress-nginx-controller')
             
         def get_service_port(self, service_name, namespace):
             """Get the port of a service"""
@@ -108,6 +115,19 @@ data:
                 return None
             except Exception as e:
                 print(f"⚠️  Error getting external IP for {service_name}.{namespace}: {e}")
+                return None
+
+        def get_ingress_external_ip(self):
+            """Get the external IP of the ingress controller service for internal HTTPS"""
+            try:
+                service = self.v1.read_namespaced_service(self.ingress_service_name, self.ingress_namespace)
+                if service.status.load_balancer and service.status.load_balancer.ingress:
+                    ip = service.status.load_balancer.ingress[0].ip
+                    if ip:
+                        return ip
+                return None
+            except Exception as e:
+                print(f"⚠️  Error getting external IP for ingress {self.ingress_service_name}.{self.ingress_namespace}: {e}")
                 return None
         
         def create_cloudflare_dns_route(self, hostname):
@@ -439,12 +459,12 @@ data:
                         if dns_success:
                             self.update_tunnel_config(service_name, hostname, namespace, port)
                     elif exposure_type == EXPOSURE_INTERNAL:
-                        # Handle internal services (MetalLB)
-                        external_ip = self.get_service_external_ip(service_name, namespace)
+                        # Handle internal services via Ingress controller IP (MetalLB)
+                        external_ip = self.get_ingress_external_ip()
                         if external_ip:
                             self.create_internal_dns_entry(hostname, external_ip)
                         else:
-                            print(f"⚠️  Service {service_name}.{namespace} is marked as internal but has no external IP")
+                            print(f"⚠️  Ingress controller has no external IP/hostname yet; cannot create DNS for {hostname}")
                     else:
                         print(f"⚠️  Unknown exposure type '{exposure_type}' for service {service_name}.{namespace}")
                         

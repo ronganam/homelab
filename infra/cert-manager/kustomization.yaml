@@ -6,3 +6,6 @@ resources:
   # Local resources
   - clusterissuer.yaml
   - wildcard-certificate.yaml
+patches:
+  - path: patch-validatingwebhook-argocd-ignore.yaml
+  - path: patch-mutatingwebhook-argocd-ignore.yaml

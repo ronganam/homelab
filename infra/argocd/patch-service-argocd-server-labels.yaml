@@ -9,5 +9,3 @@ metadata:
     exposure.service-controller.io/type: internal
 spec:
   type: ClusterIP
-
-

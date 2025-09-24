@@ -30,16 +30,10 @@ A complete, ready-to-deploy homelab setup using GitOps principles with Argo CD. 
    - 192.168.1.200-192.168.1.250  # Change this to your network range
    ```
 
-4. **Deploy Argo CD and ApplicationSets:**
+4. **Deploy Argo CD (ingress-only, pinned version) and ApplicationSets:**
    ```bash
-   # Create Argo CD namespace
-   kubectl create namespace argocd
-
-   # Install Argo CD
-   kubectl apply -n argocd -f bootstrap/argocd-install.yaml
-
-   # Wait for Argo CD to be ready
-   kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+  # Install Argo CD via kustomize
+  ./bootstrap/install-argocd.sh
 
    # Deploy the ApplicationSets (app-of-apps pattern)
    kubectl apply -n argocd -f bootstrap/root-applicationsets.yaml
@@ -169,7 +163,7 @@ This script will:
 After setting up Cloudflare Tunnel, your services will be available at:
 - **Homepage Dashboard**: `https://homepage.yourdomain.com`
 - **n8n Workflow Automation**: `https://n9n.yourdomain.com`
-- **Argo CD GitOps**: `https://argocd.yourdomain.com`
+- **Argo CD GitOps**: `https://argo.buildin.group` (ingress)
 - **Longhorn Storage UI**: `https://longhorn.yourdomain.com`
 
 ## ➕ Adding New Applications

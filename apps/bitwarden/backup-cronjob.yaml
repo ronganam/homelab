@@ -45,9 +45,8 @@ spec:
               args:
                 - |
                   set -e
-                  apk add --no-cache restic sqlite bash ca-certificates
-                  chmod +x /opt/backup/backup.sh
-                  /opt/backup/backup.sh
+                  apk add --no-cache restic sqlite ca-certificates
+                  sh /opt/backup/backup.sh
               resources:
                 requests:
                   cpu: 20m

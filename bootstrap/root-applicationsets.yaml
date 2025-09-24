@@ -23,6 +23,9 @@ metadata:
   name: infra
   namespace: argocd
 spec:
+  ignoreApplicationDifferences:
+    - jsonPointers:
+        - /spec/syncPolicy
   goTemplate: true
   generators:
     - git:
@@ -49,14 +52,7 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{ .namespace }}'
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-          - CreateNamespace=true
-          - ServerSideApply=true
-          - PrunePropagationPolicy=foreground
+      # syncPolicy intentionally omitted to allow manual control via UI/CLI
       ignoreDifferences:
         - group: ""
           kind: ConfigMap
@@ -70,6 +66,9 @@ metadata:
   name: apps
   namespace: argocd
 spec:
+  ignoreApplicationDifferences:
+    - jsonPointers:
+        - /spec/syncPolicy
   generators:
     - git:
         repoURL: https://github.com/ronganam/homelab
@@ -93,10 +92,4 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{path.basename}}'
-      syncPolicy:
-        automated:
-          prune: true
-          selfHeal: true
-        syncOptions:
-          - CreateNamespace=true
-          - ServerSideApply=true
+      # syncPolicy intentionally omitted to allow manual control via UI/CLI

@@ -12,8 +12,12 @@ kubectl apply -k "${REPO_ROOT}/infra/argocd"
 
 echo "⏳ Waiting for Argo CD to be ready..."
 kubectl -n argocd rollout status deploy/argocd-server --timeout=300s
+kubectl -n argocd rollout status statefulset/argocd-application-controller --timeout=300s
 
-echo "🎉 Argo CD installation completed!"
+echo "📦 Applying root ApplicationSets (project + apps/infra) ..."
+kubectl apply -f "${REPO_ROOT}/bootstrap/root-applicationsets.yaml"
+
+echo "🎉 Argo CD installation completed and ApplicationSets applied!"
 echo ""
 echo "Next steps:"
 echo "1. Get the admin password:"
@@ -23,3 +27,5 @@ echo "2. Access Argo CD UI via ingress:"
 echo "   https://argo.buildin.group/ (or https://argocd.buildin.group/)"
 echo "   Username: admin"
 echo "   Password: <from step 1>"
+echo ""
+echo "Note: Auto-Sync can be toggled per app in the UI/CLI and will persist."

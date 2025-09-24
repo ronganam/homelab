@@ -1,0 +1,61 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: bitwarden-backup
+  namespace: bitwarden
+data:
+  RESTIC_KEEP_DAILY: "7"
+  RESTIC_KEEP_WEEKLY: "4"
+  RESTIC_KEEP_MONTHLY: "6"
+  SQLITE_LOCAL_KEEP_DAYS: "14"
+  backup.sh: |-
+    #!/usr/bin/env bash
+    set -euo pipefail
+
+    log() { echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"; }
+
+    : "${RESTIC_REPOSITORY:?RESTIC_REPOSITORY is required}"
+    : "${RESTIC_PASSWORD:?RESTIC_PASSWORD is required}"
+
+    BACKUP_DIR="/data/backups"
+    mkdir -p "$BACKUP_DIR"
+
+    TS="$(date '+%Y%m%d-%H%M')"
+    SQLITE_DB="/data/db.sqlite3"
+    SQLITE_BACKUP_FILE="$BACKUP_DIR/db-$TS.sqlite3"
+
+    log "Starting Vaultwarden backup"
+
+    if [ -f "$SQLITE_DB" ]; then
+      log "Creating online SQLite backup: $SQLITE_BACKUP_FILE"
+      sqlite3 "$SQLITE_DB" ".backup '$SQLITE_BACKUP_FILE'"
+    else
+      log "Warning: $SQLITE_DB not found"
+    fi
+
+    if ! restic snapshots >/dev/null 2>&1; then
+      log "Initializing restic repo"
+      restic init
+    fi
+
+    log "Running restic backup"
+    restic backup \
+      --tag vaultwarden \
+      --exclude "/data/db.sqlite3" \
+      --exclude "/data/db.sqlite3-wal" \
+      --exclude "/data/db.sqlite3-shm" \
+      --exclude "/data/icon_cache" \
+      /data
+
+    log "Applying retention policy"
+    restic forget --prune \
+      --tag vaultwarden \
+      --keep-daily "${RESTIC_KEEP_DAILY}" \
+      --keep-weekly "${RESTIC_KEEP_WEEKLY}" \
+      --keep-monthly "${RESTIC_KEEP_MONTHLY}"
+
+    find "$BACKUP_DIR" -type f -name 'db-*.sqlite3' -mtime +${SQLITE_LOCAL_KEEP_DAYS} -delete || true
+
+    log "Backup completed"
+
+

@@ -1,0 +1,69 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: bitwarden-backup
+  namespace: bitwarden
+spec:
+  schedule: "0 3 * * *"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: bitwarden-backup
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            fsGroup: 33
+            runAsNonRoot: true
+            runAsUser: 33
+            runAsGroup: 33
+          affinity:
+            podAffinity:
+              preferredDuringSchedulingIgnoredDuringExecution:
+                - weight: 100
+                  podAffinityTerm:
+                    labelSelector:
+                      matchLabels:
+                        app: bitwarden
+                    topologyKey: kubernetes.io/hostname
+          containers:
+            - name: backup
+              image: alpine:3.20
+              imagePullPolicy: IfNotPresent
+              envFrom:
+                - secretRef:
+                    name: bitwarden-backup
+                - configMapRef:
+                    name: bitwarden-backup
+              volumeMounts:
+                - name: data
+                  mountPath: /data
+                - name: backup-config
+                  mountPath: /opt/backup
+              command: ["/bin/sh","-c"]
+              args:
+                - |
+                  set -e
+                  apk add --no-cache restic sqlite bash ca-certificates
+                  chmod +x /opt/backup/backup.sh
+                  /opt/backup/backup.sh
+              resources:
+                requests:
+                  cpu: 20m
+                  memory: 128Mi
+                limits:
+                  cpu: 200m
+                  memory: 512Mi
+          volumes:
+            - name: data
+              persistentVolumeClaim:
+                claimName: data-bitwarden-0
+            - name: backup-config
+              configMap:
+                name: bitwarden-backup
+                defaultMode: 0755
+

@@ -99,3 +99,90 @@ After editing the ConfigMap or creating/updating secrets, ArgoCD will automatica
 ```bash
 kubectl -n bitwarden get pods,svc,cm,secret
 ```
+
+## Backups
+
+A CronJob performs a reliable online backup of Vaultwarden data using SQLite's Online Backup API and `restic` for encrypted, deduplicated storage.
+
+### Configure backup destination (Oracle Object Storage)
+
+Use the helper script to create/update the Secret securely (no secrets in Git):
+
+```bash
+chmod +x apps/bitwarden/setup-oci-restic-secret.sh
+apps/bitwarden/setup-oci-restic-secret.sh
+```
+
+The script will:
+- Discover your OCI namespace with `oci os ns get`
+- Parse default bucket/region from `infra/longhorn/helm/values.yaml`
+- Prompt for your Customer Secret Key ID/Secret and RESTIC_PASSWORD
+- Create/update the `bitwarden-backup` Secret
+
+Retention defaults can be adjusted in `backup-configmap.yaml` (`RESTIC_KEEP_*`). The CronJob runs daily at 03:00 (see `backup-cronjob.yaml`).
+
+Notes:
+- Backs up `/data` including `attachments`, `sends`, `config.json`, `rsa_key*`, and a consistent SQLite copy under `/data/backups/`.
+- Excludes live SQLite files (`db.sqlite3`, `-wal`, `-shm`) and `icon_cache`.
+- The backup job prefers scheduling on the same node as the `bitwarden` pod to avoid RWO mount conflicts.
+- You can use `infra/longhorn/setup-oci-backup.sh` as a reference for obtaining your OCI namespace and region.
+
+### Run a backup now
+
+```bash
+kubectl -n bitwarden create job --from=cronjob/bitwarden-backup bitwarden-backup-manual
+kubectl -n bitwarden logs -l job-name=bitwarden-backup-manual -c backup --tail=-1 | cat
+```
+
+### Restore (SQLite backend)
+
+1) Stop writes:
+```bash
+kubectl -n bitwarden scale statefulset/bitwarden --replicas=0
+```
+
+2) Start a temporary pod with the PVC mounted and restic available:
+```bash
+kubectl -n bitwarden apply -f - <<'EOF'
+apiVersion: v1
+kind: Pod
+metadata:
+  name: vw-restore
+  namespace: bitwarden
+spec:
+  restartPolicy: Never
+  securityContext:
+    fsGroup: 33
+    runAsNonRoot: true
+    runAsUser: 33
+    runAsGroup: 33
+  containers:
+    - name: restore
+      image: alpine:3.20
+      command: ["/bin/sh","-c"]
+      args: ["apk add --no-cache restic bash ca-certificates && sleep 3600"]
+      envFrom:
+        - secretRef:
+            name: bitwarden-backup
+      volumeMounts:
+        - name: data
+          mountPath: /data
+  volumes:
+    - name: data
+      persistentVolumeClaim:
+        claimName: data-bitwarden-0
+EOF
+```
+
+3) Restore latest snapshot into `/` (contains `/data/...`):
+```bash
+kubectl -n bitwarden exec -it vw-restore -- sh -lc 'restic restore latest --target /'
+```
+
+4) Remove the restore pod and start Vaultwarden:
+```bash
+kubectl -n bitwarden delete pod vw-restore --wait=true
+kubectl -n bitwarden scale statefulset/bitwarden --replicas=1
+```
+
+Test restores periodically to ensure backups are valid.

@@ -19,3 +19,9 @@ patches:
       version: v1
       kind: Deployment
       name: argocd-server
+  - path: patch-cm-argocd-cm.yaml
+    target:
+      group: ""
+      version: v1
+      kind: ConfigMap
+      name: argocd-cm

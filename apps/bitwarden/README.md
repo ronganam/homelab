@@ -136,6 +136,17 @@ kubectl -n bitwarden logs -l job-name=bitwarden-backup-manual -c backup --tail=-
 
 ### Restore (SQLite backend)
 
+0) Temporarily pause Argo CD reconciliation (to prevent it from scaling the StatefulSet back up during restore):
+```bash
+# Replace with your Argo CD Application name that manages this folder
+APP_NAME="bitwarden"
+
+# Disable Auto-Sync (and Self-Heal if enabled)
+argocd app set "$APP_NAME" --sync-policy none
+# Alternatively, if you only want to disable self-heal:
+# argocd app set "$APP_NAME" --self-heal=false
+```
+
 1) Stop writes:
 ```bash
 kubectl -n bitwarden scale statefulset/bitwarden --replicas=0
@@ -183,6 +194,11 @@ kubectl -n bitwarden exec -it vw-restore -- sh -lc 'restic restore latest --targ
 ```bash
 kubectl -n bitwarden delete pod vw-restore --wait=true
 kubectl -n bitwarden scale statefulset/bitwarden --replicas=1
+```
+
+5) Re-enable Argo CD Auto-Sync/Self-Heal:
+```bash
+argocd app set "$APP_NAME" --sync-policy automated --self-heal
 ```
 
 Test restores periodically to ensure backups are valid.

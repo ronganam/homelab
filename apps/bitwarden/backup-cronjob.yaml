@@ -18,9 +18,6 @@ spec:
           restartPolicy: OnFailure
           securityContext:
             fsGroup: 33
-            runAsNonRoot: true
-            runAsUser: 33
-            runAsGroup: 33
           affinity:
             podAffinity:
               preferredDuringSchedulingIgnoredDuringExecution:

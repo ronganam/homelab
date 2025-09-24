@@ -19,5 +19,3 @@ spec:
           readinessProbe:
             timeoutSeconds: 5
             periodSeconds: 10
-
-

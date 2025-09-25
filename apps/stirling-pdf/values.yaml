@@ -1,0 +1,52 @@
+# Values to override the upstream Stirling-PDF chart
+
+stirling-pdf-chart:
+  replicaCount: 1
+
+  image:
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    externalPort: 80
+    targetPort: 8080
+    annotations: {}
+    labels:
+      dns.service-controller.io/enabled: "true"
+      dns.service-controller.io/hostname: stirling-pdf.buildin.group
+      exposure.service-controller.io/type: public
+
+  # Using ClusterIP + external tunnel/DNS controller, so keep ingress off by default
+  ingress:
+    enabled: false
+    ingressClassName: nginx
+    annotations: {}
+    hosts:
+      - name: stirling-pdf.buildin.group
+        path: /
+        tls: false
+
+  persistence:
+    enabled: true
+    size: 8Gi
+    accessMode: ReadWriteOnce
+    storageClass: longhorn
+    path: /configs
+
+  envs:
+    - name: UI_APP_NAME
+      value: "Stirling PDF"
+    - name: UI_HOME_DESCRIPTION
+      value: "Local PDF toolbox"
+    - name: APP_LOCALE
+      value: "en_GB"
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 256Mi
+    limits:
+      cpu: 300m
+      memory: 1Gi
+
+

@@ -1,4 +1,6 @@
 name: monitoring
 namespace: monitoring
-path: infra/monitoring/helm
+path: infra/monitoring
 wave: "20"
+
+

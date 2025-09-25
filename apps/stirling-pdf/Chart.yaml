@@ -1,0 +1,12 @@
+apiVersion: v2
+name: stirling-pdf
+description: Helm wrapper chart to deploy Stirling-PDF via upstream dependency
+type: application
+version: 0.1.0
+appVersion: ""
+dependencies:
+  - name: stirling-pdf-chart
+    version: 2.2.0
+    repository: https://stirling-tools.github.io/Stirling-PDF-chart
+
+

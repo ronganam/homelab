@@ -1,4 +1,6 @@
 name: longhorn
 namespace: longhorn-system
-path: infra/longhorn/helm
+path: infra/longhorn
 wave: "10"
+
+

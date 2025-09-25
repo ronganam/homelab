@@ -1,8 +1,6 @@
 kube-prometheus-stack:
-  # Disable admission controller to fix ArgoCD compatibility
   admissionWebhooks:
     enabled: false
-  # Disable pre-upgrade hooks for ArgoCD compatibility
   preUpgradeHook:
     enabled: false
   grafana:
@@ -107,10 +105,8 @@ kube-prometheus-stack:
         runAsGroup: 65534
         runAsNonRoot: true
         fsGroup: 65534
-  # Disable Alertmanager for simplicity
   alertmanager:
     enabled: false
-  # Enable essential components
   nodeExporter:
     enabled: true
   kubeStateMetrics:
@@ -132,4 +128,4 @@ kube-prometheus-stack:
   kubeDns:
     enabled: true
 
-# (moved) additionalServiceMonitors now live under kube-prometheus-stack.prometheus
+

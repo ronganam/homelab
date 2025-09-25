@@ -27,7 +27,7 @@ stirling-pdf-chart:
 
   persistence:
     enabled: true
-    size: 8Gi
+    size: 256Mi
     accessMode: ReadWriteOnce
     storageClass: longhorn
     path: /configs

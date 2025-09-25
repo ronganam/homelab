@@ -33,7 +33,6 @@ spec:
         revision: HEAD
         files:
           - path: infra/*/app.yaml
-          - path: infra/*/helm/app.yaml
   template:
     metadata:
       name: '{{ .name }}'

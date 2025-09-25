@@ -13,11 +13,10 @@ stirling-pdf-chart:
     labels:
       dns.service-controller.io/enabled: "true"
       dns.service-controller.io/hostname: pdf.buildin.group
-      exposure.service-controller.io/type: public
+      exposure.service-controller.io/type: internal
 
-  # Using ClusterIP + external tunnel/DNS controller, so keep ingress off by default
   ingress:
-    enabled: false
+    enabled: true
     ingressClassName: nginx
     annotations: {}
     hosts:
@@ -47,5 +46,22 @@ stirling-pdf-chart:
     limits:
       cpu: 300m
       memory: 1Gi
+
+
+  probes:
+    liveness:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 12
+    readiness:
+      enabled: true
+      initialDelaySeconds: 20
+      periodSeconds: 5
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 12
 
 

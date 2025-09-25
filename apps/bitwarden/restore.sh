@@ -85,14 +85,14 @@ spec:
   restartPolicy: Never
   securityContext:
     fsGroup: 33
-    runAsNonRoot: true
-    runAsUser: 33
-    runAsGroup: 33
+    runAsNonRoot: false
+    runAsUser: 0
+    runAsGroup: 0
   containers:
     - name: restore
-      image: alpine:3.20
+      image: restic/restic:latest
       command: ["/bin/sh","-c"]
-      args: ["apk add --no-cache restic bash ca-certificates && sleep 3600"]
+      args: ["sleep 3600"]
       envFrom:
         - secretRef:
             name: ${RESTIC_SECRET}
@@ -109,7 +109,7 @@ info "Waiting for 'vw-restore' to be Ready"
 kubectl -n "$NS" wait --for=condition=Ready pod/vw-restore --timeout=180s
 
 info "Running restic restore (${SNAPSHOT})"
-kubectl -n "$NS" exec vw-restore -- sh -lc "restic restore ${SNAPSHOT} --target /"
+kubectl -n "$NS" exec vw-restore -c restore -- sh -lc "restic restore ${SNAPSHOT} --target /"
 
 info "Cleaning up restore pod"
 kubectl -n "$NS" delete pod vw-restore --wait=true

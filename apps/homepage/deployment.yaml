@@ -37,7 +37,7 @@ data:
             description: GitOps Continuous Delivery
             icon: argocd
         - Longhorn:
-            href: http://longhorn.buildin.group
+            href: https://longhorn.buildin.group
             description: Distributed Block Storage
             icon: longhorn
         - Kubernetes Dashboard:
@@ -47,11 +47,11 @@ data:
 
     - Monitoring:
         - Prometheus:
-            href: http://prometheus.buildin.group
+            href: https://prometheus.buildin.group
             description: Metrics Collection
             icon: prometheus
         - Grafana:
-            href: http://grafana.buildin.group
+            href: https://grafana.buildin.group
             description: Monitoring Dashboards
             icon: grafana
 
@@ -60,6 +60,10 @@ data:
             href: https://n9n.buildin.group
             description: Workflow Automation
             icon: n8n
+        - Vaultwarden:
+            href: https://bitwarden.buildin.group
+            description: Password Manager
+            icon: vaultwarden
         - Homepage:
             href: https://homepage.buildin.group
             description: Homelab Dashboard
@@ -97,6 +101,10 @@ data:
     # Docker integration disabled for K8s deployment
   kubernetes.yaml: |
     mode: cluster
+    ingress: true
+    traefik: true
+    # Enable only if Gateway API CRDs are installed in the cluster
+    gateway: false
   custom.css: |
     /* Custom CSS for Homepage */
     /* Add your custom styles here */
@@ -216,6 +224,20 @@ rules:
       - traefik.containo.us
     resources:
       - ingressroutes
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - traefik.io
+    resources:
+      - ingressroutes
+    verbs:
+      - get
+      - list
+  - apiGroups:
+      - gateway.networking.k8s.io
+    resources:
+      - httproutes
     verbs:
       - get
       - list

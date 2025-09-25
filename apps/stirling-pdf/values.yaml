@@ -9,11 +9,10 @@ stirling-pdf-chart:
   service:
     type: ClusterIP
     externalPort: 80
-    targetPort: 8080
     annotations: {}
     labels:
       dns.service-controller.io/enabled: "true"
-      dns.service-controller.io/hostname: stirling-pdf.buildin.group
+      dns.service-controller.io/hostname: pdf.buildin.group
       exposure.service-controller.io/type: public
 
   # Using ClusterIP + external tunnel/DNS controller, so keep ingress off by default
@@ -22,7 +21,7 @@ stirling-pdf-chart:
     ingressClassName: nginx
     annotations: {}
     hosts:
-      - name: stirling-pdf.buildin.group
+      - name: pdf.buildin.group
         path: /
         tls: false
 

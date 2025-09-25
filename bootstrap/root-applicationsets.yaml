@@ -51,7 +51,10 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{ .namespace }}'
-      # syncPolicy intentionally omitted to allow manual control via UI/CLI
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+      # Auto-sync is still disabled; only syncOptions are set
       ignoreDifferences:
         - group: ""
           kind: ConfigMap
@@ -91,4 +94,7 @@ spec:
       destination:
         server: https://kubernetes.default.svc
         namespace: '{{path.basename}}'
-      # syncPolicy intentionally omitted to allow manual control via UI/CLI
+      syncPolicy:
+        syncOptions:
+          - CreateNamespace=true
+      # Auto-sync is still disabled; only syncOptions are set

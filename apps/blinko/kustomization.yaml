@@ -6,7 +6,7 @@ resources:
   - service.yaml
   - postgres-statefulset.yaml
   - postgres-service.yaml
-  # Ingress removed for internal-only exposure
+  - ingress.yaml
 namespace: blinko
 
 

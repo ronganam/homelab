@@ -37,7 +37,7 @@ spec:
                   name: blinko-postgres
                   key: password
             - name: TZ
-              value: Asia/Shanghai
+              value: Asia/Jerusalem
           volumeMounts:
             - name: data
               mountPath: /var/lib/postgresql/data
@@ -66,7 +66,7 @@ spec:
           - ReadWriteOnce
         resources:
           requests:
-            storage: 5Gi
+            storage: 256Mi
         storageClassName: longhorn
 
 

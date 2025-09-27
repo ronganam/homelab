@@ -1,0 +1,111 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: speakr
+  namespace: speakr
+  labels:
+    app: speakr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: speakr
+  template:
+    metadata:
+      labels:
+        app: speakr
+    spec:
+      containers:
+        - name: speakr
+          image: learnedmachine/speakr:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8899
+              name: http
+          env:
+            - name: LOG_LEVEL
+              value: "ERROR"
+            - name: TEXT_MODEL_BASE_URL
+              value: "https://api.openai.com/v1"
+            - name: TEXT_MODEL_NAME
+              value: "openai/gpt-4o-mini"
+            - name: TRANSCRIPTION_BASE_URL
+              value: "https://api.openai.com/v1"
+            - name: WHISPER_MODEL
+              value: "whisper-1"
+            - name: ALLOW_REGISTRATION
+              value: "false"
+            - name: SUMMARY_MAX_TOKENS
+              value: "8000"
+            - name: CHAT_MAX_TOKENS
+              value: "5000"
+            - name: TIMEZONE
+              value: "Asia/Jerusalem"
+            - name: ENABLE_CHUNKING
+              value: "true"
+            - name: CHUNK_LIMIT
+              value: "20MB"
+            - name: CHUNK_OVERLAP_SECONDS
+              value: "3"
+            - name: ADMIN_USERNAME
+              value: "ronganam"
+            - name: ADMIN_EMAIL
+              value: "ronganam@gmail.com"
+            - name: ENABLE_INQUIRE_MODE
+              value: "false"
+            - name: ENABLE_AUTO_PROCESSING
+              value: "false"
+            - name: SQLALCHEMY_DATABASE_URI
+              value: "sqlite:////data/instance/transcriptions.db"
+            - name: UPLOAD_FOLDER
+              value: "/data/uploads"
+            - name: TEXT_MODEL_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: speakr-config
+                  key: text_model_api_key
+            - name: TRANSCRIPTION_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: speakr-config
+                  key: transcription_api_key
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: speakr-config
+                  key: admin_password
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 300m
+              memory: 512Mi
+          volumeMounts:
+            - name: instance
+              mountPath: /data/instance
+            - name: uploads
+              mountPath: /data/uploads
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: instance
+          persistentVolumeClaim:
+            claimName: speakr-instance
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: speakr-uploads

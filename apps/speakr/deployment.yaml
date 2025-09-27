@@ -104,8 +104,6 @@ spec:
             failureThreshold: 3
       volumes:
         - name: instance
-          persistentVolumeClaim:
-            claimName: speakr-instance
+          emptyDir: {}
         - name: uploads
-          persistentVolumeClaim:
-            claimName: speakr-uploads
+          emptyDir: {}

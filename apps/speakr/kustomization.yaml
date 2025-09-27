@@ -5,6 +5,5 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
-  - pvc-instance.yaml
-  - pvc-uploads.yaml
+  # PVCs removed for simplicity; using emptyDir volumes
 namespace: speakr

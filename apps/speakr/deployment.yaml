@@ -56,9 +56,9 @@ spec:
             - name: ENABLE_AUTO_PROCESSING
               value: "false"
             - name: SQLALCHEMY_DATABASE_URI
-              value: "sqlite:////data/instance/transcriptions.db"
+              value: "sqlite:////app/instance/transcriptions.db"
             - name: UPLOAD_FOLDER
-              value: "/data/uploads"
+              value: "/app/uploads"
             - name: TEXT_MODEL_API_KEY
               valueFrom:
                 secretKeyRef:
@@ -83,9 +83,9 @@ spec:
               memory: 2Gi
           volumeMounts:
             - name: instance
-              mountPath: /data/instance
+              mountPath: /app/instance
             - name: uploads
-              mountPath: /data/uploads
+              mountPath: /app/uploads
           # livenessProbe:
           #   httpGet:
           #     path: /

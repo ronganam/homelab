@@ -28,7 +28,7 @@ spec:
             - name: TEXT_MODEL_BASE_URL
               value: "https://api.openai.com/v1"
             - name: TEXT_MODEL_NAME
-              value: "gpt-5-mini"
+              value: "gpt-4o-mini"
             - name: TRANSCRIPTION_BASE_URL
               value: "https://api.openai.com/v1"
             - name: WHISPER_MODEL

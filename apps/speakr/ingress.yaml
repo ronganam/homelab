@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: speakr
+  namespace: speakr
+  annotations:
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    - host: speakr.buildin.group
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: speakr
+                port:
+                  number: 8899

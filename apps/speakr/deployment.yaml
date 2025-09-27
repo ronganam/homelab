@@ -76,11 +76,11 @@ spec:
                   key: admin_password
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
-            limits:
               cpu: 300m
-              memory: 512Mi
+              memory: 1.5Gi
+            limits:
+              cpu: 500m
+              memory: 2Gi
           volumeMounts:
             - name: instance
               mountPath: /data/instance

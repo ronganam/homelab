@@ -64,7 +64,519 @@ metadata:
   name: service-controller-script
   namespace: cloudflare-tunnel
 data:
-  controller.py: "#!/usr/bin/env python3\n\nimport os\nimport time\nimport yaml\nimport json\nimport subprocess\nimport hashlib\nfrom kubernetes import client, config, watch\n\n# Label constants\nDNS_ENABLED_LABEL = \"dns.service-controller.io/enabled\"\nDNS_HOSTNAME_LABEL = \"dns.service-controller.io/hostname\"\nEXPOSURE_TYPE_LABEL = \"exposure.service-controller.io/type\"  # \"public\" or \"internal\"\n\n# Exposure types\nEXPOSURE_PUBLIC = \"public\"\nEXPOSURE_INTERNAL = \"internal\"\n\nclass ServiceController:\n    def __init__(self):\n        self.v1 = None\n        self.apps_v1 = None\n        self.tunnel_config_hash = None\n        self.last_config_update = 0\n        # Ingress settings for internal services\n        self.ingress_namespace = os.environ.get('INGRESS_NAMESPACE', 'ingress-nginx')\n        self.ingress_service_name = os.environ.get('INGRESS_SERVICE_NAME', 'ingress-nginx-controller')\n        \n    def get_service_port(self, service_name, namespace):\n        \"\"\"Get the port of a service\"\"\"\n        try:\n            service = self.v1.read_namespaced_service(service_name, namespace)\n            if service.spec.ports:\n                return service.spec.ports[0].port\n            return 80\n        except Exception as e:\n            print(f\"⚠️  Error getting port for {service_name}.{namespace}: {e}\")\n            return 80\n    \n    def get_service_external_ip(self, service_name, namespace):\n        \"\"\"Get the external IP of a service (for MetalLB)\"\"\"\n        try:\n            service = self.v1.read_namespaced_service(service_name, namespace)\n            if service.status.load_balancer and service.status.load_balancer.ingress:\n                return service.status.load_balancer.ingress[0].ip\n            return None\n        except Exception as e:\n            print(f\"⚠️  Error getting external IP for {service_name}.{namespace}: {e}\")\n            return None\n\n    def get_ingress_external_ip(self):\n        \"\"\"Get the external IP of the ingress controller service for internal HTTPS\"\"\"\n        try:\n            service = self.v1.read_namespaced_service(self.ingress_service_name, self.ingress_namespace)\n            if service.status.load_balancer and service.status.load_balancer.ingress:\n                ip = service.status.load_balancer.ingress[0].ip\n                if ip:\n                    return ip\n            return None\n        except Exception as e:\n            print(f\"⚠️  Error getting external IP for ingress {self.ingress_service_name}.{self.ingress_namespace}: {e}\")\n            return None\n    \n    def create_cloudflare_dns_route(self, hostname):\n        \"\"\"Create DNS route using cloudflared for public services\"\"\"\n        try:\n            print(f\"🌐 Creating Cloudflare DNS route for {hostname}\")\n            \n            cmd = [\n                'kubectl', 'exec', '-n', 'cloudflare-tunnel', \n                'deployment/cloudflared', '--', 'cloudflared', \n                'tunnel', 'route', 'dns', '--overwrite-dns', \n                'homelab-tunnel', hostname\n            ]\n            result = subprocess.run(cmd, capture_output=True, text=True)\n            if result.returncode == 0:\n                print(f\"✅ Created Cloudflare DNS route for {hostname}\")\n                return True\n            else:\n                print(f\"⚠️  Cloudflare DNS route creation failed for {hostname}: {result.stderr}\")\n                # Try without overwrite flag as fallback\n                cmd_fallback = [\n                    'kubectl', 'exec', '-n', 'cloudflare-tunnel', \n                    'deployment/cloudflared', '--', 'cloudflared', \n                    'tunnel', 'route', 'dns', 'homelab-tunnel', \n                    hostname\n                ]\n                result_fallback = subprocess.run(cmd_fallback, capture_output=True, text=True)\n                if result_fallback.returncode == 0:\n                    print(f\"✅ Created Cloudflare DNS route for {hostname} (fallback)\")\n                    return True\n                else:\n                    print(f\"❌ Failed to create Cloudflare DNS route for {hostname}: {result_fallback.stderr}\")\n                    return False\n        except Exception as e:\n            print(f\"❌ Error creating Cloudflare DNS route for {hostname}: {e}\")\n            return False\n    \n    def create_internal_dns_entry(self, hostname, ip_address):\n        \"\"\"Create internal DNS entry using MetalLB IP via Cloudflare API\"\"\"\n        try:\n            print(f\"🏠 Creating internal DNS entry for {hostname} -> {ip_address}\")\n            \n            # Get Cloudflare API credentials from environment or secret\n            api_token = os.environ.get('CLOUDFLARE_API_TOKEN')\n            if not api_token:\n                print(\"⚠️  CLOUDFLARE_API_TOKEN not found in environment variables\")\n                return False\n            \n            # Extract domain from hostname (e.g., \"service.internal.example.com\" -> \"example.com\")\n            domain_parts = hostname.split('.')\n            if len(domain_parts) < 2:\n                print(f\"⚠️  Invalid hostname format: {hostname}\")\n                return False\n            \n            # Get domain (last two parts: example.com)\n            domain = '.'.join(domain_parts[-2:])\n            subdomain = '.'.join(domain_parts[:-2]) if len(domain_parts) > 2 else '@'\n            \n            print(f\"🔍 Domain: {domain}, Subdomain: {subdomain}\")\n            \n            # Get zone ID for the domain\n            zone_id = self.get_cloudflare_zone_id(domain, api_token)\n            if not zone_id:\n                print(f\"❌ Could not find zone ID for domain: {domain}\")\n                return False\n            \n            # Check if record already exists\n            existing_record = self.get_existing_dns_record(zone_id, subdomain, domain, api_token)\n            \n            if existing_record:\n                # Update existing record if IP is different\n                if existing_record.get('content') != ip_address:\n                    print(f\"🔄 Updating existing DNS record for {hostname}\")\n                    success = self.update_dns_record(zone_id, existing_record['id'], subdomain, ip_address, api_token)\n                    if success:\n                        print(f\"✅ Updated DNS record for {hostname} -> {ip_address}\")\n                    return success\n                else:\n                    print(f\"ℹ️  DNS record for {hostname} already exists with correct IP\")\n                    return True\n            else:\n                # Create new record\n                print(f\"🆕 Creating new DNS record for {hostname}\")\n                success = self.create_dns_record(zone_id, subdomain, ip_address, api_token, domain)\n                if success:\n                    print(f\"✅ Created DNS record for {hostname} -> {ip_address}\")\n                return success\n            \n        except Exception as e:\n            print(f\"❌ Error creating internal DNS entry for {hostname}: {e}\")\n            return False\n    \n    def get_cloudflare_zone_id(self, domain, api_token):\n        \"\"\"Get Cloudflare zone ID for a domain\"\"\"\n        try:\n            import requests\n            \n            headers = {\n                'Authorization': f'Bearer {api_token}',\n                'Content-Type': 'application/json'\n            }\n            \n            url = f'https://api.cloudflare.com/client/v4/zones?name={domain}'\n            response = requests.get(url, headers=headers, timeout=10)\n            \n            if response.status_code == 200:\n                data = response.json()\n                if data.get('success') and data.get('result'):\n                    zone_id = data['result'][0]['id']\n                    print(f\"✅ Found zone ID for {domain}: {zone_id}\")\n                    return zone_id\n                else:\n                    print(f\"❌ No zone found for domain: {domain}\")\n                    return None\n            else:\n                print(f\"❌ Failed to get zone ID: {response.status_code} - {response.text}\")\n                return None\n                \n        except Exception as e:\n            print(f\"❌ Error getting zone ID: {e}\")\n            return None\n    \n    def get_existing_dns_record(self, zone_id, subdomain, domain, api_token):\n        \"\"\"Get existing DNS record if it exists\"\"\"\n        try:\n            import requests\n            \n            headers = {\n                'Authorization': f'Bearer {api_token}',\n                'Content-Type': 'application/json'\n            }\n            \n            # Construct the full name for the record\n            record_name = f\"{subdomain}.{domain}\" if subdomain != '@' else domain\n            \n            url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={record_name}&type=A'\n            response = requests.get(url, headers=headers, timeout=10)\n            \n            if response.status_code == 200:\n                data = response.json()\n                if data.get('success') and data.get('result'):\n                    return data['result'][0]  # Return first matching record\n                else:\n                    return None\n            else:\n                print(f\"❌ Failed to check existing records: {response.status_code}\")\n                return None\n                \n        except Exception as e:\n            print(f\"❌ Error checking existing DNS record: {e}\")\n            return None\n    \n    def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):\n        \"\"\"Create a new DNS A record\"\"\"\n        try:\n            import requests\n            \n            headers = {\n                'Authorization': f'Bearer {api_token}',\n                'Content-Type': 'application/json'\n            }\n            \n            # Construct the full name for the record\n            record_name = f\"{subdomain}.{domain}\" if subdomain != '@' else domain\n            \n            data = {\n                'type': 'A',\n                'name': record_name,\n                'content': ip_address,\n                'ttl': 300,  # 5 minutes TTL\n                'proxied': False  # Don't proxy internal services\n            }\n            \n            url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'\n            response = requests.post(url, headers=headers, json=data, timeout=10)\n            \n            if response.status_code == 200:\n                result = response.json()\n                if result.get('success'):\n                    return True\n                else:\n                    print(f\"❌ Failed to create DNS record: {result.get('errors', [])}\")\n                    return False\n            else:\n                print(f\"❌ Failed to create DNS record: {response.status_code} - {response.text}\")\n                return False\n                \n        except Exception as e:\n            print(f\"❌ Error creating DNS record: {e}\")\n            return False\n    \n    def update_dns_record(self, zone_id, record_id, subdomain, ip_address, api_token):\n        \"\"\"Update an existing DNS A record\"\"\"\n        try:\n            import requests\n            \n            headers = {\n                'Authorization': f'Bearer {api_token}',\n                'Content-Type': 'application/json'\n            }\n            \n            # Include the record name to avoid 9000 DNS name is invalid errors\n            # Cloudflare requires 'name' when updating certain records\n            data = {\n                'type': 'A',\n                'name': subdomain if subdomain != '@' else None,\n                'content': ip_address,\n                'ttl': 300,\n                'proxied': False\n            }\n            # Remove name if it's None to avoid sending null\n            if data['name'] is None:\n                del data['name']\n            \n            url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}'\n            response = requests.put(url, headers=headers, json=data, timeout=10)\n            \n            if response.status_code == 200:\n                result = response.json()\n                if result.get('success'):\n                    return True\n                else:\n                    print(f\"❌ Failed to update DNS record: {result.get('errors', [])}\")\n                    return False\n            else:\n                print(f\"❌ Failed to update DNS record: {response.status_code} - {response.text}\")\n                return False\n                \n        except Exception as e:\n            print(f\"❌ Error updating DNS record: {e}\")\n            return False\n    \n    def calculate_config_hash(self, config_data):\n        \"\"\"Calculate hash of tunnel configuration to detect changes\"\"\"\n        config_str = yaml.dump(config_data, default_flow_style=False, sort_keys=True)\n        return hashlib.md5(config_str.encode()).hexdigest()\n    \n    def update_tunnel_config(self, service_name, hostname, namespace, port):\n        \"\"\"Update the tunnel configuration for public services\"\"\"\n        try:\n            print(f\"🔧 Adding tunnel ingress rule for {hostname}\")\n            \n            # Get current config\n            configmap = self.v1.read_namespaced_config_map(\"cloudflared-config\", \"cloudflare-tunnel\")\n            current_config = configmap.data[\"config.yaml\"]\n            \n            # Parse the YAML config\n            config_data = yaml.safe_load(current_config)\n            \n            # Check if rule already exists\n            for rule in config_data.get(\"ingress\", []):\n                if isinstance(rule, dict) and rule.get(\"hostname\") == hostname:\n                    print(f\"⚠️  Tunnel ingress rule for {hostname} already exists\")\n                    return True\n            \n            # Add new rule before catch-all\n            new_rule = {\n                \"hostname\": hostname,\n                \"service\": f\"http://{service_name}.{namespace}.svc.cluster.local:{port}\"\n            }\n            \n            # Insert before the catch-all rule\n            ingress_rules = config_data.get(\"ingress\", [])\n            for i, rule in enumerate(ingress_rules):\n                if isinstance(rule, dict) and rule.get(\"service\") == \"http_status:404\":\n                    ingress_rules.insert(i, new_rule)\n                    break\n            else:\n                ingress_rules.append(new_rule)\n            \n            config_data[\"ingress\"] = ingress_rules\n            \n            # Calculate new config hash\n            new_hash = self.calculate_config_hash(config_data)\n            \n            # Only update if config actually changed\n            if new_hash != self.tunnel_config_hash:\n                # Update the configmap\n                updated_config = yaml.dump(config_data, default_flow_style=False)\n                configmap.data[\"config.yaml\"] = updated_config\n                self.v1.patch_namespaced_config_map(\"cloudflared-config\", \"cloudflare-tunnel\", configmap)\n                \n                # Update hash and timestamp\n                self.tunnel_config_hash = new_hash\n                self.last_config_update = time.time()\n                \n                # Note: cloudflared will automatically reload config when ConfigMap changes\n                # No need to restart the deployment manually\n                print(f\"ℹ️  Config updated, cloudflared will automatically reload\")\n                \n                print(f\"✅ Updated tunnel config for {hostname}\")\n            else:\n                print(f\"ℹ️  Tunnel config unchanged for {hostname}, skipping restart\")\n            \n            return True\n            \n        except Exception as e:\n            print(f\"❌ Error updating tunnel config: {e}\")\n            return False\n    \n    def process_service_event(self, event_type, service):\n        \"\"\"Process service events\"\"\"\n        try:\n            if not service or not service.metadata:\n                return\n                \n            service_name = service.metadata.name\n            namespace = service.metadata.namespace\n            labels = service.metadata.labels or {}\n            \n            # Check if DNS is enabled for this service\n            if labels.get(DNS_ENABLED_LABEL) != \"true\":\n                return\n            \n            hostname = labels.get(DNS_HOSTNAME_LABEL)\n            exposure_type = labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC)\n            \n            if not hostname:\n                print(f\"⚠️  Service {service_name}.{namespace} has DNS enabled but no hostname specified\")\n                return\n            \n            print(f\"🔍 Processing {event_type} event for {service_name}.{namespace} -> {hostname} (exposure: {exposure_type})\")\n            \n            if event_type in [\"ADDED\", \"MODIFIED\", \"EXISTING\"]:\n                if exposure_type == EXPOSURE_PUBLIC:\n                    # Handle public services (tunneled)\n                    port = self.get_service_port(service_name, namespace)\n                    dns_success = self.create_cloudflare_dns_route(hostname)\n                    if dns_success:\n                        self.update_tunnel_config(service_name, hostname, namespace, port)\n                elif exposure_type == EXPOSURE_INTERNAL:\n                    # Handle internal services via Ingress controller IP (MetalLB)\n                    external_ip = self.get_ingress_external_ip()\n                    if external_ip:\n                        self.create_internal_dns_entry(hostname, external_ip)\n                    else:\n                        print(f\"⚠️  Ingress controller has no external IP/hostname yet; cannot create DNS for {hostname}\")\n                else:\n                    print(f\"⚠️  Unknown exposure type '{exposure_type}' for service {service_name}.{namespace}\")\n                    \n        except Exception as e:\n            print(f\"❌ Error processing service event: {e}\")\n    \n    def get_services_with_dns_label(self):\n        \"\"\"Get all services that have DNS enabled using label selector\"\"\"\n        try:\n            # Use label selector for efficient querying\n            label_selector = f\"{DNS_ENABLED_LABEL}=true\"\n            services = self.v1.list_service_for_all_namespaces(label_selector=label_selector)\n            return services.items\n        except Exception as e:\n            print(f\"❌ Error getting services with DNS label: {e}\")\n            return []\n    \n    def main(self):\n        \"\"\"Main controller loop\"\"\"\n        try:\n            print(\"🔍 Loading Kubernetes config...\")\n            import sys\n            sys.stdout.flush()\n            \n            # Debug environment variables\n            print(f\"🔍 KUBERNETES_SERVICE_HOST: {os.environ.get('KUBERNETES_SERVICE_HOST', 'Not set')}\")\n            print(f\"🔍 KUBERNETES_SERVICE_PORT: {os.environ.get('KUBERNETES_SERVICE_PORT', 'Not set')}\")\n            print(f\"🔍 KUBECONFIG: {os.environ.get('KUBECONFIG', 'Not set')}\")\n            \n            # Load kubeconfig - try in-cluster first, then fallback to kubeconfig\n            try:\n                config.load_incluster_config()\n                print(\"✅ Kubernetes in-cluster config loaded\")\n            except Exception as e:\n                print(f\"⚠️  In-cluster config failed: {e}\")\n                print(\"🔄 Trying kubeconfig...\")\n                config.load_kube_config()\n                print(\"✅ Kubernetes kubeconfig loaded\")\n            \n            # Initialize Kubernetes clients after config is loaded\n            self.v1 = client.CoreV1Api()\n            self.apps_v1 = client.AppsV1Api()\n            \n            sys.stdout.flush()\n            \n            print(\"✅ Service Controller initialized\")\n            sys.stdout.flush()\n            \n            # Test Kubernetes API connection\n            try:\n                print(\"🔍 Testing Kubernetes API connection...\")\n                sys.stdout.flush()\n                # Try a simple API call to test connection\n                self.v1.list_namespace()\n                print(\"✅ Kubernetes API connection successful\")\n                sys.stdout.flush()\n            except Exception as e:\n                print(f\"❌ Kubernetes API connection failed: {e}\")\n                print(\"🔄 Retrying in 10 seconds...\")\n                sys.stdout.flush()\n                time.sleep(10)\n                return self.main()\n            \n            # Process existing services with DNS enabled\n            print(\"🔍 Processing existing services with DNS enabled...\")\n            sys.stdout.flush()\n            existing_services = self.get_services_with_dns_label()\n            for service in existing_services:\n                self.process_service_event(\"EXISTING\", service)\n            \n            # Watch for changes using label selector for efficiency\n            print(\"👀 Watching for service changes with DNS enabled...\")\n            sys.stdout.flush()\n            w = watch.Watch()\n            \n            # Watch only services with DNS enabled label\n            label_selector = f\"{DNS_ENABLED_LABEL}=true\"\n            try:\n                for event in w.stream(self.v1.list_service_for_all_namespaces, label_selector=label_selector):\n                    self.process_service_event(event[\"type\"], event[\"object\"])\n            except Exception as e:\n                print(f\"❌ Watch stream error: {e}\")\n                print(\"🔄 Restarting watch in 5 seconds...\")\n                sys.stdout.flush()\n                time.sleep(5)\n                return self.main()\n                \n        except Exception as e:\n            print(f\"❌ Controller error: {e}\")\n            import traceback\n            traceback.print_exc()\n            time.sleep(10)\n            self.main()\n\nif __name__ == \"__main__\":\n    controller = ServiceController()\n    controller.main()\n"
+  controller.py: |-
+    #!/usr/bin/env python3
+
+    import os
+    import time
+    import yaml
+    import json
+    import subprocess
+    import hashlib
+    from kubernetes import client, config, watch
+
+    # Label constants
+    DNS_ENABLED_LABEL = "dns.service-controller.io/enabled"
+    DNS_HOSTNAME_LABEL = "dns.service-controller.io/hostname"
+    EXPOSURE_TYPE_LABEL = "exposure.service-controller.io/type"  # "public" or "internal"
+
+    # Exposure types
+    EXPOSURE_PUBLIC = "public"
+    EXPOSURE_INTERNAL = "internal"
+
+    class ServiceController:
+        def __init__(self):
+            self.v1 = None
+            self.apps_v1 = None
+            self.tunnel_config_hash = None
+            self.last_config_update = 0
+            # Ingress settings for internal services
+            self.ingress_namespace = os.environ.get('INGRESS_NAMESPACE', 'ingress-nginx')
+            self.ingress_service_name = os.environ.get('INGRESS_SERVICE_NAME', 'ingress-nginx-controller')
+
+        def get_service_port(self, service_name, namespace):
+            """Get the port of a service"""
+            try:
+                service = self.v1.read_namespaced_service(service_name, namespace)
+                if service.spec.ports:
+                    return service.spec.ports[0].port
+                return 80
+            except Exception as e:
+                print(f"⚠️  Error getting port for {service_name}.{namespace}: {e}")
+                return 80
+
+        def get_service_external_ip(self, service_name, namespace):
+            """Get the external IP of a service (for MetalLB)"""
+            try:
+                service = self.v1.read_namespaced_service(service_name, namespace)
+                if service.status.load_balancer and service.status.load_balancer.ingress:
+                    return service.status.load_balancer.ingress[0].ip
+                return None
+            except Exception as e:
+                print(f"⚠️  Error getting external IP for {service_name}.{namespace}: {e}")
+                return None
+
+        def get_ingress_external_ip(self):
+            """Get the external IP of the ingress controller service for internal HTTPS"""
+            try:
+                service = self.v1.read_namespaced_service(self.ingress_service_name, self.ingress_namespace)
+                if service.status.load_balancer and service.status.load_balancer.ingress:
+                    ip = service.status.load_balancer.ingress[0].ip
+                    if ip:
+                        return ip
+                return None
+            except Exception as e:
+                print(f"⚠️  Error getting external IP for ingress {self.ingress_service_name}.{self.ingress_namespace}: {e}")
+                return None
+
+        def create_cloudflare_dns_route(self, hostname):
+            """Create DNS route using cloudflared for public services"""
+            try:
+                print(f"🌐 Creating Cloudflare DNS route for {hostname}")
+
+                cmd = [
+                    'kubectl', 'exec', '-n', 'cloudflare-tunnel',
+                    'deployment/cloudflared', '--', 'cloudflared',
+                    'tunnel', 'route', 'dns', '--overwrite-dns',
+                    'homelab-tunnel', hostname
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True)
+                if result.returncode == 0:
+                    print(f"✅ Created Cloudflare DNS route for {hostname}")
+                    return True
+                else:
+                    print(f"⚠️  Cloudflare DNS route creation failed for {hostname}: {result.stderr}")
+                    # Try without overwrite flag as fallback
+                    cmd_fallback = [
+                        'kubectl', 'exec', '-n', 'cloudflare-tunnel',
+                        'deployment/cloudflared', '--', 'cloudflared',
+                        'tunnel', 'route', 'dns', 'homelab-tunnel',
+                        hostname
+                    ]
+                    result_fallback = subprocess.run(cmd_fallback, capture_output=True, text=True)
+                    if result_fallback.returncode == 0:
+                        print(f"✅ Created Cloudflare DNS route for {hostname} (fallback)")
+                        return True
+                    else:
+                        print(f"❌ Failed to create Cloudflare DNS route for {hostname}: {result_fallback.stderr}")
+                        return False
+            except Exception as e:
+                print(f"❌ Error creating Cloudflare DNS route for {hostname}: {e}")
+                return False
+
+        def create_internal_dns_entry(self, hostname, ip_address):
+            """Create internal DNS entry using MetalLB IP via Cloudflare API"""
+            try:
+                print(f"🏠 Creating internal DNS entry for {hostname} -> {ip_address}")
+
+                # Get Cloudflare API credentials from environment or secret
+                api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+                if not api_token:
+                    print("⚠️  CLOUDFLARE_API_TOKEN not found in environment variables")
+                    return False
+
+                # Extract domain from hostname (e.g., "service.internal.example.com" -> "example.com")
+                domain_parts = hostname.split('.')
+                if len(domain_parts) < 2:
+                    print(f"⚠️  Invalid hostname format: {hostname}")
+                    return False
+
+                # Get domain (last two parts: example.com)
+                domain = '.'.join(domain_parts[-2:])
+                subdomain = '.'.join(domain_parts[:-2]) if len(domain_parts) > 2 else '@'
+
+                print(f"🔍 Domain: {domain}, Subdomain: {subdomain}")
+
+                # Get zone ID for the domain
+                zone_id = self.get_cloudflare_zone_id(domain, api_token)
+                if not zone_id:
+                    print(f"❌ Could not find zone ID for domain: {domain}")
+                    return False
+
+                # Check if record already exists
+                existing_record = self.get_existing_dns_record(zone_id, subdomain, domain, api_token)
+
+                if existing_record:
+                    # Update existing record if IP is different
+                    if existing_record.get('content') != ip_address:
+                        print(f"🔄 Updating existing DNS record for {hostname}")
+                        success = self.update_dns_record(zone_id, existing_record['id'], subdomain, ip_address, api_token)
+                        if success:
+                            print(f"✅ Updated DNS record for {hostname} -> {ip_address}")
+                        return success
+                    else:
+                        print(f"ℹ️  DNS record for {hostname} already exists with correct IP")
+                        return True
+                else:
+                    # Create new record
+                    print(f"🆕 Creating new DNS record for {hostname}")
+                    success = self.create_dns_record(zone_id, subdomain, ip_address, api_token, domain)
+                    if success:
+                        print(f"✅ Created DNS record for {hostname} -> {ip_address}")
+                    return success
+
+            except Exception as e:
+                print(f"❌ Error creating internal DNS entry for {hostname}: {e}")
+                return False
+
+        def get_cloudflare_zone_id(self, domain, api_token):
+            """Get Cloudflare zone ID for a domain"""
+            try:
+                import requests
+
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+
+                url = f'https://api.cloudflare.com/client/v4/zones?name={domain}'
+                response = requests.get(url, headers=headers, timeout=10)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('success') and data.get('result'):
+                        zone_id = data['result'][0]['id']
+                        print(f"✅ Found zone ID for {domain}: {zone_id}")
+                        return zone_id
+                    else:
+                        print(f"❌ No zone found for domain: {domain}")
+                        return None
+                else:
+                    print(f"❌ Failed to get zone ID: {response.status_code} - {response.text}")
+                    return None
+
+            except Exception as e:
+                print(f"❌ Error getting zone ID: {e}")
+                return None
+
+        def get_existing_dns_record(self, zone_id, subdomain, domain, api_token):
+            """Get existing DNS record if it exists"""
+            try:
+                import requests
+
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+
+                # Construct the full name for the record
+                record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
+
+                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={record_name}&type=A'
+                response = requests.get(url, headers=headers, timeout=10)
+
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('success') and data.get('result'):
+                        return data['result'][0]  # Return first matching record
+                    else:
+                        return None
+                else:
+                    print(f"❌ Failed to check existing records: {response.status_code}")
+                    return None
+
+            except Exception as e:
+                print(f"❌ Error checking existing DNS record: {e}")
+                return None
+
+        def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):
+            """Create a new DNS A record"""
+            try:
+                import requests
+
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+
+                # Construct the full name for the record
+                record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
+
+                data = {
+                    'type': 'A',
+                    'name': record_name,
+                    'content': ip_address,
+                    'ttl': 300,  # 5 minutes TTL
+                    'proxied': False  # Don't proxy internal services
+                }
+
+                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
+                response = requests.post(url, headers=headers, json=data, timeout=10)
+
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get('success'):
+                        return True
+                    else:
+                        print(f"❌ Failed to create DNS record: {result.get('errors', [])}")
+                        return False
+                else:
+                    print(f"❌ Failed to create DNS record: {response.status_code} - {response.text}")
+                    return False
+
+            except Exception as e:
+                print(f"❌ Error creating DNS record: {e}")
+                return False
+
+        def update_dns_record(self, zone_id, record_id, subdomain, ip_address, api_token):
+            """Update an existing DNS A record"""
+            try:
+                import requests
+
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+
+                # Include the record name to avoid 9000 DNS name is invalid errors
+                # Cloudflare requires 'name' when updating certain records
+                data = {
+                    'type': 'A',
+                    'name': subdomain if subdomain != '@' else None,
+                    'content': ip_address,
+                    'ttl': 300,
+                    'proxied': False
+                }
+                # Remove name if it's None to avoid sending null
+                if data['name'] is None:
+                    del data['name']
+
+                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}'
+                response = requests.put(url, headers=headers, json=data, timeout=10)
+
+                if response.status_code == 200:
+                    result = response.json()
+                    if result.get('success'):
+                        return True
+                    else:
+                        print(f"❌ Failed to update DNS record: {result.get('errors', [])}")
+                        return False
+                else:
+                    print(f"❌ Failed to update DNS record: {response.status_code} - {response.text}")
+                    return False
+
+            except Exception as e:
+                print(f"❌ Error updating DNS record: {e}")
+                return False
+
+        def calculate_config_hash(self, config_data):
+            """Calculate hash of tunnel configuration to detect changes"""
+            config_str = yaml.dump(config_data, default_flow_style=False, sort_keys=True)
+            return hashlib.md5(config_str.encode()).hexdigest()
+
+        def update_tunnel_config(self, service_name, hostname, namespace, port):
+            """Update the tunnel configuration for public services"""
+            try:
+                print(f"🔧 Adding tunnel ingress rule for {hostname}")
+
+                # Get current config
+                configmap = self.v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
+                current_config = configmap.data["config.yaml"]
+
+                # Parse the YAML config
+                config_data = yaml.safe_load(current_config)
+
+                # Desired service target for this hostname
+                desired_service = f"http://{service_name}.{namespace}.svc.cluster.local:{port}"
+
+                # Normalize hostname and check existing rules
+                normalized_hostname = str(hostname).strip().lower().rstrip(".")
+                ingress_rules = config_data.get("ingress", [])
+                existing_index = None
+                for i, rule in enumerate(ingress_rules):
+                    if not isinstance(rule, dict):
+                        continue
+                    current_hostname = str(rule.get("hostname", "")).strip().lower().rstrip(".")
+                    if current_hostname == normalized_hostname:
+                        existing_index = i
+                        if rule.get("service") != desired_service:
+                            print(f"🔄 Updating tunnel ingress rule for {hostname} -> {desired_service}")
+                            rule["service"] = desired_service
+                            ingress_rules[i] = rule
+                        else:
+                            print(f"⚠️  Tunnel ingress rule for {hostname} already exists")
+                            return True
+                        break
+
+                # Add new rule before catch-all if not found
+                if existing_index is None:
+                    new_rule = {
+                        "hostname": hostname,
+                        "service": desired_service
+                    }
+
+                    # Insert before the catch-all rule
+                    for i, rule in enumerate(ingress_rules):
+                        if isinstance(rule, dict) and rule.get("service") == "http_status:404":
+                            ingress_rules.insert(i, new_rule)
+                            break
+                    else:
+                        ingress_rules.append(new_rule)
+
+                config_data["ingress"] = ingress_rules
+
+                # Calculate new config hash
+                new_hash = self.calculate_config_hash(config_data)
+
+                # Only update if config actually changed
+                if new_hash != self.tunnel_config_hash:
+                    # Update the configmap
+                    updated_config = yaml.dump(config_data, default_flow_style=False)
+                    configmap.data["config.yaml"] = updated_config
+                    self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
+
+                    # Update hash and timestamp
+                    self.tunnel_config_hash = new_hash
+                    self.last_config_update = time.time()
+
+                    # Note: cloudflared will automatically reload config when ConfigMap changes
+                    # No need to restart the deployment manually
+                    print(f"ℹ️  Config updated, cloudflared will automatically reload")
+
+                    print(f"✅ Updated tunnel config for {hostname}")
+                else:
+                    print(f"ℹ️  Tunnel config unchanged for {hostname}, skipping restart")
+
+                return True
+
+            except Exception as e:
+                print(f"❌ Error updating tunnel config: {e}")
+                return False
+
+        def process_service_event(self, event_type, service):
+            """Process service events"""
+            try:
+                if not service or not service.metadata:
+                    return
+
+                service_name = service.metadata.name
+                namespace = service.metadata.namespace
+                labels = service.metadata.labels or {}
+
+                # Check if DNS is enabled for this service
+                if labels.get(DNS_ENABLED_LABEL) != "true":
+                    return
+
+                hostname = labels.get(DNS_HOSTNAME_LABEL)
+                exposure_type = labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC)
+
+                if not hostname:
+                    print(f"⚠️  Service {service_name}.{namespace} has DNS enabled but no hostname specified")
+                    return
+
+                print(f"🔍 Processing {event_type} event for {service_name}.{namespace} -> {hostname} (exposure: {exposure_type})")
+
+                if event_type in ["ADDED", "MODIFIED", "EXISTING"]:
+                    if exposure_type == EXPOSURE_PUBLIC:
+                        # Handle public services (tunneled)
+                        port = self.get_service_port(service_name, namespace)
+                        dns_success = self.create_cloudflare_dns_route(hostname)
+                        if dns_success:
+                            self.update_tunnel_config(service_name, hostname, namespace, port)
+                    elif exposure_type == EXPOSURE_INTERNAL:
+                        # Handle internal services via Ingress controller IP (MetalLB)
+                        external_ip = self.get_ingress_external_ip()
+                        if external_ip:
+                            self.create_internal_dns_entry(hostname, external_ip)
+                        else:
+                            print(f"⚠️  Ingress controller has no external IP/hostname yet; cannot create DNS for {hostname}")
+                    else:
+                        print(f"⚠️  Unknown exposure type '{exposure_type}' for service {service_name}.{namespace}")
+
+            except Exception as e:
+                print(f"❌ Error processing service event: {e}")
+
+        def get_services_with_dns_label(self):
+            """Get all services that have DNS enabled using label selector"""
+            try:
+                # Use label selector for efficient querying
+                label_selector = f"{DNS_ENABLED_LABEL}=true"
+                services = self.v1.list_service_for_all_namespaces(label_selector=label_selector)
+                return services.items
+            except Exception as e:
+                print(f"❌ Error getting services with DNS label: {e}")
+                return []
+
+        def main(self):
+            """Main controller loop"""
+            try:
+                print("🔍 Loading Kubernetes config...")
+                import sys
+                sys.stdout.flush()
+
+                # Debug environment variables
+                print(f"🔍 KUBERNETES_SERVICE_HOST: {os.environ.get('KUBERNETES_SERVICE_HOST', 'Not set')}")
+                print(f"🔍 KUBERNETES_SERVICE_PORT: {os.environ.get('KUBERNETES_SERVICE_PORT', 'Not set')}")
+                print(f"🔍 KUBECONFIG: {os.environ.get('KUBECONFIG', 'Not set')}")
+
+                # Load kubeconfig - try in-cluster first, then fallback to kubeconfig
+                try:
+                    config.load_incluster_config()
+                    print("✅ Kubernetes in-cluster config loaded")
+                except Exception as e:
+                    print(f"⚠️  In-cluster config failed: {e}")
+                    print("🔄 Trying kubeconfig...")
+                    config.load_kube_config()
+                    print("✅ Kubernetes kubeconfig loaded")
+
+                # Initialize Kubernetes clients after config is loaded
+                self.v1 = client.CoreV1Api()
+                self.apps_v1 = client.AppsV1Api()
+
+                sys.stdout.flush()
+
+                print("✅ Service Controller initialized")
+                sys.stdout.flush()
+
+                # Test Kubernetes API connection
+                try:
+                    print("🔍 Testing Kubernetes API connection...")
+                    sys.stdout.flush()
+                    # Try a simple API call to test connection
+                    self.v1.list_namespace()
+                    print("✅ Kubernetes API connection successful")
+                    sys.stdout.flush()
+                except Exception as e:
+                    print(f"❌ Kubernetes API connection failed: {e}")
+                    print("🔄 Retrying in 10 seconds...")
+                    sys.stdout.flush()
+                    time.sleep(10)
+                    return self.main()
+
+                # Process existing services with DNS enabled
+                print("🔍 Processing existing services with DNS enabled...")
+                sys.stdout.flush()
+                existing_services = self.get_services_with_dns_label()
+                for service in existing_services:
+                    self.process_service_event("EXISTING", service)
+
+                # Watch for changes using label selector for efficiency
+                print("👀 Watching for service changes with DNS enabled...")
+                sys.stdout.flush()
+                w = watch.Watch()
+
+                # Watch only services with DNS enabled label
+                label_selector = f"{DNS_ENABLED_LABEL}=true"
+                try:
+                    for event in w.stream(self.v1.list_service_for_all_namespaces, label_selector=label_selector):
+                        self.process_service_event(event["type"], event["object"])
+                except Exception as e:
+                    print(f"❌ Watch stream error: {e}")
+                    print("🔄 Restarting watch in 5 seconds...")
+                    sys.stdout.flush()
+                    time.sleep(5)
+                    return self.main()
+
+            except Exception as e:
+                print(f"❌ Controller error: {e}")
+                import traceback
+                traceback.print_exc()
+                time.sleep(10)
+                self.main()
+
+    if __name__ == "__main__":
+        controller = ServiceController()
+        controller.main()
 ---
 apiVersion: v1
 kind: ServiceAccount

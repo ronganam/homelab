@@ -18,7 +18,8 @@ stirling-pdf-chart:
   ingress:
     enabled: true
     ingressClassName: nginx
-    annotations: {}
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
     hosts:
       - name: pdf.buildin.group
         path: /

@@ -138,27 +138,45 @@ data:
                     'kubectl', 'exec', '-n', 'cloudflare-tunnel',
                     'deployment/cloudflared', '--', 'cloudflared',
                     'tunnel', 'route', 'dns', '--overwrite-dns',
+                    '--cred-file', '/etc/cloudflared/credentials/credentials.json',
                     'homelab-tunnel', hostname
                 ]
                 result = subprocess.run(cmd, capture_output=True, text=True)
                 if result.returncode == 0:
                     print(f"✅ Created Cloudflare DNS route for {hostname}")
+                    if result.stdout:
+                        print(result.stdout.strip())
+                    # Verify route visible under the tunnel (helps debug UI visibility)
+                    verify_cmd = [
+                        'kubectl', 'exec', '-n', 'cloudflare-tunnel',
+                        'deployment/cloudflared', '--', 'cloudflared',
+                        'tunnel', 'info', 'homelab-tunnel'
+                    ]
+                    verify = subprocess.run(verify_cmd, capture_output=True, text=True)
+                    if verify.returncode == 0 and verify.stdout:
+                        print("ℹ️  cloudflared tunnel info output:")
+                        print(verify.stdout.strip())
+                    else:
+                        print(f"⚠️  Could not verify route via 'cloudflared tunnel info': {verify.stderr.strip()}")
                     return True
                 else:
-                    print(f"⚠️  Cloudflare DNS route creation failed for {hostname}: {result.stderr}")
+                    print(f"⚠️  Cloudflare DNS route creation failed for {hostname}: {result.stderr.strip()}\nSTDOUT: {result.stdout.strip()}")
                     # Try without overwrite flag as fallback
                     cmd_fallback = [
                         'kubectl', 'exec', '-n', 'cloudflare-tunnel',
                         'deployment/cloudflared', '--', 'cloudflared',
-                        'tunnel', 'route', 'dns', 'homelab-tunnel',
-                        hostname
+                        'tunnel', 'route', 'dns',
+                        '--cred-file', '/etc/cloudflared/credentials/credentials.json',
+                        'homelab-tunnel', hostname
                     ]
                     result_fallback = subprocess.run(cmd_fallback, capture_output=True, text=True)
                     if result_fallback.returncode == 0:
                         print(f"✅ Created Cloudflare DNS route for {hostname} (fallback)")
+                        if result_fallback.stdout:
+                            print(result_fallback.stdout.strip())
                         return True
                     else:
-                        print(f"❌ Failed to create Cloudflare DNS route for {hostname}: {result_fallback.stderr}")
+                        print(f"❌ Failed to create Cloudflare DNS route for {hostname}: {result_fallback.stderr.strip()}\nSTDOUT: {result_fallback.stdout.strip()}")
                         return False
             except Exception as e:
                 print(f"❌ Error creating Cloudflare DNS route for {hostname}: {e}")
@@ -425,14 +443,33 @@ data:
                     configmap.data["config.yaml"] = updated_config
                     self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
 
+                    # Force cloudflared rollout by updating pod template annotation with the new hash
+                    try:
+                        patch_body = {
+                            "spec": {
+                                "template": {
+                                    "metadata": {
+                                        "annotations": {
+                                            "service-controller.io/config-hash": new_hash
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        self.apps_v1.patch_namespaced_deployment(
+                            name="cloudflared",
+                            namespace="cloudflare-tunnel",
+                            body=patch_body
+                        )
+                        print("🔁 Triggered cloudflared rollout due to config change")
+                    except Exception as e:
+                        print(f"⚠️  Failed to trigger cloudflared rollout: {e}")
+
                     # Update hash and timestamp
                     self.tunnel_config_hash = new_hash
                     self.last_config_update = time.time()
 
-                    # Note: cloudflared will automatically reload config when ConfigMap changes
-                    # No need to restart the deployment manually
-                    print(f"ℹ️  Config updated, cloudflared will automatically reload")
-
+                    # Note: cloudflared will reload after restart
                     print(f"✅ Updated tunnel config for {hostname}")
                 else:
                     print(f"ℹ️  Tunnel config unchanged for {hostname}, skipping restart")

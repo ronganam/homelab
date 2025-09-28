@@ -138,46 +138,44 @@ data:
                     'kubectl', 'exec', '-n', 'cloudflare-tunnel',
                     'deployment/cloudflared', '--', 'cloudflared',
                     'tunnel', 'route', 'dns', '--overwrite-dns',
-                    '--cred-file', '/etc/cloudflared/credentials/credentials.json',
                     'homelab-tunnel', hostname
                 ]
                 result = subprocess.run(cmd, capture_output=True, text=True)
+                print(f"DEBUG: DNS route cmd returncode: {result.returncode}, stdout: '{result.stdout.strip()}', stderr: '{result.stderr.strip()}'")
                 if result.returncode == 0:
                     print(f"✅ Created Cloudflare DNS route for {hostname}")
-                    if result.stdout:
-                        print(result.stdout.strip())
-                    # Verify route visible under the tunnel (helps debug UI visibility)
+                    # Simplified verification - just list routes without full info to avoid OOM
                     verify_cmd = [
                         'kubectl', 'exec', '-n', 'cloudflare-tunnel',
                         'deployment/cloudflared', '--', 'cloudflared',
-                        'tunnel', 'info', 'homelab-tunnel'
+                        'tunnel', 'route', 'dns', 'homelab-tunnel', 'list'
                     ]
-                    verify = subprocess.run(verify_cmd, capture_output=True, text=True)
-                    if verify.returncode == 0 and verify.stdout:
-                        print("ℹ️  cloudflared tunnel info output:")
-                        print(verify.stdout.strip())
+                    verify = subprocess.run(verify_cmd, capture_output=True, text=True, timeout=10)
+                    if verify.returncode == 0:
+                        print(f"ℹ️  DNS routes for homelab-tunnel: {verify.stdout.strip()}")
                     else:
-                        print(f"⚠️  Could not verify route via 'cloudflared tunnel info': {verify.stderr.strip()}")
+                        print(f"⚠️  Could not list DNS routes: {verify.stderr.strip()}")
                     return True
                 else:
-                    print(f"⚠️  Cloudflare DNS route creation failed for {hostname}: {result.stderr.strip()}\nSTDOUT: {result.stdout.strip()}")
+                    print(f"⚠️  Cloudflare DNS route creation failed for {hostname}: {result.stderr.strip()}")
                     # Try without overwrite flag as fallback
                     cmd_fallback = [
                         'kubectl', 'exec', '-n', 'cloudflare-tunnel',
                         'deployment/cloudflared', '--', 'cloudflared',
                         'tunnel', 'route', 'dns',
-                        '--cred-file', '/etc/cloudflared/credentials/credentials.json',
                         'homelab-tunnel', hostname
                     ]
                     result_fallback = subprocess.run(cmd_fallback, capture_output=True, text=True)
+                    print(f"DEBUG: Fallback DNS route cmd returncode: {result_fallback.returncode}, stdout: '{result_fallback.stdout.strip()}', stderr: '{result_fallback.stderr.strip()}'")
                     if result_fallback.returncode == 0:
                         print(f"✅ Created Cloudflare DNS route for {hostname} (fallback)")
-                        if result_fallback.stdout:
-                            print(result_fallback.stdout.strip())
                         return True
                     else:
-                        print(f"❌ Failed to create Cloudflare DNS route for {hostname}: {result_fallback.stderr.strip()}\nSTDOUT: {result_fallback.stdout.strip()}")
+                        print(f"❌ Failed to create Cloudflare DNS route for {hostname}: {result_fallback.stderr.strip()}")
                         return False
+            except subprocess.TimeoutExpired:
+                print(f"⚠️  DNS route command timed out for {hostname}")
+                return False
             except Exception as e:
                 print(f"❌ Error creating Cloudflare DNS route for {hostname}: {e}")
                 return False
@@ -396,21 +394,27 @@ data:
 
                 # Desired service target for this hostname
                 desired_service = f"http://{service_name}.{namespace}.svc.cluster.local:{port}"
+                print(f"DEBUG: Desired service for {hostname}: {desired_service}")
 
                 # Normalize hostname and check existing rules
                 normalized_hostname = str(hostname).strip().lower().rstrip(".")
+                print(f"DEBUG: Normalized hostname: '{normalized_hostname}'")
                 ingress_rules = config_data.get("ingress", [])
                 existing_index = None
                 for i, rule in enumerate(ingress_rules):
                     if not isinstance(rule, dict):
                         continue
                     current_hostname = str(rule.get("hostname", "")).strip().lower().rstrip(".")
+                    print(f"DEBUG: Checking rule {i}: current_hostname='{current_hostname}', rule={rule}")
                     if current_hostname == normalized_hostname:
                         existing_index = i
-                        if rule.get("service") != desired_service:
+                        current_service = rule.get("service")
+                        print(f"DEBUG: Found existing rule at index {i}, current service: '{current_service}', desired: '{desired_service}'")
+                        if current_service != desired_service:
                             print(f"🔄 Updating tunnel ingress rule for {hostname} -> {desired_service}")
                             rule["service"] = desired_service
                             ingress_rules[i] = rule
+                            config_changed = True
                         else:
                             print(f"⚠️  Tunnel ingress rule for {hostname} already exists")
                             return True
@@ -418,30 +422,38 @@ data:
 
                 # Add new rule before catch-all if not found
                 if existing_index is None:
+                    print(f"DEBUG: No existing rule found for {normalized_hostname}, adding new")
                     new_rule = {
                         "hostname": hostname,
                         "service": desired_service
                     }
-
+                    
                     # Insert before the catch-all rule
+                    config_changed = False
                     for i, rule in enumerate(ingress_rules):
                         if isinstance(rule, dict) and rule.get("service") == "http_status:404":
+                            print(f"DEBUG: Inserting before catch-all at index {i}")
                             ingress_rules.insert(i, new_rule)
+                            config_changed = True
                             break
                     else:
+                        print("DEBUG: Appending to end (no catch-all found)")
                         ingress_rules.append(new_rule)
+                        config_changed = True
 
                 config_data["ingress"] = ingress_rules
 
                 # Calculate new config hash
                 new_hash = self.calculate_config_hash(config_data)
+                print(f"DEBUG: New config hash: {new_hash}, previous: {self.tunnel_config_hash}")
 
                 # Only update if config actually changed
-                if new_hash != self.tunnel_config_hash:
+                if new_hash != self.tunnel_config_hash or 'config_changed' in locals() and config_changed:
                     # Update the configmap
                     updated_config = yaml.dump(config_data, default_flow_style=False)
                     configmap.data["config.yaml"] = updated_config
                     self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
+                    print(f"ℹ️  Updated ConfigMap with new ingress rules")
 
                     # Force cloudflared rollout by updating pod template annotation with the new hash
                     try:
@@ -462,22 +474,23 @@ data:
                             body=patch_body
                         )
                         print("🔁 Triggered cloudflared rollout due to config change")
-                    except Exception as e:
-                        print(f"⚠️  Failed to trigger cloudflared rollout: {e}")
+                    except Exception as rollout_e:
+                        print(f"⚠️  Failed to trigger cloudflared rollout: {rollout_e}")
 
                     # Update hash and timestamp
                     self.tunnel_config_hash = new_hash
                     self.last_config_update = time.time()
 
-                    # Note: cloudflared will reload after restart
                     print(f"✅ Updated tunnel config for {hostname}")
                 else:
-                    print(f"ℹ️  Tunnel config unchanged for {hostname}, skipping restart")
+                    print(f"ℹ️  Tunnel config unchanged for {hostname}, skipping update")
 
                 return True
 
             except Exception as e:
                 print(f"❌ Error updating tunnel config: {e}")
+                import traceback
+                traceback.print_exc()
                 return False
 
         def process_service_event(self, event_type, service):

@@ -52,7 +52,7 @@ spec:
             - name: ADMIN_EMAIL
               value: "ronganam@gmail.com"
             - name: ENABLE_INQUIRE_MODE
-              value: "false"
+              value: "true"
             - name: ENABLE_AUTO_PROCESSING
               value: "false"
             - name: SQLALCHEMY_DATABASE_URI

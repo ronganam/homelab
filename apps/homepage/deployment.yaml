@@ -72,9 +72,9 @@ data:
         target: _blank
     - openmeteo:
         label: Weather
-        latitude: 40.7589
-        longitude: -73.9851
-        timezone: America/New_York
+        latitude: 31.7683
+        longitude: 35.2137
+        timezone: Asia/Jerusalem
         cache: 5
   bookmarks.yaml: |
     # Bookmarks are automatically discovered from ingresses with gethomepage.dev annotations
@@ -127,6 +127,8 @@ spec:
           env:
             - name: HOMEPAGE_ALLOWED_HOSTS
               value: "*"
+            - name: HOMEPAGE_INSTANCE
+              value: "internal"
           ports:
             - name: http
               containerPort: 3000
@@ -222,9 +224,12 @@ rules:
       - namespaces
       - pods
       - nodes
+      - services
+      - endpoints
     verbs:
       - get
       - list
+      - watch
   - apiGroups:
       - extensions
       - networking.k8s.io
@@ -233,6 +238,7 @@ rules:
     verbs:
       - get
       - list
+      - watch
   - apiGroups:
       - traefik.containo.us
     resources:
@@ -240,6 +246,7 @@ rules:
     verbs:
       - get
       - list
+      - watch
   - apiGroups:
       - traefik.io
     resources:
@@ -247,6 +254,7 @@ rules:
     verbs:
       - get
       - list
+      - watch
   - apiGroups:
       - gateway.networking.k8s.io
     resources:
@@ -254,6 +262,7 @@ rules:
     verbs:
       - get
       - list
+      - watch
   - apiGroups:
       - metrics.k8s.io
     resources:
@@ -262,6 +271,7 @@ rules:
     verbs:
       - get
       - list
+      - watch
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding

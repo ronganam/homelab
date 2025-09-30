@@ -37,12 +37,6 @@ data:
     
     # Services are automatically discovered from ingresses with gethomepage.dev annotations
     # No manual configuration needed for services with proper ingress annotations
-    - Infrastructure:
-      - ""
-    - Monitoring:
-      - ""
-    - Applications:
-      - ""
   widgets.yaml: |
     - logo:
         icon: https://gethomepage.dev/img/favicon.ico

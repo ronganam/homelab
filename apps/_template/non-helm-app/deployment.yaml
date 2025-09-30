@@ -7,6 +7,8 @@ metadata:
     app: CHANGEME # Replace with your app name
 spec:
   replicas: 1
+  strategy:
+    type: Recreate # Use Recreate for apps with persistent storage
   selector:
     matchLabels:
       app: CHANGEME # Replace with your app name
@@ -15,9 +17,15 @@ spec:
       labels:
         app: CHANGEME # Replace with your app name
     spec:
+      securityContext:
+        runAsUser: 1000 # Adjust as needed for your app
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: CHANGEME # Replace with your app name
           image: nginx:latest # Replace with your app image
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80 # Replace with your app port
               name: http
@@ -31,8 +39,8 @@ spec:
               mountPath: /data
           resources:
             limits:
-              memory: 512Mi
-              cpu: 200m
+              memory: 1Gi
+              cpu: 500m
             requests:
               memory: 256Mi
               cpu: 100m
@@ -69,5 +77,5 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 5Gi # Adjust size as needed
+      storage: 1Gi # Adjust size as needed
   storageClassName: longhorn # Use Longhorn storage

@@ -1,0 +1,10 @@
+# Kustomization for PUBLIC app
+# Use this for apps that should be accessible via Cloudflare tunnel
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - namespace.yaml
+  - deployment.yaml
+  - service-public.yaml
+  # No ingress needed for public apps
+namespace: CHANGEME # Replace with your app name

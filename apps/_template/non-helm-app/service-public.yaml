@@ -1,0 +1,22 @@
+# PUBLIC Service - accessible via Cloudflare tunnel
+# This service will be accessible via public DNS through Cloudflare tunnel
+apiVersion: v1
+kind: Service
+metadata:
+  name: CHANGEME # Replace with your app name
+  namespace: CHANGEME # Replace with your app name
+  labels:
+    app: CHANGEME # Replace with your app name
+    # DNS Management Labels for Public Service
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "CHANGEME.yourdomain.com" # Replace with your public domain
+    exposure.service-controller.io/type: "public"
+spec:
+  type: ClusterIP # Use ClusterIP for tunneled services
+  ports:
+    - name: http
+      port: 80 # External port
+      targetPort: 80 # Replace with your app's container port
+      protocol: TCP
+  selector:
+    app: CHANGEME # Replace with your app name

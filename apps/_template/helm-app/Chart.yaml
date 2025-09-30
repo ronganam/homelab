@@ -1,0 +1,10 @@
+apiVersion: v2
+name: CHANGEME # Replace with your app name
+description: Helm wrapper chart to deploy CHANGEME via upstream dependency
+type: application
+version: 0.1.0
+appVersion: ""
+dependencies:
+  - name: CHANGEME-chart # Replace with upstream chart name
+    version: "1.0.0" # Replace with desired version
+    repository: https://CHANGEME.github.io/CHANGEME-chart # Replace with chart repository URL

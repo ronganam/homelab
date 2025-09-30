@@ -1,0 +1,4 @@
+name: CHANGEME # Replace with your app name
+namespace: CHANGEME # Replace with your app name
+path: apps/CHANGEME # Replace with your app name
+wave: "30"

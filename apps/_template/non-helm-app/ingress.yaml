@@ -1,0 +1,23 @@
+# Ingress for INTERNAL apps only
+# This ingress is only needed for internal services
+# Public services use Cloudflare tunnel and don't need ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: CHANGEME # Replace with your app name
+  namespace: CHANGEME # Replace with your app name
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m" # Adjust as needed
+spec:
+  rules:
+    - host: CHANGEME.buildin.group # Replace with your internal domain
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: CHANGEME # Replace with your app name
+                port:
+                  number: 80 # Replace with your service port

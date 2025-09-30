@@ -1,28 +1,6 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: metrics-server
-  namespace: argocd
-  finalizers:
-    - resources-finalizer.argoproj.io
-spec:
-  project: homelab
-  source:
-    repoURL: https://github.com/kubernetes-sigs/metrics-server
-    targetRevision: HEAD
-    path: deploy/kubernetes
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: kube-system
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - ServerSideApply=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
+name: metrics-server
+namespace: kube-system
+path: infra/metrics-server
+wave: "15"
+
+

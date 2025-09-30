@@ -1,0 +1,121 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: papra
+  namespace: papra
+  labels:
+    app: papra
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Use Recreate for apps with persistent storage
+  selector:
+    matchLabels:
+      app: papra
+  template:
+    metadata:
+      labels:
+        app: papra
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: papra
+          image: ghcr.io/papra-hq/papra:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1221
+              name: http
+          env:
+            # Papra Configuration
+            - name: APP_BASE_URL
+              value: "https://papra.buildin.group"
+            - name: AUTH_SECRET
+              value: "lkjasdoijadlaksjdlaskjdasd"
+            - name: AUTH_IS_REGISTRATION_ENABLED
+              value: "true"
+            - name: AUTH_IS_PASSWORD_RESET_ENABLED
+              value: "true"
+            - name: AUTH_IS_EMAIL_VERIFICATION_REQUIRED
+              value: "false"
+            - name: AUTH_SHOW_LEGAL_LINKS
+              value: "false"
+            - name: AUTH_PROVIDERS_EMAIL_IS_ENABLED
+              value: "true"
+            - name: AUTH_PROVIDERS_GITHUB_IS_ENABLED
+              value: "false"
+            - name: AUTH_PROVIDERS_GOOGLE_IS_ENABLED
+              value: "false"
+            - name: DATABASE_URL
+              value: "file:./app-data/db/db.sqlite"
+            - name: DOCUMENT_STORAGE_DRIVER
+              value: "filesystem"
+            - name: DOCUMENT_STORAGE_FILESYSTEM_ROOT
+              value: "./app-data/documents"
+            - name: DOCUMENT_STORAGE_MAX_UPLOAD_SIZE
+              value: "50000000" # 50MB
+            - name: DOCUMENTS_OCR_LANGUAGES
+              value: "eng"
+            - name: DOCUMENTS_DELETED_DOCUMENTS_RETENTION_DAYS
+              value: "30"
+            - name: EMAILS_DRIVER
+              value: "logger"
+            - name: INGESTION_FOLDER_IS_ENABLED
+              value: "false"
+            - name: IS_FREE_PLAN_UNLIMITED
+              value: "true"
+            - name: MAX_ORGANIZATION_COUNT_PER_USER
+              value: "10"
+            - name: ORGANIZATION_INVITATION_EXPIRATION_DELAY_DAYS
+              value: "7"
+            - name: MAX_USER_ORGANIZATIONS_INVITATIONS_PER_DAY
+              value: "30"
+            - name: POSTHOG_ENABLED
+              value: "false"
+          volumeMounts:
+            - name: data
+              mountPath: /app/app-data
+          resources:
+            limits:
+              memory: 1Gi
+              cpu: 500m
+            requests:
+              memory: 256Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: papra-data
+---
+# PersistentVolumeClaim for data storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: papra-data
+  namespace: papra
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi # Adjust size as needed for document storage
+  storageClassName: longhorn # Use Longhorn storage

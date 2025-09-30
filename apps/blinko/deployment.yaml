@@ -14,11 +14,6 @@ spec:
     metadata:
       labels:
         app: blinko
-        # Kubernetes standard labels for Homepage resource monitoring
-        app.kubernetes.io/name: blinko
-        app.kubernetes.io/instance: blinko
-        app.kubernetes.io/component: web
-        app.kubernetes.io/part-of: blinko
     spec:
       containers:
         - name: blinko

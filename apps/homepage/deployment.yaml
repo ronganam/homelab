@@ -74,6 +74,27 @@ data:
           dateStyle: long
           timeStyle: short
           hour12: false
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: "cluster"
+        nodes:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+    - resources:
+        backend: resources
+        expanded: true
+        cpu: true
+        memory: true
+        network: default
+    - search:
+        provider: duckduckgo
+        target: _blank
     - openmeteo:
         label: Weather
         latitude: 40.7589
@@ -99,14 +120,12 @@ data:
     traefik: true
     # Enable only if Gateway API CRDs are installed in the cluster
     gateway: false
-    # Resource monitoring configuration
-    resources:
-      enabled: true
-      cpu: true
-      memory: true
   custom.css: |
     /* Custom CSS for Homepage */
     /* Add your custom styles here */
+  custom.js: |
+    // Custom JavaScript for Homepage
+    // Add your custom scripts here
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -116,7 +135,10 @@ metadata:
   labels:
     app: homepage
 spec:
+  revisionHistoryLimit: 3
   replicas: 1
+  strategy:
+    type: RollingUpdate
   selector:
     matchLabels:
       app: homepage
@@ -126,37 +148,47 @@ spec:
         app: homepage
     spec:
       serviceAccountName: homepage
-      initContainers:
-        - name: init-config
-          image: busybox:1.37
-          command: ['sh', '-c', 'mkdir -p /writable-config/src/skeleton && cp /config/skeleton-settings.yaml /writable-config/src/skeleton/settings.yaml && cp /config/*.yaml /writable-config/']
-          volumeMounts:
-            - name: config
-              mountPath: /config
-            - name: writable-config
-              mountPath: /writable-config
+      automountServiceAccountToken: true
+      dnsPolicy: ClusterFirst
+      enableServiceLinks: true
       containers:
         - name: homepage
-          image: ghcr.io/gethomepage/homepage:v1.5
-          ports:
-            - containerPort: 3000
-              name: http
+          image: "ghcr.io/gethomepage/homepage:latest"
+          imagePullPolicy: Always
           env:
-            - name: HOMEPAGE_VAR_TITLE
-              value: "Homelab Dashboard"
-            - name: HOMEPAGE_VAR_SEARCH_PROVIDER
-              value: "duckduckgo"
-            - name: HOMEPAGE_VAR_HEADER_STYLE
-              value: "boxed"
-            - name: HOMEPAGE_VAR_WEATHER_API_KEY
-              value: "" # Add your weather API key if desired
             - name: HOMEPAGE_ALLOWED_HOSTS
               value: "*"
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
           volumeMounts:
-            - name: writable-config
-              mountPath: /app/config
-            - name: logs
-              mountPath: /app/config/logs
+            - mountPath: /app/config/custom.js
+              name: homepage-config
+              subPath: custom.js
+            - mountPath: /app/config/custom.css
+              name: homepage-config
+              subPath: custom.css
+            - mountPath: /app/config/bookmarks.yaml
+              name: homepage-config
+              subPath: bookmarks.yaml
+            - mountPath: /app/config/docker.yaml
+              name: homepage-config
+              subPath: docker.yaml
+            - mountPath: /app/config/kubernetes.yaml
+              name: homepage-config
+              subPath: kubernetes.yaml
+            - mountPath: /app/config/services.yaml
+              name: homepage-config
+              subPath: services.yaml
+            - mountPath: /app/config/settings.yaml
+              name: homepage-config
+              subPath: settings.yaml
+            - mountPath: /app/config/widgets.yaml
+              name: homepage-config
+              subPath: widgets.yaml
+            - mountPath: /app/config/logs
+              name: logs
           resources:
             limits:
               memory: 512Mi
@@ -181,13 +213,22 @@ spec:
             timeoutSeconds: 3
             failureThreshold: 3
       volumes:
-        - name: config
+        - name: homepage-config
           configMap:
             name: homepage-config
-        - name: writable-config
-          emptyDir: {}
         - name: logs
           emptyDir: {}
+---
+apiVersion: v1
+kind: Secret
+type: kubernetes.io/service-account-token
+metadata:
+  name: homepage
+  namespace: homepage
+  labels:
+    app: homepage
+  annotations:
+    kubernetes.io/service-account.name: homepage
 ---
 apiVersion: v1
 kind: ServiceAccount
@@ -196,11 +237,15 @@ metadata:
   namespace: homepage
   labels:
     app: homepage
+secrets:
+  - name: homepage
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: homepage
+  labels:
+    app: homepage
 rules:
   - apiGroups:
       - ""
@@ -253,6 +298,8 @@ apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: homepage
+  labels:
+    app: homepage
 roleRef:
   apiGroup: rbac.authorization.k8s.io
   kind: ClusterRole

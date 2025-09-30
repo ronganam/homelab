@@ -80,10 +80,7 @@ The deployment template includes proper Kubernetes labels for CPU and memory mon
 
 ```yaml
 labels:
-  app.kubernetes.io/name: service-name
-  app.kubernetes.io/instance: service-instance
-  app.kubernetes.io/component: web
-  app.kubernetes.io/part-of: service-name
+  app: service-name
 ```
 
 ### Public Apps

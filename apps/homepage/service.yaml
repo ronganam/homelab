@@ -8,12 +8,13 @@ metadata:
     dns.service-controller.io/enabled: "true"
     dns.service-controller.io/hostname: "homepage.buildin.group"
     exposure.service-controller.io/type: "public"
+  annotations:
 spec:
   type: ClusterIP
   ports:
-    - name: http
-      port: 3000
-      targetPort: 3000
+    - port: 3000
+      targetPort: http
       protocol: TCP
+      name: http
   selector:
     app: homepage

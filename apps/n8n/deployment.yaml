@@ -16,10 +16,6 @@ spec:
     metadata:
       labels:
         app: n8n
-        app.kubernetes.io/name: n8n
-        app.kubernetes.io/instance: n8n
-        app.kubernetes.io/component: web
-        app.kubernetes.io/part-of: n8n
     spec:
       securityContext:
         runAsUser: 1000

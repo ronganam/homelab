@@ -31,6 +31,9 @@ data:
         style: row
         columns: 3
   services.yaml: |
+    # Services with ingresses will be automatically discovered via annotations
+    # Only add services here that don't have ingresses or need special configuration
+    
     - Infrastructure:
         - Argo CD:
             href: https://argo.buildin.group
@@ -41,7 +44,7 @@ data:
             description: Distributed Block Storage
             icon: longhorn
         - Kubernetes Dashboard:
-            href: https://dashboard.buildin.group  # Update if you have k8s dashboard
+            href: https://dashboard.buildin.group
             description: Kubernetes Management
             icon: kubernetes-dashboard
 
@@ -55,19 +58,10 @@ data:
             description: Monitoring Dashboards
             icon: grafana
 
-    - Applications:
-        - n8n:
-            href: https://n9n.buildin.group
-            description: Workflow Automation
-            icon: n8n
-        - Vaultwarden:
-            href: https://bitwarden.buildin.group
-            description: Password Manager
-            icon: vaultwarden
-        - Homepage:
-            href: https://homepage.buildin.group
-            description: Homelab Dashboard
-            icon: homepage
+    # Note: Applications with ingress annotations will be automatically discovered
+    # The following are examples of services that might not have ingresses:
+    # - n8n (if using Cloudflare tunnel)
+    # - Other services without ingress
   widgets.yaml: |
     - logo:
         icon: https://gethomepage.dev/img/favicon.ico
@@ -105,6 +99,11 @@ data:
     traefik: true
     # Enable only if Gateway API CRDs are installed in the cluster
     gateway: false
+    # Resource monitoring configuration
+    resources:
+      enabled: true
+      cpu: true
+      memory: true
   custom.css: |
     /* Custom CSS for Homepage */
     /* Add your custom styles here */

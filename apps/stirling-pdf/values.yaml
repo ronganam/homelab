@@ -20,6 +20,14 @@ stirling-pdf-chart:
     ingressClassName: nginx
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      # Homepage automatic service discovery annotations
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Stirling PDF"
+      gethomepage.dev/description: "PDF Toolbox"
+      gethomepage.dev/icon: "stirling-pdf.png"
+      gethomepage.dev/group: "Applications"
+      gethomepage.dev/weight: "25"
+      gethomepage.dev/instance: "internal"
     hosts:
       - name: pdf.buildin.group
         path: /

@@ -17,6 +17,10 @@ spec:
     metadata:
       labels:
         app: bitwarden
+        app.kubernetes.io/name: vaultwarden
+        app.kubernetes.io/instance: bitwarden
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: vaultwarden
     spec:
       securityContext:
         fsGroup: 33

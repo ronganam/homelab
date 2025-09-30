@@ -9,6 +9,15 @@ kube-prometheus-stack:
     ingress:
       enabled: true
       ingressClassName: nginx
+      annotations:
+        # Homepage automatic service discovery annotations
+        gethomepage.dev/enabled: "true"
+        gethomepage.dev/name: "Grafana"
+        gethomepage.dev/description: "Monitoring Dashboards"
+        gethomepage.dev/icon: "grafana.png"
+        gethomepage.dev/group: "Monitoring"
+        gethomepage.dev/weight: "3"
+        gethomepage.dev/instance: "internal"
       hosts:
         - grafana.buildin.group
     service:
@@ -55,6 +64,15 @@ kube-prometheus-stack:
     ingress:
       enabled: true
       ingressClassName: nginx
+      annotations:
+        # Homepage automatic service discovery annotations
+        gethomepage.dev/enabled: "true"
+        gethomepage.dev/name: "Prometheus"
+        gethomepage.dev/description: "Metrics Collection"
+        gethomepage.dev/icon: "prometheus.png"
+        gethomepage.dev/group: "Monitoring"
+        gethomepage.dev/weight: "4"
+        gethomepage.dev/instance: "internal"
       hosts:
         - prometheus.buildin.group
     service:

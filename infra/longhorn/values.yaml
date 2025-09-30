@@ -42,6 +42,14 @@ longhorn:
         name: longhorn-ui
         annotations:
           kubernetes.io/ingress.class: nginx
+          # Homepage automatic service discovery annotations
+          gethomepage.dev/enabled: "true"
+          gethomepage.dev/name: "Longhorn"
+          gethomepage.dev/description: "Distributed Block Storage"
+          gethomepage.dev/icon: "longhorn.png"
+          gethomepage.dev/group: "Infrastructure"
+          gethomepage.dev/weight: "2"
+          gethomepage.dev/instance: "internal"
       spec:
         rules:
           - host: longhorn.buildin.group

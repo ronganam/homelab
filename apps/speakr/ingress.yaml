@@ -6,6 +6,14 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    # Homepage automatic service discovery annotations
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Speakr"
+    gethomepage.dev/description: "AI Voice Assistant"
+    gethomepage.dev/icon: "speakr.png"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "15"
+    gethomepage.dev/instance: "internal"
 spec:
   rules:
     - host: speakr.buildin.group

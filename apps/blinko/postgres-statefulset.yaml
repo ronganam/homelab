@@ -15,6 +15,11 @@ spec:
     metadata:
       labels:
         app: blinko-postgres
+        # Kubernetes standard labels for Homepage resource monitoring
+        app.kubernetes.io/name: postgres
+        app.kubernetes.io/instance: blinko-postgres
+        app.kubernetes.io/component: database
+        app.kubernetes.io/part-of: blinko
     spec:
       containers:
         - name: postgres

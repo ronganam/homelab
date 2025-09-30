@@ -52,3 +52,40 @@ Both internal and public apps use the DNS service controller labels:
 ## Storage
 
 All apps use Longhorn storage class for persistent volumes.
+
+## Homepage Integration
+
+### Automatic Service Discovery
+
+Internal Helm apps are automatically discovered by Homepage when they have the required annotations in their ingress. The template includes these annotations in `values-internal.yaml`.
+
+### Resource Monitoring
+
+For CPU and memory monitoring, ensure your Helm chart supports the standard Kubernetes labels:
+
+```yaml
+labels:
+  app.kubernetes.io/name: service-name
+  app.kubernetes.io/instance: service-instance
+  app.kubernetes.io/component: web
+  app.kubernetes.io/part-of: service-name
+```
+
+### Public Apps
+
+Public apps (using Cloudflare tunnel) don't have ingresses, so they need to be manually added to Homepage's `services.yaml` configuration.
+
+### Configuration
+
+The template includes Homepage annotations in the ingress configuration:
+
+```yaml
+annotations:
+  gethomepage.dev/enabled: "true"
+  gethomepage.dev/name: "Service Name"
+  gethomepage.dev/description: "Service Description"
+  gethomepage.dev/icon: "icon-name.png"
+  gethomepage.dev/group: "Applications"
+  gethomepage.dev/weight: "10"
+  gethomepage.dev/instance: "internal"
+```

@@ -5,6 +5,14 @@ metadata:
   namespace: blinko
   annotations:
     kubernetes.io/ingress.class: nginx
+    # Homepage automatic service discovery annotations
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Blinko"
+    gethomepage.dev/description: "Link Shortener"
+    gethomepage.dev/icon: "blinko.png"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "20"
+    gethomepage.dev/instance: "internal"
 spec:
   rules:
     - host: blinko.buildin.group

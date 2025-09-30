@@ -1,0 +1,23 @@
+# Ingress for INTERNAL apps only
+# This ingress is only needed for internal services
+# Public services use Cloudflare tunnel and don't need ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: papra
+  namespace: papra
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m" # Allow large file uploads
+spec:
+  rules:
+    - host: papra.buildin.group
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: papra
+                port:
+                  number: 80

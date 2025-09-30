@@ -65,10 +65,7 @@ For CPU and memory monitoring, ensure your Helm chart supports the standard Kube
 
 ```yaml
 labels:
-  app.kubernetes.io/name: service-name
-  app.kubernetes.io/instance: service-instance
-  app.kubernetes.io/component: web
-  app.kubernetes.io/part-of: service-name
+  app: service-name
 ```
 
 ### Public Apps

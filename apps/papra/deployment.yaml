@@ -16,10 +16,6 @@ spec:
     metadata:
       labels:
         app: papra
-        app.kubernetes.io/name: papra
-        app.kubernetes.io/instance: papra
-        app.kubernetes.io/component: web
-        app.kubernetes.io/part-of: papra
     spec:
       securityContext:
         runAsUser: 1000

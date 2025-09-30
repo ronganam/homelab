@@ -14,6 +14,11 @@ spec:
     metadata:
       labels:
         app: speakr
+        # Kubernetes standard labels for Homepage resource monitoring
+        app.kubernetes.io/name: speakr
+        app.kubernetes.io/instance: speakr
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: speakr
     spec:
       containers:
         - name: speakr

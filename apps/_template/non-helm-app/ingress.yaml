@@ -9,6 +9,14 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "100m" # Adjust as needed
+    # Homepage automatic service discovery annotations
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "CHANGEME" # Replace with your app display name
+    gethomepage.dev/description: "CHANGEME Description" # Replace with your app description
+    gethomepage.dev/icon: "CHANGEME.png" # Replace with your app icon
+    gethomepage.dev/group: "Applications" # Replace with your group (Applications, Infrastructure, Monitoring)
+    gethomepage.dev/weight: "10" # Replace with your weight (lower = higher priority)
+    gethomepage.dev/instance: "internal" # Use "internal" for internal apps, "public" for public apps
 spec:
   rules:
     - host: CHANGEME.buildin.group # Replace with your internal domain

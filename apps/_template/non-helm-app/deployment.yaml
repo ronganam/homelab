@@ -16,6 +16,11 @@ spec:
     metadata:
       labels:
         app: CHANGEME # Replace with your app name
+        # Kubernetes standard labels for Homepage resource monitoring
+        app.kubernetes.io/name: CHANGEME # Replace with your app name
+        app.kubernetes.io/instance: CHANGEME # Replace with your app instance
+        app.kubernetes.io/component: web
+        app.kubernetes.io/part-of: CHANGEME # Replace with your app name
     spec:
       securityContext:
         runAsUser: 1000 # Adjust as needed for your app

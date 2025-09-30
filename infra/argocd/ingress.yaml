@@ -7,6 +7,14 @@ metadata:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Homepage automatic service discovery annotations
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Argo CD"
+    gethomepage.dev/description: "GitOps Continuous Delivery"
+    gethomepage.dev/icon: "argocd.png"
+    gethomepage.dev/group: "Infrastructure"
+    gethomepage.dev/weight: "1"
+    gethomepage.dev/instance: "internal"
 spec:
   rules:
     - host: argocd.buildin.group

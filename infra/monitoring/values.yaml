@@ -147,5 +147,18 @@ kube-prometheus-stack:
     enabled: true
   metricsServer:
     enabled: true
+    service:
+      type: ClusterIP
+      port: 443
+      targetPort: 4443
+    serviceMonitor:
+      enabled: true
+    resources:
+      limits:
+        cpu: 100m
+        memory: 200Mi
+      requests:
+        cpu: 100m
+        memory: 200Mi
 
 

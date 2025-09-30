@@ -2,5 +2,8 @@ name: monitoring
 namespace: monitoring
 path: infra/monitoring
 wave: "20"
+syncPolicy:
+  syncOptions:
+    - ServerSideApply=true
 
 

@@ -33,11 +33,9 @@ data:
   services.yaml: |
     # All services with ingress annotations will be automatically discovered
     # Only add services here that don't have ingresses or need special configuration
-
-    # Note: Applications with ingress annotations will be automatically discovered
-    # The following are examples of services that might not have ingresses:
-    # - n8n (if using Cloudflare tunnel)
-    # - Other services without ingress
+    
+    # Services are automatically discovered from ingresses with gethomepage.dev annotations
+    # No manual configuration needed for services with proper ingress annotations
   widgets.yaml: |
     - logo:
         icon: https://gethomepage.dev/img/favicon.ico
@@ -78,16 +76,8 @@ data:
         timezone: America/New_York
         cache: 5
   bookmarks.yaml: |
-    - Homelab:
-        - Documentation:
-            - href: https://kubernetes.io/docs/
-              icon: kubernetes
-        - Repositories:
-            - href: https://github.com/
-              icon: github
-        - Monitoring:
-            - href: https://grafana.com/
-              icon: grafana
+    # Bookmarks are automatically discovered from ingresses with gethomepage.dev annotations
+    # No manual configuration needed for services with proper ingress annotations
   docker.yaml: |
     # Docker integration disabled for K8s deployment
   kubernetes.yaml: |
@@ -96,6 +86,8 @@ data:
     traefik: true
     # Enable only if Gateway API CRDs are installed in the cluster
     gateway: false
+    # Auto-discover services from ingresses with gethomepage.dev annotations
+    # Services will be automatically discovered and grouped by their annotations
   custom.css: |
     /* Custom CSS for Homepage */
     /* Add your custom styles here */

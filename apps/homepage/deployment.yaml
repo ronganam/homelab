@@ -31,32 +31,8 @@ data:
         style: row
         columns: 3
   services.yaml: |
-    # Services with ingresses will be automatically discovered via annotations
+    # All services with ingress annotations will be automatically discovered
     # Only add services here that don't have ingresses or need special configuration
-    
-    - Infrastructure:
-        - Argo CD:
-            href: https://argo.buildin.group
-            description: GitOps Continuous Delivery
-            icon: argocd
-        - Longhorn:
-            href: https://longhorn.buildin.group
-            description: Distributed Block Storage
-            icon: longhorn
-        - Kubernetes Dashboard:
-            href: https://dashboard.buildin.group
-            description: Kubernetes Management
-            icon: kubernetes-dashboard
-
-    - Monitoring:
-        - Prometheus:
-            href: https://prometheus.buildin.group
-            description: Metrics Collection
-            icon: prometheus
-        - Grafana:
-            href: https://grafana.buildin.group
-            description: Monitoring Dashboards
-            icon: grafana
 
     # Note: Applications with ingress annotations will be automatically discovered
     # The following are examples of services that might not have ingresses:

@@ -10,6 +10,7 @@ data:
     theme: dark
     color: slate
     headerStyle: boxed
+    instance: internal
     layout:
       Infrastructure:
         style: row
@@ -83,7 +84,7 @@ data:
   kubernetes.yaml: |
     mode: cluster
     ingress: true
-    traefik: true
+    traefik: false
     # Enable only if Gateway API CRDs are installed in the cluster
     gateway: false
     # Auto-discover services from ingresses with gethomepage.dev annotations

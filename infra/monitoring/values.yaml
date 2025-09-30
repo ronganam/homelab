@@ -145,5 +145,7 @@ kube-prometheus-stack:
     enabled: true
   kubeDns:
     enabled: true
+  metricsServer:
+    enabled: true
 
 

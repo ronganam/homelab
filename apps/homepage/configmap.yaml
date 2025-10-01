@@ -18,9 +18,9 @@ data:
     instanceName: internal
     # Subtle blue background inspired by docs example
     background: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
-    backgroundOpacity: 0.25
-    backgroundBlur: 4
-    cardBackgroundBlur: 2
+    backgroundOpacity: 0.4
+    backgroundBlur: 6
+    cardBackgroundBlur: 3
     providers:
       longhorn:
         url: https://longhorn.buildin.group
@@ -46,9 +46,9 @@ data:
     statusStyle: "dot"
     hideErrors: true
     background: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
-    backgroundOpacity: 0.25
-    backgroundBlur: 4
-    cardBackgroundBlur: 2
+    backgroundOpacity: 0.4
+    backgroundBlur: 6
+    cardBackgroundBlur: 3
   services.yaml: |
     # All services with ingress annotations will be automatically discovered
     # Only add services here that don't have ingresses or need special configuration
@@ -83,9 +83,6 @@ data:
         total: true
         nodes: true
     # Utility and context widgets to the right
-    - search:
-        provider: duckduckgo
-        target: _blank
     - datetime:
         text_size: l
         format:
@@ -98,9 +95,6 @@ data:
         longitude: 35.2137
         timezone: Asia/Jerusalem
         cache: 5
-    - greeting:
-        text_size: m
-        text: "Welcome to your Homelab!"
   bookmarks.yaml: |
     # Bookmarks are automatically discovered from ingresses with gethomepage.dev annotations
     # No manual configuration needed for services with proper ingress annotations

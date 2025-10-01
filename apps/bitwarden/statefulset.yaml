@@ -17,6 +17,7 @@ spec:
     metadata:
       labels:
         app: bitwarden
+        app.kubernetes.io/name: bitwarden
     spec:
       securityContext:
         fsGroup: 33

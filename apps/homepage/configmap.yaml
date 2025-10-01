@@ -18,9 +18,7 @@ data:
     instanceName: internal
     # Subtle blue background inspired by docs example
     background: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
-    backgroundOpacity: 0.4
-    backgroundBlur: 6
-    cardBackgroundBlur: 3
+    cardBlur: sm
     providers:
       longhorn:
         url: https://longhorn.buildin.group
@@ -34,21 +32,6 @@ data:
       Monitoring:
         style: row
         columns: 2
-  skeleton-settings.yaml: |
-    title: Homelab Dashboard
-    favicon: https://gethomepage.dev/img/favicon.ico
-    theme: dark
-    color: blue
-    headerStyle: boxedWidgets
-    fullWidth: true
-    useEqualHeights: true
-    showStats: true
-    statusStyle: "dot"
-    hideErrors: true
-    background: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
-    backgroundOpacity: 0.4
-    backgroundBlur: 6
-    cardBackgroundBlur: 3
   services.yaml: |
     # All services with ingress annotations will be automatically discovered
     # Only add services here that don't have ingresses or need special configuration
@@ -56,10 +39,6 @@ data:
     # Services are automatically discovered from ingresses with gethomepage.dev annotations
     # No manual configuration needed for services with proper ingress annotations
   widgets.yaml: |
-    # Header widgets - organized in logical groups
-    - logo:
-        icon: https://gethomepage.dev/img/favicon.ico
-    # Prioritize key stats up front for a cleaner, data-first header
     - kubernetes:
         cluster:
           show: true
@@ -82,7 +61,6 @@ data:
         expanded: true
         total: true
         nodes: true
-    # Utility and context widgets to the right
     - datetime:
         text_size: l
         format:

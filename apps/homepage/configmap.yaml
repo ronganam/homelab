@@ -9,8 +9,13 @@ data:
     favicon: https://gethomepage.dev/img/favicon.ico
     theme: dark
     color: slate
-    headerStyle: boxed
-    instance: internal
+    headerStyle: boxedWidgets
+    fullWidth: true
+    useEqualHeights: true
+    showStats: true
+    statusStyle: "dot"
+    hideErrors: true
+    instanceName: internal
     providers:
       longhorn:
         url: https://longhorn.buildin.group
@@ -26,7 +31,12 @@ data:
     favicon: https://gethomepage.dev/img/favicon.ico
     theme: dark
     color: slate
-    headerStyle: boxed
+    headerStyle: boxedWidgets
+    fullWidth: true
+    useEqualHeights: true
+    showStats: true
+    statusStyle: "dot"
+    hideErrors: true
     layout:
       Infrastructure:
         style: row
@@ -43,9 +53,9 @@ data:
   widgets.yaml: |
     - logo:
         icon: https://gethomepage.dev/img/favicon.ico
-    - greeting:
-        text_size: xl
-        text: "Welcome to your Homelab!"
+    - search:
+        provider: duckduckgo
+        target: _blank
     - datetime:
         text_size: l
         format:
@@ -64,25 +74,25 @@ data:
           cpu: true
           memory: true
           showLabel: true
-    - longhorn:
-        expanded: true
-        total: true
-        nodes: true
     - resources:
         backend: resources
         expanded: true
         cpu: true
         memory: true
         network: default
-    - search:
-        provider: duckduckgo
-        target: _blank
+    - longhorn:
+        expanded: true
+        total: true
+        nodes: true
     - openmeteo:
         label: Weather
         latitude: 31.7683
         longitude: 35.2137
         timezone: Asia/Jerusalem
         cache: 5
+    - greeting:
+        text_size: m
+        text: "Welcome to your Homelab!"
   bookmarks.yaml: |
     # Bookmarks are automatically discovered from ingresses with gethomepage.dev annotations
     # No manual configuration needed for services with proper ingress annotations

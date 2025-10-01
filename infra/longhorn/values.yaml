@@ -25,6 +25,7 @@ longhorn:
       metadata:
         name: longhorn-ui
         labels:
+          app.kubernetes.io/name: longhorn-ui
           dns.service-controller.io/enabled: "true"
           dns.service-controller.io/hostname: "longhorn.buildin.group"
           exposure.service-controller.io/type: "internal"

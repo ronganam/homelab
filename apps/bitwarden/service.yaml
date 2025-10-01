@@ -5,6 +5,7 @@ metadata:
   namespace: bitwarden
   labels:
     app: bitwarden
+    app.kubernetes.io/name: bitwarden
     dns.service-controller.io/enabled: "true"
     dns.service-controller.io/hostname: "bitwarden.buildin.group"
     exposure.service-controller.io/type: "internal"

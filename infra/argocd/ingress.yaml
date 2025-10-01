@@ -14,7 +14,6 @@ metadata:
     gethomepage.dev/icon: "argocd.png"
     gethomepage.dev/group: "Infrastructure"
     gethomepage.dev/weight: "1"
-: "internal"
 spec:
   rules:
     - host: argocd.buildin.group

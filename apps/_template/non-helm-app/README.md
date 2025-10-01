@@ -99,5 +99,4 @@ annotations:
   gethomepage.dev/icon: "icon-name.png"
   gethomepage.dev/group: "Applications"
   gethomepage.dev/weight: "10"
-: "internal"
 ```

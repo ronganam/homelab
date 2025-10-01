@@ -27,7 +27,6 @@ stirling-pdf-chart:
       gethomepage.dev/icon: "stirling-pdf.png"
       gethomepage.dev/group: "Applications"
       gethomepage.dev/weight: "25"
-: "internal"
     hosts:
       - name: pdf.buildin.group
         path: /

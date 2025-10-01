@@ -17,7 +17,6 @@ kube-prometheus-stack:
         gethomepage.dev/icon: "grafana.png"
         gethomepage.dev/group: "Monitoring"
         gethomepage.dev/weight: "3"
-: "internal"
       hosts:
         - grafana.buildin.group
     service:
@@ -72,7 +71,6 @@ kube-prometheus-stack:
         gethomepage.dev/icon: "prometheus.png"
         gethomepage.dev/group: "Monitoring"
         gethomepage.dev/weight: "4"
-: "internal"
       hosts:
         - prometheus.buildin.group
     service:

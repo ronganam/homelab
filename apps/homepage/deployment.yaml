@@ -82,7 +82,7 @@ data:
   docker.yaml: |
     # Docker integration disabled for K8s deployment
   kubernetes.yaml: |
-    mode: cluster
+    mode: default
     ingress: true
     traefik: false
     # Enable only if Gateway API CRDs are installed in the cluster

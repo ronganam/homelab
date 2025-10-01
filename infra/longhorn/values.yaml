@@ -50,6 +50,7 @@ longhorn:
           gethomepage.dev/icon: "longhorn.png"
           gethomepage.dev/group: "Infrastructure"
           gethomepage.dev/weight: "2"
+          gethomepage.dev/pod-selector: "app=longhorn-ui,app.kubernetes.io/instance=longhorn"
       spec:
         rules:
           - host: longhorn.buildin.group

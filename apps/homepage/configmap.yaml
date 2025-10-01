@@ -16,10 +16,12 @@ data:
     statusStyle: "dot"
     hideErrors: true
     instanceName: internal
+    disableCollapse: false
+    groupsInitiallyCollapsed: false
     background: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
-    backgroundOpacity: 0.3
-    backgroundBlur: 2
-    cardBackgroundBlur: 1
+    backgroundOpacity: 0.2
+    backgroundBlur: 3
+    cardBackgroundBlur: 2
     quicklaunch:
       searchDescriptions: true
       showSearchSuggestions: true
@@ -51,10 +53,12 @@ data:
     showStats: true
     statusStyle: "dot"
     hideErrors: true
+    disableCollapse: false
+    groupsInitiallyCollapsed: false
     background: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
-    backgroundOpacity: 0.3
-    backgroundBlur: 2
-    cardBackgroundBlur: 1
+    backgroundOpacity: 0.2
+    backgroundBlur: 3
+    cardBackgroundBlur: 2
   services.yaml: |
     # All services with ingress annotations will be automatically discovered
     # Only add services here that don't have ingresses or need special configuration

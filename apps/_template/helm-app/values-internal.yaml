@@ -28,7 +28,6 @@ CHANGEME-chart: # Replace with upstream chart name
       gethomepage.dev/icon: "CHANGEME.png" # Replace with your app icon
       gethomepage.dev/group: "Applications" # Replace with your group (Applications, Infrastructure, Monitoring)
       gethomepage.dev/weight: "10" # Replace with your weight (lower = higher priority)
-: "internal" # Use "internal" for internal apps
     hosts:
       - name: CHANGEME.buildin.group # Replace with your domain
         path: /

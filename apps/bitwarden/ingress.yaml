@@ -13,7 +13,6 @@ metadata:
     gethomepage.dev/icon: "vaultwarden.png"
     gethomepage.dev/group: "Applications"
     gethomepage.dev/weight: "5"
-: "public"
 spec:
   rules:
     - host: bitwarden.buildin.group

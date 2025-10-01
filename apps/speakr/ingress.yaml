@@ -13,7 +13,6 @@ metadata:
     gethomepage.dev/icon: "speakr.png"
     gethomepage.dev/group: "Applications"
     gethomepage.dev/weight: "15"
-: "internal"
 spec:
   rules:
     - host: speakr.buildin.group

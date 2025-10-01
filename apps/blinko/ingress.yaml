@@ -12,7 +12,6 @@ metadata:
     gethomepage.dev/icon: "blinko.png"
     gethomepage.dev/group: "Applications"
     gethomepage.dev/weight: "20"
-: "internal"
 spec:
   rules:
     - host: blinko.buildin.group

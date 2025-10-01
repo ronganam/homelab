@@ -64,6 +64,7 @@ data:
     - longhorn:
         expanded: true
         total: true
+        url: http://longhorn.buildin.group
     - resources:
         backend: resources
         expanded: true

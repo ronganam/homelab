@@ -8,9 +8,9 @@ kube-prometheus-stack:
     adminPassword: "admin"
     # Add proper labels for homepage discovery
     podLabels:
-      app.kubernetes.io/name: monitoring-grafana
+      app.kubernetes.io/name: grafana
     serviceLabels:
-      app.kubernetes.io/name: monitoring-grafana
+      app.kubernetes.io/name: grafana
     ingress:
       enabled: true
       ingressClassName: nginx
@@ -22,6 +22,7 @@ kube-prometheus-stack:
         gethomepage.dev/icon: "grafana.png"
         gethomepage.dev/group: "Monitoring"
         gethomepage.dev/weight: "3"
+        gethomepage.dev/pod-selector: "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=monitoring"
       hosts:
         - grafana.buildin.group
     service:
@@ -65,9 +66,7 @@ kube-prometheus-stack:
               value: Prometheus
   prometheus:
     enabled: true
-    # Add proper labels for homepage discovery
-    serviceLabels:
-      app.kubernetes.io/name: monitoring-kube-prometheus-prometheus
+    # Add proper labels for homepage discovery (keep defaults; use pod-selector annotation instead)
     ingress:
       enabled: true
       ingressClassName: nginx
@@ -79,6 +78,7 @@ kube-prometheus-stack:
         gethomepage.dev/icon: "prometheus.png"
         gethomepage.dev/group: "Monitoring"
         gethomepage.dev/weight: "4"
+        gethomepage.dev/pod-selector: "app.kubernetes.io/name=prometheus,app.kubernetes.io/instance=monitoring"
       hosts:
         - prometheus.buildin.group
     service:
@@ -101,9 +101,6 @@ kube-prometheus-stack:
           - port: manager
             path: /metrics
     prometheusSpec:
-      podMetadata:
-        labels:
-          app.kubernetes.io/name: monitoring-kube-prometheus-prometheus
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
       ruleSelectorNilUsesHelmValues: false

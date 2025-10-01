@@ -28,6 +28,7 @@ stirling-pdf-chart:
       gethomepage.dev/icon: "stirling-pdf.png"
       gethomepage.dev/group: "Applications"
       gethomepage.dev/weight: "25"
+      gethomepage.dev/pod-selector: "app.kubernetes.io/name=stirling-pdf-chart,app.kubernetes.io/instance=stirling-pdf"
     hosts:
       - name: pdf.buildin.group
         path: /

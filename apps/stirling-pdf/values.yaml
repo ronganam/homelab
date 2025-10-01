@@ -3,10 +3,6 @@
 stirling-pdf-chart:
   replicaCount: 1
 
-  # Add proper labels for homepage discovery
-  podLabels:
-    app.kubernetes.io/name: stirling-pdf-stirling-pdf-chart
-
   image:
     pullPolicy: IfNotPresent
 

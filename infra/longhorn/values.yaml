@@ -49,7 +49,7 @@ longhorn:
           gethomepage.dev/icon: "longhorn.png"
           gethomepage.dev/group: "Infrastructure"
           gethomepage.dev/weight: "2"
-          gethomepage.dev/instance: "internal"
+: "internal"
       spec:
         rules:
           - host: longhorn.buildin.group

@@ -88,7 +88,7 @@ annotations:
   gethomepage.dev/icon: "icon-name.png"
   gethomepage.dev/group: "Group Name"
   gethomepage.dev/weight: "10"
-  gethomepage.dev/instance: "internal" # or "public"
+: "internal" # or "public"
 ```
 
 ### Resource Monitoring

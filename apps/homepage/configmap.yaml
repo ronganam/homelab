@@ -17,9 +17,11 @@ data:
     hideErrors: true
     instanceName: internal
     # Enhanced background with better readability
-    background: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
-    backgroundOpacity: 0.3
-    backgroundFilters: "brightness(0.4) saturate(1.2)"
+    background:
+      image: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
+      opacity: 30
+      brightness: 40
+      saturate: 120
     cardBlur: lg
     providers:
       longhorn:

@@ -8,9 +8,9 @@ kube-prometheus-stack:
     adminPassword: "admin"
     # Add proper labels for homepage discovery
     podLabels:
-      app.kubernetes.io/name: grafana
+      app.kubernetes.io/name: monitoring-grafana
     serviceLabels:
-      app.kubernetes.io/name: grafana
+      app.kubernetes.io/name: monitoring-grafana
     ingress:
       enabled: true
       ingressClassName: nginx
@@ -66,8 +66,6 @@ kube-prometheus-stack:
   prometheus:
     enabled: true
     # Add proper labels for homepage discovery
-    podLabels:
-      app.kubernetes.io/name: monitoring-kube-prometheus-prometheus
     serviceLabels:
       app.kubernetes.io/name: monitoring-kube-prometheus-prometheus
     ingress:
@@ -103,6 +101,9 @@ kube-prometheus-stack:
           - port: manager
             path: /metrics
     prometheusSpec:
+      podMetadata:
+        labels:
+          app.kubernetes.io/name: monitoring-kube-prometheus-prometheus
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false
       ruleSelectorNilUsesHelmValues: false

@@ -6,6 +6,9 @@ stirling-pdf-chart:
   image:
     pullPolicy: IfNotPresent
 
+  podLabels:
+    app.kubernetes.io/name: stirling-pdf-stirling-pdf-chart
+
   service:
     type: ClusterIP
     externalPort: 8080

@@ -16,16 +16,11 @@ data:
     statusStyle: "dot"
     hideErrors: true
     instanceName: internal
-    disableCollapse: false
-    groupsInitiallyCollapsed: false
+    # Subtle blue background inspired by docs example
     background: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
-    backgroundOpacity: 0.2
-    backgroundBlur: 3
+    backgroundOpacity: 0.25
+    backgroundBlur: 4
     cardBackgroundBlur: 2
-    quicklaunch:
-      searchDescriptions: true
-      showSearchSuggestions: true
-      provider: duckduckgo
     providers:
       longhorn:
         url: https://longhorn.buildin.group
@@ -33,15 +28,12 @@ data:
       Infrastructure:
         style: row
         columns: 3
-        useEqualHeights: true
       Applications:
         style: row
         columns: 3
-        useEqualHeights: true
       Monitoring:
         style: row
         columns: 2
-        useEqualHeights: true
   skeleton-settings.yaml: |
     title: Homelab Dashboard
     favicon: https://gethomepage.dev/img/favicon.ico
@@ -53,11 +45,9 @@ data:
     showStats: true
     statusStyle: "dot"
     hideErrors: true
-    disableCollapse: false
-    groupsInitiallyCollapsed: false
     background: https://images.unsplash.com/photo-1506905925346-21bda4d32df4?auto=format&fit=crop&w=2560&q=80
-    backgroundOpacity: 0.2
-    backgroundBlur: 3
+    backgroundOpacity: 0.25
+    backgroundBlur: 4
     cardBackgroundBlur: 2
   services.yaml: |
     # All services with ingress annotations will be automatically discovered
@@ -66,39 +56,10 @@ data:
     # Services are automatically discovered from ingresses with gethomepage.dev annotations
     # No manual configuration needed for services with proper ingress annotations
   widgets.yaml: |
-    # Branding and Navigation
+    # Header widgets - organized in logical groups
     - logo:
         icon: https://gethomepage.dev/img/favicon.ico
-    - greeting:
-        text_size: xl
-        text: "Welcome to your Homelab!"
-    - search:
-        provider: duckduckgo
-        target: _blank
-    
-    # Time and Weather
-    - datetime:
-        text_size: l
-        format:
-          dateStyle: long
-          timeStyle: short
-          hour12: false
-    - openmeteo:
-        label: Weather
-        latitude: 31.7683
-        longitude: 35.2137
-        timezone: Asia/Jerusalem
-        cache: 5
-    
-    # System Resources
-    - resources:
-        backend: resources
-        expanded: true
-        cpu: true
-        memory: true
-        network: default
-    
-    # Kubernetes Cluster
+    # Prioritize key stats up front for a cleaner, data-first header
     - kubernetes:
         cluster:
           show: true
@@ -111,12 +72,35 @@ data:
           cpu: true
           memory: true
           showLabel: true
-    
-    # Storage
+    - resources:
+        backend: resources
+        expanded: true
+        cpu: true
+        memory: true
+        network: default
     - longhorn:
         expanded: true
         total: true
         nodes: true
+    # Utility and context widgets to the right
+    - search:
+        provider: duckduckgo
+        target: _blank
+    - datetime:
+        text_size: l
+        format:
+          dateStyle: long
+          timeStyle: short
+          hour12: false
+    - openmeteo:
+        label: Weather
+        latitude: 31.7683
+        longitude: 35.2137
+        timezone: Asia/Jerusalem
+        cache: 5
+    - greeting:
+        text_size: m
+        text: "Welcome to your Homelab!"
   bookmarks.yaml: |
     # Bookmarks are automatically discovered from ingresses with gethomepage.dev annotations
     # No manual configuration needed for services with proper ingress annotations

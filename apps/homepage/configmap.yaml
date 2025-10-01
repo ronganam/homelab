@@ -19,13 +19,6 @@ data:
     providers:
       longhorn:
         url: https://longhorn.buildin.group
-    layout:
-      Infrastructure:
-        style: row
-        columns: 3
-      Applications:
-        style: row
-        columns: 3
   skeleton-settings.yaml: |
     title: Homelab Dashboard
     favicon: https://gethomepage.dev/img/favicon.ico
@@ -37,6 +30,13 @@ data:
     showStats: true
     statusStyle: "dot"
     hideErrors: true
+  services.yaml: |
+    # All services with ingress annotations will be automatically discovered
+    # Only add services here that don't have ingresses or need special configuration
+    
+    # Services are automatically discovered from ingresses with gethomepage.dev annotations
+    # No manual configuration needed for services with proper ingress annotations
+    
     layout:
       Infrastructure:
         style: row
@@ -44,24 +44,32 @@ data:
       Applications:
         style: row
         columns: 3
-  services.yaml: |
-    # All services with ingress annotations will be automatically discovered
-    # Only add services here that don't have ingresses or need special configuration
-    
-    # Services are automatically discovered from ingresses with gethomepage.dev annotations
-    # No manual configuration needed for services with proper ingress annotations
+      Monitoring:
+        style: row
+        columns: 2
   widgets.yaml: |
+    # Header widgets - organized in logical groups
     - logo:
         icon: https://gethomepage.dev/img/favicon.ico
-    - search:
-        provider: duckduckgo
-        target: _blank
+    - greeting:
+        text_size: xl
+        text: "Welcome to your Homelab!"
     - datetime:
         text_size: l
         format:
           dateStyle: long
           timeStyle: short
           hour12: false
+    - search:
+        provider: duckduckgo
+        target: _blank
+    - openmeteo:
+        label: Weather
+        latitude: 31.7683
+        longitude: 35.2137
+        timezone: Asia/Jerusalem
+        cache: 5
+    # System monitoring widgets
     - kubernetes:
         cluster:
           show: true
@@ -84,15 +92,6 @@ data:
         expanded: true
         total: true
         nodes: true
-    - openmeteo:
-        label: Weather
-        latitude: 31.7683
-        longitude: 35.2137
-        timezone: Asia/Jerusalem
-        cache: 5
-    - greeting:
-        text_size: m
-        text: "Welcome to your Homelab!"
   bookmarks.yaml: |
     # Bookmarks are automatically discovered from ingresses with gethomepage.dev annotations
     # No manual configuration needed for services with proper ingress annotations

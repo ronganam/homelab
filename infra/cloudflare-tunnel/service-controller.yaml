@@ -73,6 +73,7 @@ data:
     import subprocess
     import hashlib
     import logging
+    import re
     from kubernetes import client, config, watch
     import threading
 
@@ -127,6 +128,11 @@ data:
         def create_cloudflare_dns_route(self, hostname):
             """Create DNS route using cloudflared for public services"""
             try:
+                # Skip creating if route already exists
+                if self.public_route_exists(hostname):
+                    logger.info("Cloudflare DNS route already exists for %s", hostname)
+                    return True
+
                 logger.info("Creating Cloudflare DNS route for %s", hostname)
 
                 cmd = [
@@ -173,6 +179,30 @@ data:
                 return False
             except Exception as e:
                 logger.exception("Error creating Cloudflare DNS route for %s: %s", hostname, e)
+                return False
+
+        def public_route_exists(self, hostname):
+            """Check if a Cloudflare DNS route already exists for the hostname"""
+            try:
+                cmd = [
+                    'kubectl', 'exec', '-n', 'cloudflare-tunnel',
+                    'deployment/cloudflared', '--', 'cloudflared',
+                    'tunnel', 'route', 'dns', 'homelab-tunnel', 'list'
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+                if result.returncode != 0:
+                    logger.debug("route list failed rc=%s stderr='%s'", result.returncode, result.stderr.strip())
+                    return False
+                out = result.stdout or ""
+                # Simple containment check; output is tabular, so contains hostname when present
+                exists = hostname in out
+                logger.debug("route exists for %s: %s", hostname, exists)
+                return exists
+            except subprocess.TimeoutExpired:
+                logger.warning("Timeout checking route existence for %s", hostname)
+                return False
+            except Exception as e:
+                logger.debug("Error checking route existence for %s: %s", hostname, e)
                 return False
 
         def create_internal_dns_entry(self, hostname, ip_address):
@@ -486,6 +516,124 @@ data:
                 logger.exception("Error updating tunnel config: %s", e)
                 return False
 
+        def build_desired_public_rules(self):
+            """Build desired ingress rules from all public, DNS-enabled services"""
+            desired = []
+            services = self.get_services_with_dns_label()
+            for service in services:
+                try:
+                    labels = (service.metadata and service.metadata.labels) or {}
+                    if labels.get(DNS_ENABLED_LABEL) != "true":
+                        continue
+                    exposure = labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC)
+                    if exposure != EXPOSURE_PUBLIC:
+                        continue
+                    hostname = labels.get(DNS_HOSTNAME_LABEL)
+                    if not hostname:
+                        continue
+                    port = self.get_service_port(service.metadata.name, service.metadata.namespace)
+                    desired_service = f"http://{service.metadata.name}.{service.metadata.namespace}.svc.cluster.local:{port}"
+                    desired.append({
+                        "hostname": str(hostname).strip().lower().rstrip('.'),
+                        "service": desired_service,
+                    })
+                except Exception as e:
+                    logger.debug("Error building desired rule from %s.%s: %s", service.metadata.name, service.metadata.namespace, e)
+            return desired
+
+        def get_current_public_rules(self, config_data):
+            """Extract current public ingress rules from config (excluding catch-all)"""
+            rules = []
+            for rule in config_data.get("ingress", []) or []:
+                if not isinstance(rule, dict):
+                    continue
+                if rule.get("service") == "http_status:404":
+                    continue
+                hostname = str(rule.get("hostname", "")).strip().lower().rstrip('.')
+                service_target = rule.get("service")
+                if hostname and service_target:
+                    rules.append({"hostname": hostname, "service": service_target})
+            return rules
+
+        def reconcile_tunnel_config(self):
+            """Reconcile entire set of public ingress rules. Only patch if changed."""
+            try:
+                # Load current configmap
+                configmap = self.v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
+                current_config = configmap.data["config.yaml"]
+                config_data = yaml.safe_load(current_config) or {}
+
+                desired_rules = self.build_desired_public_rules()
+                current_rules = self.get_current_public_rules(config_data)
+
+                # Sort for stable comparison
+                def sort_key(r):
+                    return (r.get("hostname", ""), r.get("service", ""))
+
+                desired_sorted = sorted(desired_rules, key=sort_key)
+                current_sorted = sorted(current_rules, key=sort_key)
+
+                if desired_sorted == current_sorted:
+                    logger.info("Tunnel config already matches desired state; no changes needed")
+                    return True
+
+                # Rebuild ingress: keep catch-all at end
+                new_ingress = []
+                for r in desired_sorted:
+                    new_ingress.append({"hostname": r["hostname"], "service": r["service"]})
+                # Preserve catch-all 404 if present; otherwise append one
+                catch_all = None
+                for rule in config_data.get("ingress", []) or []:
+                    if isinstance(rule, dict) and rule.get("service") == "http_status:404":
+                        catch_all = rule
+                        break
+                if catch_all is None:
+                    catch_all = {"service": "http_status:404"}
+                new_ingress.append(catch_all)
+
+                config_data["ingress"] = new_ingress
+
+                # Patch only if hash differs
+                new_hash = self.calculate_config_hash(config_data)
+                if new_hash == self.tunnel_config_hash:
+                    logger.info("Computed config hash unchanged; skipping patch")
+                    return True
+
+                updated_config = yaml.dump(config_data, default_flow_style=False)
+                configmap.data["config.yaml"] = updated_config
+                self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
+                logger.info("Updated ConfigMap with reconciled ingress rules")
+
+                # Trigger rollout
+                try:
+                    patch_body = {
+                        "spec": {
+                            "template": {
+                                "metadata": {
+                                    "annotations": {
+                                        "service-controller.io/config-hash": new_hash
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    self.apps_v1.patch_namespaced_deployment(
+                        name="cloudflared",
+                        namespace="cloudflare-tunnel",
+                        body=patch_body
+                    )
+                    logger.info("Triggered cloudflared rollout due to reconciled config change")
+                except Exception as rollout_e:
+                    logger.warning("Failed to trigger cloudflared rollout: %s", rollout_e)
+
+                self.tunnel_config_hash = new_hash
+                self.last_config_update = time.time()
+                logger.info("Reconciled tunnel config applied")
+                return True
+            except Exception as e:
+                logger.exception("Error reconciling tunnel config: %s", e)
+                return False
+
         def process_service_event(self, event_type, service):
             """Process service events"""
             try:
@@ -535,6 +683,8 @@ data:
             services = self.get_services_with_dns_label()
             for service in services:
                 self.process_service_event("EXISTING", service)
+            # Ensure full tunnel config matches desired set of public services
+            self.reconcile_tunnel_config()
 
         def start_periodic_reconciliation(self):
             def periodic_reconcile():

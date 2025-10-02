@@ -16,6 +16,7 @@ spec:
     metadata:
       labels:
         app: homeassistant
+        app.kubernetes.io/name: homeassistant
     spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet

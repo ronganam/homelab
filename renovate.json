@@ -37,7 +37,9 @@
     "kustomize",
     "kubernetes"
   ],
-  
+  "ignorePaths": [
+    "apps/_template/**"
+  ],
   "platformAutomerge": true,
   "automerge": false,
   "prConcurrentLimit": 5,

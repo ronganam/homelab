@@ -1,34 +1,50 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "packageRules": [
     {
+      "matchCategories": [
+        "docker"
+      ],
+      "enabled": true
+    },
+    {
       "description": "Group all Docker image updates into a single PR",
-      "matchDatasources": ["docker"],
+      "matchDatasources": [
+        "docker"
+      ],
       "groupName": "Docker Images",
       "groupSlug": "docker-images"
     },
     {
       "description": "Auto-merge minor and patch updates for Docker images",
-      "matchDatasources": ["docker"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchDatasources": [
+        "docker"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "automerge": true,
       "automergeType": "pr"
     },
     {
       "description": "Schedule updates for Docker images on weekdays",
-      "matchDatasources": ["docker"],
-      "schedule": ["before 6am on monday"]
+      "matchDatasources": [
+        "docker"
+      ],
+      "schedule": [
+        "before 6am on monday"
+      ]
     }
   ],
-  "docker": {
-    "enabled": true
-  },
   "kubernetes": {
     "enabled": true,
-    "fileMatch": [
-      "(^|/)apps/.+\\.ya?ml$",
-      "(^|/)infra/.+\\.ya?ml$"
+    "managerFilePatterns": [
+      "/(^|/)apps/.+\\.ya?ml$/",
+      "/(^|/)infra/.+\\.ya?ml$/"
     ]
   },
   "enabledManagers": [

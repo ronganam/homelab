@@ -1,0 +1,22 @@
+# INTERNAL Service - accessible via ingress
+# This service will be accessible via internal DNS using MetalLB IP + Ingress
+apiVersion: v1
+kind: Service
+metadata:
+  name: homeassistant
+  namespace: homeassistant
+  labels:
+    app: homeassistant
+    # DNS Management Labels for Internal Service
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "homeassistant.buildin.group"
+    exposure.service-controller.io/type: "internal"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8123
+      protocol: TCP
+  selector:
+    app: homeassistant

@@ -1,0 +1,29 @@
+# Ingress for INTERNAL apps only
+# This ingress is only needed for internal services
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: homeassistant
+  namespace: homeassistant
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    # Homepage automatic service discovery annotations
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Home Assistant"
+    gethomepage.dev/description: "Home automation platform"
+    gethomepage.dev/icon: "home-assistant.svg"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "10"
+spec:
+  rules:
+    - host: homeassistant.buildin.group
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: homeassistant
+                port:
+                  number: 80

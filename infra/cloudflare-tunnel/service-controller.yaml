@@ -130,10 +130,10 @@ data:
             try:
                 # Skip creating if route already exists
                 if self.public_route_exists(hostname):
-                    logger.info("Cloudflare DNS route already exists for %s", hostname)
+                    logger.debug("Cloudflare DNS route already exists for %s", hostname)
                     return True
 
-                logger.info("Creating Cloudflare DNS route for %s", hostname)
+                logger.debug("Ensuring Cloudflare DNS route for %s", hostname)
 
                 cmd = [
                     'kubectl', 'exec', '-n', 'cloudflare-tunnel',
@@ -145,11 +145,11 @@ data:
                 out = (result.stdout or "") + "\n" + (result.stderr or "")
                 logger.debug("DNS route cmd rc=%s out='%s'", result.returncode, out.strip())
                 if result.returncode == 0:
-                    # Heuristics: if output hints it existed, say so; otherwise say ensured
+                    # Heuristics: avoid noisy info logs; treat as ensure at debug level
                     if re.search(r"exist|already", out, re.IGNORECASE):
-                        logger.info("Cloudflare DNS route already existed for %s", hostname)
+                        logger.debug("Cloudflare DNS route already existed for %s", hostname)
                     else:
-                        logger.info("Ensured Cloudflare DNS route for %s", hostname)
+                        logger.debug("Ensured Cloudflare DNS route for %s", hostname)
                     return True
                 else:
                     logger.warning("Cloudflare DNS route creation failed for %s: %s", hostname, result.stderr.strip())
@@ -165,9 +165,9 @@ data:
                     logger.debug("Fallback DNS route rc=%s out='%s'", result_fallback.returncode, fb_out.strip())
                     if result_fallback.returncode == 0:
                         if re.search(r"exist|already", fb_out, re.IGNORECASE):
-                            logger.info("Cloudflare DNS route already existed for %s (fallback)", hostname)
+                            logger.debug("Cloudflare DNS route already existed for %s (fallback)", hostname)
                         else:
-                            logger.info("Ensured Cloudflare DNS route for %s (fallback)", hostname)
+                            logger.debug("Ensured Cloudflare DNS route for %s (fallback)", hostname)
                         return True
                     else:
                         logger.error("Failed to create Cloudflare DNS route for %s: %s", hostname, result_fallback.stderr.strip())
@@ -204,9 +204,9 @@ data:
                 return False
 
         def create_internal_dns_entry(self, hostname, ip_address):
-            """Create internal DNS entry using MetalLB IP via Cloudflare API"""
+            """Ensure internal DNS entry using MetalLB IP via Cloudflare API"""
             try:
-                logger.info("Creating internal DNS entry for %s -> %s", hostname, ip_address)
+                logger.debug("Ensuring internal DNS entry for %s -> %s", hostname, ip_address)
 
                 # Get Cloudflare API credentials from environment or secret
                 api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
@@ -238,20 +238,16 @@ data:
                 if existing_record:
                     # Update existing record if IP is different
                     if existing_record.get('content') != ip_address:
-                        logger.info("Updating existing DNS record for %s", hostname)
+                        logger.info("Updating internal DNS record for %s -> %s", hostname, ip_address)
                         success = self.update_dns_record(zone_id, existing_record['id'], subdomain, ip_address, api_token)
-                        if success:
-                            logger.info("Updated DNS record for %s -> %s", hostname, ip_address)
                         return success
                     else:
-                        logger.info("DNS record for %s already exists with correct IP", hostname)
+                        logger.debug("Internal DNS record for %s already correct", hostname)
                         return True
                 else:
                     # Create new record
-                    logger.info("Creating new DNS record for %s", hostname)
+                    logger.info("Creating internal DNS record for %s -> %s", hostname, ip_address)
                     success = self.create_dns_record(zone_id, subdomain, ip_address, api_token, domain)
-                    if success:
-                        logger.info("Created DNS record for %s -> %s", hostname, ip_address)
                     return success
 
             except Exception as e:
@@ -675,18 +671,15 @@ data:
 
                 if event_type in ["ADDED", "MODIFIED", "EXISTING"]:
                     if exposure_type == EXPOSURE_PUBLIC:
-                        # Public services: ensure DNS route exists, then reconcile full config for idempotency
-                        dns_success = self.create_cloudflare_dns_route(hostname)
-                        if dns_success:
-                            # Full reconcile ensures no missing/extra entries and avoids partial drift
-                            self.reconcile_tunnel_config()
+                        # Public services: ensure DNS route exists quietly; reconciliation handles config changes
+                        self.create_cloudflare_dns_route(hostname)
                     elif exposure_type == EXPOSURE_INTERNAL:
-                        # Handle internal services via Ingress controller IP (MetalLB)
+                        # Internal services: ensure DNS quietly at event time
                         external_ip = self.get_ingress_external_ip()
                         if external_ip:
                             self.create_internal_dns_entry(hostname, external_ip)
                         else:
-                            logger.warning("Ingress controller has no external IP/hostname yet; cannot create DNS for %s", hostname)
+                            logger.debug("Ingress controller has no external IP/hostname yet; skip ensure for %s", hostname)
                     else:
                         logger.warning("Unknown exposure type '%s' for service %s.%s", exposure_type, service_name, namespace)
 
@@ -695,11 +688,11 @@ data:
 
         def reconcile_all(self):
             """Reconcile all DNS-enabled services periodically"""
-            logger.info("Periodic reconciliation: checking all DNS-enabled services...")
+            # Summary-only logs: internal DNS ensure is silent unless changes happen
             services = self.get_services_with_dns_label()
             for service in services:
                 self.process_service_event("EXISTING", service)
-            # Ensure full tunnel config matches desired set of public services
+            # Public tunnel reconciliation prints desired/current/diff summary
             self.reconcile_tunnel_config()
 
         def start_periodic_reconciliation(self):

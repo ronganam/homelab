@@ -70,11 +70,16 @@ data:
     import os
     import time
     import yaml
-    import json
     import subprocess
     import hashlib
+    import logging
     from kubernetes import client, config, watch
     import threading
+
+    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+    logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+    logger = logging.getLogger("service-controller")
+    RECONCILE_INTERVAL_SEC = int(os.environ.get('RECONCILE_INTERVAL_SEC', '300'))
 
     # Label constants
     DNS_ENABLED_LABEL = "dns.service-controller.io/enabled"
@@ -103,19 +108,8 @@ data:
                     return service.spec.ports[0].port
                 return 80
             except Exception as e:
-                print(f"⚠️  Error getting port for {service_name}.{namespace}: {e}")
+                logger.warning("Error getting port for %s.%s: %s", service_name, namespace, e)
                 return 80
-
-        def get_service_external_ip(self, service_name, namespace):
-            """Get the external IP of a service (for MetalLB)"""
-            try:
-                service = self.v1.read_namespaced_service(service_name, namespace)
-                if service.status.load_balancer and service.status.load_balancer.ingress:
-                    return service.status.load_balancer.ingress[0].ip
-                return None
-            except Exception as e:
-                print(f"⚠️  Error getting external IP for {service_name}.{namespace}: {e}")
-                return None
 
         def get_ingress_external_ip(self):
             """Get the external IP of the ingress controller service for internal HTTPS"""
@@ -127,13 +121,13 @@ data:
                         return ip
                 return None
             except Exception as e:
-                print(f"⚠️  Error getting external IP for ingress {self.ingress_service_name}.{self.ingress_namespace}: {e}")
+                logger.warning("Error getting external IP for ingress %s.%s: %s", self.ingress_service_name, self.ingress_namespace, e)
                 return None
 
         def create_cloudflare_dns_route(self, hostname):
             """Create DNS route using cloudflared for public services"""
             try:
-                print(f"🌐 Creating Cloudflare DNS route for {hostname}")
+                logger.info("Creating Cloudflare DNS route for %s", hostname)
 
                 cmd = [
                     'kubectl', 'exec', '-n', 'cloudflare-tunnel',
@@ -142,9 +136,9 @@ data:
                     'homelab-tunnel', hostname
                 ]
                 result = subprocess.run(cmd, capture_output=True, text=True)
-                print(f"DEBUG: DNS route cmd returncode: {result.returncode}, stdout: '{result.stdout.strip()}', stderr: '{result.stderr.strip()}'")
+                logger.debug("DNS route cmd rc=%s stdout='%s' stderr='%s'", result.returncode, result.stdout.strip(), result.stderr.strip())
                 if result.returncode == 0:
-                    print(f"✅ Created Cloudflare DNS route for {hostname}")
+                    logger.info("Created Cloudflare DNS route for %s", hostname)
                     # Simplified verification - just list routes without full info to avoid OOM
                     verify_cmd = [
                         'kubectl', 'exec', '-n', 'cloudflare-tunnel',
@@ -153,12 +147,12 @@ data:
                     ]
                     verify = subprocess.run(verify_cmd, capture_output=True, text=True, timeout=10)
                     if verify.returncode == 0:
-                        print(f"ℹ️  DNS routes for homelab-tunnel: {verify.stdout.strip()}")
+                        logger.debug("DNS routes for homelab-tunnel: %s", verify.stdout.strip())
                     else:
-                        print(f"⚠️  Could not list DNS routes: {verify.stderr.strip()}")
+                        logger.warning("Could not list DNS routes: %s", verify.stderr.strip())
                     return True
                 else:
-                    print(f"⚠️  Cloudflare DNS route creation failed for {hostname}: {result.stderr.strip()}")
+                    logger.warning("Cloudflare DNS route creation failed for %s: %s", hostname, result.stderr.strip())
                     # Try without overwrite flag as fallback
                     cmd_fallback = [
                         'kubectl', 'exec', '-n', 'cloudflare-tunnel',
@@ -167,29 +161,29 @@ data:
                         'homelab-tunnel', hostname
                     ]
                     result_fallback = subprocess.run(cmd_fallback, capture_output=True, text=True)
-                    print(f"DEBUG: Fallback DNS route cmd returncode: {result_fallback.returncode}, stdout: '{result_fallback.stdout.strip()}', stderr: '{result_fallback.stderr.strip()}'")
+                    logger.debug("Fallback DNS route rc=%s stdout='%s' stderr='%s'", result_fallback.returncode, result_fallback.stdout.strip(), result_fallback.stderr.strip())
                     if result_fallback.returncode == 0:
-                        print(f"✅ Created Cloudflare DNS route for {hostname} (fallback)")
+                        logger.info("Created Cloudflare DNS route for %s (fallback)", hostname)
                         return True
                     else:
-                        print(f"❌ Failed to create Cloudflare DNS route for {hostname}: {result_fallback.stderr.strip()}")
+                        logger.error("Failed to create Cloudflare DNS route for %s: %s", hostname, result_fallback.stderr.strip())
                         return False
             except subprocess.TimeoutExpired:
-                print(f"⚠️  DNS route command timed out for {hostname}")
+                logger.warning("DNS route command timed out for %s", hostname)
                 return False
             except Exception as e:
-                print(f"❌ Error creating Cloudflare DNS route for {hostname}: {e}")
+                logger.exception("Error creating Cloudflare DNS route for %s: %s", hostname, e)
                 return False
 
         def create_internal_dns_entry(self, hostname, ip_address):
             """Create internal DNS entry using MetalLB IP via Cloudflare API"""
             try:
-                print(f"🏠 Creating internal DNS entry for {hostname} -> {ip_address}")
+                logger.info("Creating internal DNS entry for %s -> %s", hostname, ip_address)
 
                 # Get Cloudflare API credentials from environment or secret
                 api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
                 if not api_token:
-                    print("⚠️  CLOUDFLARE_API_TOKEN not found in environment variables")
+                    logger.warning("CLOUDFLARE_API_TOKEN not found in environment variables")
                     return False
 
                 # Extract domain from hostname (e.g., "service.internal.example.com" -> "example.com")
@@ -202,12 +196,12 @@ data:
                 domain = '.'.join(domain_parts[-2:])
                 subdomain = '.'.join(domain_parts[:-2]) if len(domain_parts) > 2 else '@'
 
-                print(f"🔍 Domain: {domain}, Subdomain: {subdomain}")
+                logger.debug("Domain: %s, Subdomain: %s", domain, subdomain)
 
                 # Get zone ID for the domain
                 zone_id = self.get_cloudflare_zone_id(domain, api_token)
                 if not zone_id:
-                    print(f"❌ Could not find zone ID for domain: {domain}")
+                    logger.error("Could not find zone ID for domain: %s", domain)
                     return False
 
                 # Check if record already exists
@@ -216,24 +210,24 @@ data:
                 if existing_record:
                     # Update existing record if IP is different
                     if existing_record.get('content') != ip_address:
-                        print(f"🔄 Updating existing DNS record for {hostname}")
+                        logger.info("Updating existing DNS record for %s", hostname)
                         success = self.update_dns_record(zone_id, existing_record['id'], subdomain, ip_address, api_token)
                         if success:
-                            print(f"✅ Updated DNS record for {hostname} -> {ip_address}")
+                            logger.info("Updated DNS record for %s -> %s", hostname, ip_address)
                         return success
                     else:
-                        print(f"ℹ️  DNS record for {hostname} already exists with correct IP")
+                        logger.info("DNS record for %s already exists with correct IP", hostname)
                         return True
                 else:
                     # Create new record
-                    print(f"🆕 Creating new DNS record for {hostname}")
+                    logger.info("Creating new DNS record for %s", hostname)
                     success = self.create_dns_record(zone_id, subdomain, ip_address, api_token, domain)
                     if success:
-                        print(f"✅ Created DNS record for {hostname} -> {ip_address}")
+                        logger.info("Created DNS record for %s -> %s", hostname, ip_address)
                     return success
 
             except Exception as e:
-                print(f"❌ Error creating internal DNS entry for {hostname}: {e}")
+                logger.exception("Error creating internal DNS entry for %s: %s", hostname, e)
                 return False
 
         def get_cloudflare_zone_id(self, domain, api_token):
@@ -253,17 +247,17 @@ data:
                     data = response.json()
                     if data.get('success') and data.get('result'):
                         zone_id = data['result'][0]['id']
-                        print(f"✅ Found zone ID for {domain}: {zone_id}")
+                        logger.info("Found zone ID for %s: %s", domain, zone_id)
                         return zone_id
                     else:
-                        print(f"❌ No zone found for domain: {domain}")
+                        logger.error("No zone found for domain: %s", domain)
                         return None
                 else:
-                    print(f"❌ Failed to get zone ID: {response.status_code} - {response.text}")
+                    logger.error("Failed to get zone ID: %s - %s", response.status_code, response.text)
                     return None
 
             except Exception as e:
-                print(f"❌ Error getting zone ID: {e}")
+                logger.exception("Error getting zone ID: %s", e)
                 return None
 
         def get_existing_dns_record(self, zone_id, subdomain, domain, api_token):
@@ -289,11 +283,11 @@ data:
                     else:
                         return None
                 else:
-                    print(f"❌ Failed to check existing records: {response.status_code}")
+                    logger.error("Failed to check existing records: %s", response.status_code)
                     return None
 
             except Exception as e:
-                print(f"❌ Error checking existing DNS record: {e}")
+                logger.exception("Error checking existing DNS record: %s", e)
                 return None
 
         def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):
@@ -325,14 +319,14 @@ data:
                     if result.get('success'):
                         return True
                     else:
-                        print(f"❌ Failed to create DNS record: {result.get('errors', [])}")
+                        logger.error("Failed to create DNS record: %s", result.get('errors', []))
                         return False
                 else:
-                    print(f"❌ Failed to create DNS record: {response.status_code} - {response.text}")
+                    logger.error("Failed to create DNS record: %s - %s", response.status_code, response.text)
                     return False
 
             except Exception as e:
-                print(f"❌ Error creating DNS record: {e}")
+                logger.exception("Error creating DNS record: %s", e)
                 return False
 
         def update_dns_record(self, zone_id, record_id, subdomain, ip_address, api_token):
@@ -366,14 +360,14 @@ data:
                     if result.get('success'):
                         return True
                     else:
-                        print(f"❌ Failed to update DNS record: {result.get('errors', [])}")
+                        logger.error("Failed to update DNS record: %s", result.get('errors', []))
                         return False
                 else:
-                    print(f"❌ Failed to update DNS record: {response.status_code} - {response.text}")
+                    logger.error("Failed to update DNS record: %s - %s", response.status_code, response.text)
                     return False
 
             except Exception as e:
-                print(f"❌ Error updating DNS record: {e}")
+                logger.exception("Error updating DNS record: %s", e)
                 return False
 
         def calculate_config_hash(self, config_data):
@@ -384,7 +378,7 @@ data:
         def update_tunnel_config(self, service_name, hostname, namespace, port):
             """Update the tunnel configuration for public services"""
             try:
-                print(f"🔧 Adding tunnel ingress rule for {hostname}")
+                logger.info("Adding tunnel ingress rule for %s", hostname)
 
                 # Get current config
                 configmap = self.v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
@@ -395,50 +389,50 @@ data:
 
                 # Desired service target for this hostname
                 desired_service = f"http://{service_name}.{namespace}.svc.cluster.local:{port}"
-                print(f"DEBUG: Desired service for {hostname}: {desired_service}")
+                logger.debug("Desired service for %s: %s", hostname, desired_service)
 
                 # Normalize hostname and check existing rules
                 normalized_hostname = str(hostname).strip().lower().rstrip(".")
-                print(f"DEBUG: Normalized hostname: '{normalized_hostname}'")
+                logger.debug("Normalized hostname: '%s'", normalized_hostname)
                 ingress_rules = config_data.get("ingress", [])
                 existing_index = None
+                config_changed = False
                 for i, rule in enumerate(ingress_rules):
                     if not isinstance(rule, dict):
                         continue
                     current_hostname = str(rule.get("hostname", "")).strip().lower().rstrip(".")
-                    print(f"DEBUG: Checking rule {i}: current_hostname='{current_hostname}', rule={rule}")
+                    logger.debug("Checking rule %s: current_hostname='%s' rule=%s", i, current_hostname, rule)
                     if current_hostname == normalized_hostname:
                         existing_index = i
                         current_service = rule.get("service")
-                        print(f"DEBUG: Found existing rule at index {i}, current service: '{current_service}', desired: '{desired_service}'")
+                        logger.debug("Found existing rule at index %s, current service: '%s', desired: '%s'", i, current_service, desired_service)
                         if current_service != desired_service:
-                            print(f"🔄 Updating tunnel ingress rule for {hostname} -> {desired_service}")
+                            logger.info("Updating tunnel ingress rule for %s -> %s", hostname, desired_service)
                             rule["service"] = desired_service
                             ingress_rules[i] = rule
                             config_changed = True
                         else:
-                            print(f"⚠️  Tunnel ingress rule for {hostname} already exists")
+                            logger.info("Tunnel ingress rule for %s already exists", hostname)
                             return True
                         break
 
                 # Add new rule before catch-all if not found
                 if existing_index is None:
-                    print(f"DEBUG: No existing rule found for {normalized_hostname}, adding new")
+                    logger.debug("No existing rule found for %s, adding new", normalized_hostname)
                     new_rule = {
                         "hostname": hostname,
                         "service": desired_service
                     }
                     
                     # Insert before the catch-all rule
-                    config_changed = False
                     for i, rule in enumerate(ingress_rules):
                         if isinstance(rule, dict) and rule.get("service") == "http_status:404":
-                            print(f"DEBUG: Inserting before catch-all at index {i}")
+                            logger.debug("Inserting before catch-all at index %s", i)
                             ingress_rules.insert(i, new_rule)
                             config_changed = True
                             break
                     else:
-                        print("DEBUG: Appending to end (no catch-all found)")
+                        logger.debug("Appending to end (no catch-all found)")
                         ingress_rules.append(new_rule)
                         config_changed = True
 
@@ -446,15 +440,15 @@ data:
 
                 # Calculate new config hash
                 new_hash = self.calculate_config_hash(config_data)
-                print(f"DEBUG: New config hash: {new_hash}, previous: {self.tunnel_config_hash}")
+                logger.debug("New config hash: %s, previous: %s", new_hash, self.tunnel_config_hash)
 
                 # Only update if config actually changed
-                if new_hash != self.tunnel_config_hash or 'config_changed' in locals() and config_changed:
+                if new_hash != self.tunnel_config_hash or config_changed:
                     # Update the configmap
                     updated_config = yaml.dump(config_data, default_flow_style=False)
                     configmap.data["config.yaml"] = updated_config
                     self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
-                    print(f"ℹ️  Updated ConfigMap with new ingress rules")
+                    logger.info("Updated ConfigMap with new ingress rules")
 
                     # Force cloudflared rollout by updating pod template annotation with the new hash
                     try:
@@ -474,24 +468,22 @@ data:
                             namespace="cloudflare-tunnel",
                             body=patch_body
                         )
-                        print("🔁 Triggered cloudflared rollout due to config change")
+                        logger.info("Triggered cloudflared rollout due to config change")
                     except Exception as rollout_e:
-                        print(f"⚠️  Failed to trigger cloudflared rollout: {rollout_e}")
+                        logger.warning("Failed to trigger cloudflared rollout: %s", rollout_e)
 
                     # Update hash and timestamp
                     self.tunnel_config_hash = new_hash
                     self.last_config_update = time.time()
 
-                    print(f"✅ Updated tunnel config for {hostname}")
+                    logger.info("Updated tunnel config for %s", hostname)
                 else:
-                    print(f"ℹ️  Tunnel config unchanged for {hostname}, skipping update")
+                    logger.info("Tunnel config unchanged for %s, skipping update", hostname)
 
                 return True
 
             except Exception as e:
-                print(f"❌ Error updating tunnel config: {e}")
-                import traceback
-                traceback.print_exc()
+                logger.exception("Error updating tunnel config: %s", e)
                 return False
 
         def process_service_event(self, event_type, service):
@@ -512,10 +504,10 @@ data:
                 exposure_type = labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC)
 
                 if not hostname:
-                    print(f"⚠️  Service {service_name}.{namespace} has DNS enabled but no hostname specified")
+                    logger.warning("Service %s.%s has DNS enabled but no hostname specified", service_name, namespace)
                     return
 
-                print(f"🔍 Processing {event_type} event for {service_name}.{namespace} -> {hostname} (exposure: {exposure_type})")
+                logger.info("Processing %s event for %s.%s -> %s (exposure: %s)", event_type, service_name, namespace, hostname, exposure_type)
 
                 if event_type in ["ADDED", "MODIFIED", "EXISTING"]:
                     if exposure_type == EXPOSURE_PUBLIC:
@@ -530,19 +522,31 @@ data:
                         if external_ip:
                             self.create_internal_dns_entry(hostname, external_ip)
                         else:
-                            print(f"⚠️  Ingress controller has no external IP/hostname yet; cannot create DNS for {hostname}")
+                            logger.warning("Ingress controller has no external IP/hostname yet; cannot create DNS for %s", hostname)
                     else:
-                        print(f"⚠️  Unknown exposure type '{exposure_type}' for service {service_name}.{namespace}")
+                        logger.warning("Unknown exposure type '%s' for service %s.%s", exposure_type, service_name, namespace)
 
             except Exception as e:
-                print(f"❌ Error processing service event: {e}")
+                logger.exception("Error processing service event: %s", e)
 
         def reconcile_all(self):
             """Reconcile all DNS-enabled services periodically"""
-            print("🔍 Periodic reconciliation: checking all DNS-enabled services...")
+            logger.info("Periodic reconciliation: checking all DNS-enabled services...")
             services = self.get_services_with_dns_label()
             for service in services:
                 self.process_service_event("EXISTING", service)
+
+        def start_periodic_reconciliation(self):
+            def periodic_reconcile():
+                while True:
+                    time.sleep(RECONCILE_INTERVAL_SEC)
+                    try:
+                        self.reconcile_all()
+                    except Exception as e:
+                        logger.exception("Error in periodic reconciliation: %s", e)
+            thread = threading.Thread(target=periodic_reconcile, daemon=True)
+            thread.start()
+            logger.info("Started periodic reconciliation every %s seconds", RECONCILE_INTERVAL_SEC)
 
         def get_services_with_dns_label(self):
             """Get all services that have DNS enabled using label selector"""
@@ -558,72 +562,52 @@ data:
         def main(self):
             """Main controller loop"""
             try:
-                print("🔍 Loading Kubernetes config...")
-                import sys
-                sys.stdout.flush()
+                logger.info("Loading Kubernetes config...")
 
                 # Debug environment variables
-                print(f"🔍 KUBERNETES_SERVICE_HOST: {os.environ.get('KUBERNETES_SERVICE_HOST', 'Not set')}")
-                print(f"🔍 KUBERNETES_SERVICE_PORT: {os.environ.get('KUBERNETES_SERVICE_PORT', 'Not set')}")
-                print(f"🔍 KUBECONFIG: {os.environ.get('KUBECONFIG', 'Not set')}")
+                logger.debug("KUBERNETES_SERVICE_HOST: %s", os.environ.get('KUBERNETES_SERVICE_HOST', 'Not set'))
+                logger.debug("KUBERNETES_SERVICE_PORT: %s", os.environ.get('KUBERNETES_SERVICE_PORT', 'Not set'))
+                logger.debug("KUBECONFIG: %s", os.environ.get('KUBECONFIG', 'Not set'))
 
                 # Load kubeconfig - try in-cluster first, then fallback to kubeconfig
                 try:
                     config.load_incluster_config()
-                    print("✅ Kubernetes in-cluster config loaded")
+                    logger.info("Kubernetes in-cluster config loaded")
                 except Exception as e:
-                    print(f"⚠️  In-cluster config failed: {e}")
-                    print("🔄 Trying kubeconfig...")
+                    logger.warning("In-cluster config failed: %s", e)
+                    logger.info("Trying kubeconfig...")
                     config.load_kube_config()
-                    print("✅ Kubernetes kubeconfig loaded")
+                    logger.info("Kubernetes kubeconfig loaded")
 
                 # Initialize Kubernetes clients after config is loaded
                 self.v1 = client.CoreV1Api()
                 self.apps_v1 = client.AppsV1Api()
 
-                sys.stdout.flush()
-
-                print("✅ Service Controller initialized")
-                sys.stdout.flush()
+                logger.info("Service Controller initialized")
 
                 # Test Kubernetes API connection
                 try:
-                    print("🔍 Testing Kubernetes API connection...")
-                    sys.stdout.flush()
+                    logger.info("Testing Kubernetes API connection...")
                     # Try a simple API call to test connection
                     self.v1.list_namespace()
-                    print("✅ Kubernetes API connection successful")
-                    sys.stdout.flush()
+                    logger.info("Kubernetes API connection successful")
                 except Exception as e:
-                    print(f"❌ Kubernetes API connection failed: {e}")
-                    print("🔄 Retrying in 10 seconds...")
-                    sys.stdout.flush()
+                    logger.error("Kubernetes API connection failed: %s", e)
+                    logger.info("Retrying in 10 seconds...")
                     time.sleep(10)
                     return self.main()
 
                 # Process existing services with DNS enabled
-                print("🔍 Processing existing services with DNS enabled...")
-                sys.stdout.flush()
+                logger.info("Processing existing services with DNS enabled...")
                 existing_services = self.get_services_with_dns_label()
                 for service in existing_services:
                     self.process_service_event("EXISTING", service)
 
                 # Start periodic reconciliation thread
-                def periodic_reconcile():
-                    while True:
-                        time.sleep(300)  # 5 minutes
-                        try:
-                            self.reconcile_all()
-                        except Exception as e:
-                            print(f"❌ Error in periodic reconciliation: {e}")
-
-                thread = threading.Thread(target=periodic_reconcile, daemon=True)
-                thread.start()
-                print("⏰ Started periodic reconciliation every 5 minutes")
+                self.start_periodic_reconciliation()
 
                 # Watch for changes using label selector for efficiency
-                print("👀 Watching for service changes with DNS enabled...")
-                sys.stdout.flush()
+                logger.info("Watching for service changes with DNS enabled...")
                 w = watch.Watch()
 
                 # Watch only services with DNS enabled label
@@ -632,16 +616,13 @@ data:
                     for event in w.stream(self.v1.list_service_for_all_namespaces, label_selector=label_selector):
                         self.process_service_event(event["type"], event["object"])
                 except Exception as e:
-                    print(f"❌ Watch stream error: {e}")
-                    print("🔄 Restarting watch in 5 seconds...")
-                    sys.stdout.flush()
+                    logger.error("Watch stream error: %s", e)
+                    logger.info("Restarting watch in 5 seconds...")
                     time.sleep(5)
                     return self.main()
 
             except Exception as e:
-                print(f"❌ Controller error: {e}")
-                import traceback
-                traceback.print_exc()
+                logger.exception("Controller error: %s", e)
                 time.sleep(10)
                 self.main()
 

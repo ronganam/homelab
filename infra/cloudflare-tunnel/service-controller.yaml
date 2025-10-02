@@ -571,10 +571,28 @@ data:
                 desired_sorted = sorted(desired_rules, key=sort_key)
                 current_sorted = sorted(current_rules, key=sort_key)
 
+                # Log state and differences succinctly
+                desired_fmt = [f"{r['hostname']} -> {r['service']}" for r in desired_sorted]
+                current_fmt = [f"{r['hostname']} -> {r['service']}" for r in current_sorted]
+                logger.info("Desired rules: %s", desired_fmt)
+                logger.info("Current rules: %s", current_fmt)
+
                 if desired_sorted == current_sorted:
-                    logger.info("Tunnel config already matches desired state; no changes needed")
+                    logger.info("Diff: none (no changes needed)")
                     return True
 
+                # Compute a concise diff summary
+                desired_map = {r["hostname"]: r["service"] for r in desired_sorted}
+                current_map = {r["hostname"]: r["service"] for r in current_sorted}
+                desired_set = {(h, s) for h, s in desired_map.items()}
+                current_set = {(h, s) for h, s in current_map.items()}
+                additions = sorted(list(desired_set - current_set))
+                removals = sorted(list(current_set - desired_set))
+                intersect_hosts = set(desired_map.keys()) & set(current_map.keys())
+                changes = sorted([h for h in intersect_hosts if desired_map[h] != current_map[h]])
+                logger.info("Diff: additions=%s removals=%s changes=%s", additions, removals, changes)
+
+                logger.info("Updating rules to match desired state")
                 # Rebuild ingress: keep catch-all at end
                 new_ingress = []
                 for r in desired_sorted:

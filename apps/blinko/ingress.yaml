@@ -8,7 +8,7 @@ metadata:
     # Homepage automatic service discovery annotations
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: "Blinko"
-    gethomepage.dev/description: "Link Shortener"
+    gethomepage.dev/description: "Notes Taking App"
     gethomepage.dev/icon: "blinko.png"
     gethomepage.dev/group: "Applications"
     gethomepage.dev/weight: "20"

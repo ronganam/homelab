@@ -271,7 +271,7 @@ data:
                     data = response.json()
                     if data.get('success') and data.get('result'):
                         zone_id = data['result'][0]['id']
-                        logger.info("Found zone ID for %s: %s", domain, zone_id)
+                        logger.debug("Found zone ID for %s: %s", domain, zone_id)
                         return zone_id
                     else:
                         logger.error("No zone found for domain: %s", domain)
@@ -313,6 +313,39 @@ data:
             except Exception as e:
                 logger.exception("Error checking existing DNS record: %s", e)
                 return None
+
+        def get_cloudflare_records_by_names(self, zone_id, api_token, names):
+            """Fetch all A records in zone and return a map for the provided FQDN names."""
+            results = {}
+            try:
+                import requests
+
+                headers = {
+                    'Authorization': f'Bearer {api_token}',
+                    'Content-Type': 'application/json'
+                }
+
+                # List A records; assume manageable count (no pagination handling for simplicity)
+                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?type=A'
+                response = requests.get(url, headers=headers, timeout=10)
+                if response.status_code == 200:
+                    data = response.json()
+                    if data.get('success'):
+                        wanted = set(n.lower().rstrip('.') for n in names)
+                        for record in data.get('result', []):
+                            name = (record.get('name') or '').lower().rstrip('.')
+                            if name in wanted:
+                                results[name] = {
+                                    'ip': record.get('content'),
+                                    'id': record.get('id')
+                                }
+                    else:
+                        logger.warning("Failed to list A records in zone %s: %s", zone_id, data)
+                else:
+                    logger.warning("Failed to list A records in zone %s: %s", zone_id, response.status_code)
+            except Exception as e:
+                logger.exception("Error fetching DNS records by names: %s", e)
+            return results
 
         def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):
             """Create a new DNS A record"""
@@ -646,6 +679,82 @@ data:
                 logger.exception("Error reconciling tunnel config: %s", e)
                 return False
 
+        def reconcile_internal_dns(self):
+            """Reconcile internal DNS A records for all internal, DNS-enabled services.
+            Only log summaries and update when diffs exist."""
+            try:
+                services = self.get_services_with_dns_label()
+                hostnames = []
+                for service in services:
+                    labels = (service.metadata and service.metadata.labels) or {}
+                    if labels.get(DNS_ENABLED_LABEL) != "true":
+                        continue
+                    if labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC) != EXPOSURE_INTERNAL:
+                        continue
+                    hostname = labels.get(DNS_HOSTNAME_LABEL)
+                    if hostname:
+                        hostnames.append(hostname)
+
+                if not hostnames:
+                    logger.debug("No internal services to reconcile")
+                    return True
+
+                external_ip = self.get_ingress_external_ip()
+                if not external_ip:
+                    logger.debug("No ingress IP available; skipping internal DNS reconcile")
+                    return True
+
+                # Assume all internal hostnames share the same zone (domain is last 2 parts)
+                domain = '.'.join(hostnames[0].split('.')[-2:])
+                names = [h.lower().rstrip('.') for h in hostnames]
+
+                api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+                if not api_token:
+                    logger.debug("No CLOUDFLARE_API_TOKEN; skipping internal DNS reconcile")
+                    return True
+
+                zone_id = self.get_cloudflare_zone_id(domain, api_token)
+                if not zone_id:
+                    logger.debug("No zone ID for domain %s; skipping internal DNS reconcile", domain)
+                    return True
+
+                current = self.get_cloudflare_records_by_names(zone_id, api_token, names)
+
+                desired_map = {n: external_ip for n in names}
+                current_map = {n: info.get('ip') for n, info in current.items()}
+
+                desired_fmt = [f"{n} -> {ip}" for n, ip in sorted(desired_map.items())]
+                current_fmt = [f"{n} -> {ip}" for n, ip in sorted(current_map.items())]
+                logger.info("Desired internal DNS: %s", desired_fmt)
+                logger.info("Current internal DNS: %s", current_fmt)
+
+                additions = sorted([n for n in names if n not in current_map])
+                changes = sorted([n for n in names if current_map.get(n) and current_map[n] != external_ip])
+                removals = []  # We do not remove stray records here
+
+                if not additions and not changes and not removals:
+                    logger.info("Internal DNS diff: none (no changes needed)")
+                    return True
+
+                logger.info("Internal DNS diff: additions=%s changes=%s removals=%s", additions, changes, removals)
+                logger.info("Updating internal DNS records to match desired state")
+
+                # Apply upserts
+                for n in additions:
+                    sub = n.replace(f".{domain}", "") if n.endswith(f".{domain}") else n
+                    self.create_dns_record(zone_id, sub, external_ip, api_token, domain)
+                for n in changes:
+                    sub = n.replace(f".{domain}", "") if n.endswith(f".{domain}") else n
+                    rec = current.get(n)
+                    if rec and rec.get('id'):
+                        self.update_dns_record(zone_id, rec['id'], sub, external_ip, api_token)
+
+                logger.info("Internal DNS reconcile complete")
+                return True
+            except Exception as e:
+                logger.exception("Error reconciling internal DNS: %s", e)
+                return False
+
         def process_service_event(self, event_type, service):
             """Process service events"""
             try:
@@ -688,11 +797,8 @@ data:
 
         def reconcile_all(self):
             """Reconcile all DNS-enabled services periodically"""
-            # Summary-only logs: internal DNS ensure is silent unless changes happen
-            services = self.get_services_with_dns_label()
-            for service in services:
-                self.process_service_event("EXISTING", service)
-            # Public tunnel reconciliation prints desired/current/diff summary
+            # Summary-only reconciles: compute diffs and apply if needed
+            self.reconcile_internal_dns()
             self.reconcile_tunnel_config()
 
         def start_periodic_reconciliation(self):
@@ -756,11 +862,9 @@ data:
                     time.sleep(10)
                     return self.main()
 
-                # Process existing services with DNS enabled
-                logger.info("Processing existing services with DNS enabled...")
-                existing_services = self.get_services_with_dns_label()
-                for service in existing_services:
-                    self.process_service_event("EXISTING", service)
+                # Initial full reconcile
+                logger.info("Performing initial full reconciliation...")
+                self.reconcile_all()
 
                 # Start periodic reconciliation thread
                 self.start_periodic_reconciliation()

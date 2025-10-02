@@ -13,6 +13,7 @@ spec:
   template:
     metadata:
       labels:
+        app.kubernetes.io/name: blinko
         app: blinko
     spec:
       containers:

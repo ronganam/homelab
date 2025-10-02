@@ -40,8 +40,14 @@ data:
     # All services with ingress annotations will be automatically discovered
     # Only add services here that don't have ingresses or need special configuration
     
-    # Services are automatically discovered from ingresses with gethomepage.dev annotations
-    # No manual configuration needed for services with proper ingress annotations
+    # Public apps (no ingress) are added manually below
+    - Applications:
+        - N8N:
+            icon: n8n.png
+            href: "https://n9n.buildin.group"
+            description: Workflow automation
+            namespace: n8n
+            app: n8n
   widgets.yaml: |
     - kubernetes:
         cluster:

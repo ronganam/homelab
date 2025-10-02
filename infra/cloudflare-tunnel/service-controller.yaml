@@ -74,6 +74,7 @@ data:
     import subprocess
     import hashlib
     from kubernetes import client, config, watch
+    import threading
 
     # Label constants
     DNS_ENABLED_LABEL = "dns.service-controller.io/enabled"
@@ -536,6 +537,13 @@ data:
             except Exception as e:
                 print(f"❌ Error processing service event: {e}")
 
+        def reconcile_all(self):
+            """Reconcile all DNS-enabled services periodically"""
+            print("🔍 Periodic reconciliation: checking all DNS-enabled services...")
+            services = self.get_services_with_dns_label()
+            for service in services:
+                self.process_service_event("EXISTING", service)
+
         def get_services_with_dns_label(self):
             """Get all services that have DNS enabled using label selector"""
             try:
@@ -599,6 +607,19 @@ data:
                 existing_services = self.get_services_with_dns_label()
                 for service in existing_services:
                     self.process_service_event("EXISTING", service)
+
+                # Start periodic reconciliation thread
+                def periodic_reconcile():
+                    while True:
+                        time.sleep(300)  # 5 minutes
+                        try:
+                            self.reconcile_all()
+                        except Exception as e:
+                            print(f"❌ Error in periodic reconciliation: {e}")
+
+                thread = threading.Thread(target=periodic_reconcile, daemon=True)
+                thread.start()
+                print("⏰ Started periodic reconciliation every 5 minutes")
 
                 # Watch for changes using label selector for efficiency
                 print("👀 Watching for service changes with DNS enabled...")

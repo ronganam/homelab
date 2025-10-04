@@ -23,7 +23,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: cobalt
-          image: ronganam/cobalt-web:v2
+          image: ronganam/cobalt-web:v3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

@@ -1,21 +1,21 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: cobalt
+  name: cobalt-api
   namespace: cobalt
   labels:
-    app: cobalt
+    app: cobalt-api
     dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: "cobalt.buildin.group"
+    dns.service-controller.io/hostname: "cobalt-api.buildin.group"
     exposure.service-controller.io/type: "internal"
 spec:
   type: ClusterIP
   ports:
     - name: http
       port: 80
-      targetPort: 8080
+      targetPort: 9000
       protocol: TCP
   selector:
-    app: cobalt
+    app: cobalt-api
 
 

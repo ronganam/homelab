@@ -5,6 +5,9 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - deployment-api.yaml
+  - service-api.yaml
+  - ingress-api.yaml
 namespace: cobalt
 
 

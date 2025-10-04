@@ -1,0 +1,28 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: cobalt
+  namespace: cobalt
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    # Homepage automatic service discovery annotations
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Cobalt"
+    gethomepage.dev/description: "Cobalt Media Downloader"
+    gethomepage.dev/icon: "cobalt.png"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "20"
+spec:
+  rules:
+    - host: cobalt.buildin.group
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: cobalt
+                port:
+                  number: 80
+
+

@@ -17,6 +17,9 @@ spec:
       labels:
         app: linkwarden
     spec:
+      securityContext:
+        fsGroup: 999
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: linkwarden
           image: ghcr.io/linkwarden/linkwarden:latest
@@ -67,14 +70,12 @@ spec:
         - name: postgres
           image: postgres:16-alpine
           imagePullPolicy: IfNotPresent
-          securityContext:
-            runAsUser: 999
-            runAsGroup: 999
-            fsGroup: 999
           ports:
             - containerPort: 5432
               name: postgres
           env:
+            - name: PGDATA
+              value: "/var/lib/postgresql/data/pgdata"
             - name: POSTGRES_PASSWORD
               value: "f3600d57313c7ab42cadc4d21e4a1d71a704b657aa5b05378de3097cf8fa2813"
             - name: POSTGRES_DB

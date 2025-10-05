@@ -36,9 +36,9 @@ spec:
             - name: NEXTAUTH_SECRET
               value: "8a957534ef6612c0a503d8a9c77b0236a31b0d7a4cc414950b088dec0a7ea29b"
             - name: DATABASE_URL
-              value: "postgresql://postgres:f3600d57313c7ab42cadc4d21e4a1d71a704b657aa5b05378de3097cf8fa2813@postgres:5432/postgres"
+              value: "postgresql://postgres:f3600d57313c7ab42cadc4d21e4a1d71a704b657aa5b05378de3097cf8fa2813@localhost:5432/postgres"
             - name: MEILI_HOST
-              value: "http://meilisearch:7700"
+              value: "http://localhost:7700"
             - name: MEILI_MASTER_KEY
               value: "cc8b0f2bc7735d25cbb0f9456b362811f700fad75e0277364987c787c5829b9e"
           volumeMounts:

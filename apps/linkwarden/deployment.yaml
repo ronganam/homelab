@@ -17,15 +17,13 @@ spec:
       labels:
         app: linkwarden
     spec:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: linkwarden
           image: ghcr.io/linkwarden/linkwarden:latest
           imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
           ports:
             - containerPort: 3000
               name: http
@@ -33,13 +31,13 @@ spec:
             - name: NEXTAUTH_URL
               value: "http://linkwarden.buildin.group/api/v1/auth"
             - name: NEXTAUTH_SECRET
-              value: "NaCT7ElF5tjzyuCzGRg9XEZJm3EA+hS/xtkaQW9tlDc="
+              value: "8a957534ef6612c0a503d8a9c77b0236a31b0d7a4cc414950b088dec0a7ea29b"
             - name: DATABASE_URL
-              value: "postgresql://postgres:jBbbmg7Oualv1mianInwf8yL/LIKvBax1IUQF3EeD/M=@postgres:5432/postgres"
+              value: "postgresql://postgres:f3600d57313c7ab42cadc4d21e4a1d71a704b657aa5b05378de3097cf8fa2813@postgres:5432/postgres"
             - name: MEILI_HOST
               value: "http://meilisearch:7700"
             - name: MEILI_MASTER_KEY
-              value: "eLUeQkS4pQgHyoT0916a2gC/xpLNJghcOj3hacfqpAY="
+              value: "cc8b0f2bc7735d25cbb0f9456b362811f700fad75e0277364987c787c5829b9e"
           volumeMounts:
             - name: data
               mountPath: /data/data
@@ -69,12 +67,16 @@ spec:
         - name: postgres
           image: postgres:16-alpine
           imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 999
+            runAsGroup: 999
+            fsGroup: 999
           ports:
             - containerPort: 5432
               name: postgres
           env:
             - name: POSTGRES_PASSWORD
-              value: "jBbbmg7Oualv1mianInwf8yL/LIKvBax1IUQF3EeD/M="
+              value: "f3600d57313c7ab42cadc4d21e4a1d71a704b657aa5b05378de3097cf8fa2813"
             - name: POSTGRES_DB
               value: "postgres"
           volumeMounts:
@@ -115,7 +117,7 @@ spec:
               name: meilisearch
           env:
             - name: MEILI_MASTER_KEY
-              value: "eLUeQkS4pQgHyoT0916a2gC/xpLNJghcOj3hacfqpAY="
+              value: "cc8b0f2bc7735d25cbb0f9456b362811f700fad75e0277364987c787c5829b9e"
           volumeMounts:
             - name: meili-data
               mountPath: /meili_data

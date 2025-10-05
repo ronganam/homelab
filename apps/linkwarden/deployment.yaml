@@ -8,7 +8,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate # Use Recreate for apps with persistent storage
+    type: Recreate
   selector:
     matchLabels:
       app: linkwarden
@@ -20,30 +20,6 @@ spec:
       securityContext:
         fsGroup: 999
         fsGroupChangePolicy: OnRootMismatch
-      initContainers:
-        - name: prepare-cache-dirs
-          image: ghcr.io/linkwarden/linkwarden:latest
-          securityContext:
-            runAsUser: 0
-          command: ["/bin/sh","-c"]
-          args: ["mkdir -p /data/data/next-cache /data/data/.cache /data/data/playwright && chown -R 1000:1000 /data/data"]
-          volumeMounts:
-            - name: data
-              mountPath: /data/data
-        - name: install-playwright-browsers
-          image: ghcr.io/linkwarden/linkwarden:latest
-          securityContext:
-            runAsUser: 0
-          env:
-            - name: PLAYWRIGHT_BROWSERS_PATH
-              value: "/data/data/playwright"
-            - name: XDG_CACHE_HOME
-              value: "/data/data/.cache"
-          command: ["/bin/sh","-c"]
-          args: ["(yarn playwright install --with-deps || npx playwright install --with-deps) || true"]
-          volumeMounts:
-            - name: data
-              mountPath: /data/data
       containers:
         - name: linkwarden
           image: ghcr.io/linkwarden/linkwarden:latest
@@ -65,12 +41,8 @@ spec:
               value: "http://localhost:7700"
             - name: MEILI_MASTER_KEY
               value: "cc8b0f2bc7735d25cbb0f9456b362811f700fad75e0277364987c787c5829b9e"
-            - name: PLAYWRIGHT_BROWSERS_PATH
-              value: "/data/data/playwright"
-            - name: XDG_CACHE_HOME
-              value: "/data/data/.cache"
-            - name: NEXT_CACHE_DIR
-              value: "/data/data/next-cache"
+            - name: DISABLE_PRESERVATION
+              value: "true"
           volumeMounts:
             - name: data
               mountPath: /data/data

@@ -1,0 +1,30 @@
+# Ingress for INTERNAL apps only
+# This ingress is only needed for internal services
+# Public services use Cloudflare tunnel and don't need ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: linkwarden
+  namespace: linkwarden
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m" # Adjust as needed
+    # Homepage automatic service discovery annotations
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Linkwarden"
+    gethomepage.dev/description: "Self-hosted bookmark manager"
+    gethomepage.dev/icon: "linkwarden.png"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "10"
+spec:
+  rules:
+    - host: linkwarden.buildin.group
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: linkwarden
+                port:
+                  number: 80

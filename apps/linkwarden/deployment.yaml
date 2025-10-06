@@ -113,7 +113,7 @@ spec:
             timeoutSeconds: 3
             failureThreshold: 3
         - name: meilisearch
-          image: getmeili/meilisearch:v1.12.8
+          image: getmeili/meilisearch:v1.22.2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 7700

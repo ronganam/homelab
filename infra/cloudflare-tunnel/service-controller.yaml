@@ -590,6 +590,10 @@ data:
                 current_config = configmap.data["config.yaml"]
                 config_data = yaml.safe_load(current_config) or {}
 
+                # Capture the existing hash BEFORE any mutation so we compare against
+                # the actual current state rather than a cached internal hash.
+                existing_hash = self.calculate_config_hash(config_data)
+
                 desired_rules = self.build_desired_public_rules()
                 current_rules = self.get_current_public_rules(config_data)
 
@@ -638,10 +642,10 @@ data:
 
                 config_data["ingress"] = new_ingress
 
-                # Patch only if hash differs
+                # Patch only if the new config differs from what is currently stored
                 new_hash = self.calculate_config_hash(config_data)
-                if new_hash == self.tunnel_config_hash:
-                    logger.info("Computed config hash unchanged; skipping patch")
+                if new_hash == existing_hash:
+                    logger.info("Reconciled config equals current ConfigMap; skipping patch")
                     return True
 
                 updated_config = yaml.dump(config_data, default_flow_style=False)

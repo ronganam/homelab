@@ -1,0 +1,99 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wireguard
+  namespace: wireguard
+  labels:
+    app: wireguard
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: wireguard
+  template:
+    metadata:
+      labels:
+        app: wireguard
+    spec:
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 0
+        fsGroupChangePolicy: OnRootMismatch
+        sysctls:
+          - name: net.ipv4.ip_forward
+            value: "1"
+          - name: net.ipv4.conf.all.src_valid_mark
+            value: "1"
+          - name: net.ipv6.conf.all.disable_ipv6
+            value: "0"
+          - name: net.ipv6.conf.all.forwarding
+            value: "1"
+          - name: net.ipv6.conf.default.forwarding
+            value: "1"
+      containers:
+        - name: wg-easy
+          image: ghcr.io/wg-easy/wg-easy:15
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 51821
+              name: http
+              protocol: TCP
+            - containerPort: 51820
+              name: wireguard-udp
+              protocol: UDP
+          env:
+            - name: PORT
+              value: "51821"
+            - name: HOST
+              value: "0.0.0.0"
+            - name: INSECURE
+              value: "false"
+          volumeMounts:
+            - name: etc-wireguard
+              mountPath: /etc/wireguard
+            - name: lib-modules
+              mountPath: /lib/modules
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+                - SYS_MODULE
+      volumes:
+        - name: etc-wireguard
+          persistentVolumeClaim:
+            claimName: wireguard-data
+        - name: lib-modules
+          hostPath:
+            path: /lib/modules
+            type: Directory
+      hostNetwork: false
+      dnsPolicy: ClusterFirst
+      nodeSelector: {}
+      tolerations: []
+      affinity: {}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: wireguard-data
+  namespace: wireguard
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 100Mi
+  storageClassName: longhorn
+
+

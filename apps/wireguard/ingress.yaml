@@ -1,0 +1,29 @@
+# Ingress for INTERNAL web UI
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: wireguard
+  namespace: wireguard
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "WireGuard"
+    gethomepage.dev/description: "WireGuard VPN - wg-easy"
+    gethomepage.dev/icon: "wireguard.png"
+    gethomepage.dev/group: "Infrastructure"
+    gethomepage.dev/weight: "20"
+spec:
+  rules:
+    - host: wireguard.buildin.group
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: wireguard
+                port:
+                  number: 80
+
+

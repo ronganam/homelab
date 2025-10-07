@@ -4,27 +4,27 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: linkwarden
-  namespace: linkwarden
+  name: karakeep
+  namespace: karakeep
   annotations:
     kubernetes.io/ingress.class: nginx
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m" # Adjust as needed
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
     # Homepage automatic service discovery annotations
     gethomepage.dev/enabled: "true"
-    gethomepage.dev/name: "Linkwarden"
-    gethomepage.dev/description: "Self-hosted bookmark manager"
-    gethomepage.dev/icon: "linkwarden.png"
+    gethomepage.dev/name: "Karakeep"
+    gethomepage.dev/description: "Bookmark manager with AI-powered tagging"
+    gethomepage.dev/icon: "karakeep.png"
     gethomepage.dev/group: "Applications"
     gethomepage.dev/weight: "10"
 spec:
   rules:
-    - host: linkwarden.buildin.group
+    - host: karakeep.buildin.group
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: linkwarden
+                name: karakeep-web
                 port:
-                  number: 80
+                  number: 3000

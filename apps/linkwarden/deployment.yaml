@@ -16,6 +16,7 @@ spec:
     metadata:
       labels:
         app: linkwarden
+        app.kubernetes.io/name: linkwarden
     spec:
       securityContext:
         fsGroup: 999

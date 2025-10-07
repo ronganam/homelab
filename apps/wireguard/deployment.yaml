@@ -16,6 +16,7 @@ spec:
     metadata:
       labels:
         app: wireguard
+        app.kubernetes.io/name: wireguard
     spec:
       securityContext:
         runAsUser: 0

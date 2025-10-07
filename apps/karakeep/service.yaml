@@ -1,0 +1,58 @@
+# INTERNAL Service - accessible via ingress
+# This service will be accessible via internal DNS using MetalLB IP + Ingress
+apiVersion: v1
+kind: Service
+metadata:
+  name: karakeep-web
+  namespace: karakeep
+  labels:
+    app: karakeep-web
+    # DNS Management Labels for Internal Service
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "karakeep.buildin.group"
+    exposure.service-controller.io/type: "internal"
+spec:
+  type: ClusterIP # Use ClusterIP for internal services with ingress
+  ports:
+    - name: http
+      port: 3000 # External port
+      targetPort: 3000 # App's container port
+      protocol: TCP
+  selector:
+    app: karakeep-web
+---
+# Service for Chrome (internal communication only)
+apiVersion: v1
+kind: Service
+metadata:
+  name: chrome
+  namespace: karakeep
+  labels:
+    app: karakeep-chrome
+spec:
+  type: ClusterIP
+  ports:
+    - name: debug
+      port: 9222
+      targetPort: 9222
+      protocol: TCP
+  selector:
+    app: karakeep-chrome
+---
+# Service for Meilisearch (internal communication only)
+apiVersion: v1
+kind: Service
+metadata:
+  name: meilisearch
+  namespace: karakeep
+  labels:
+    app: karakeep-meilisearch
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 7700
+      targetPort: 7700
+      protocol: TCP
+  selector:
+    app: karakeep-meilisearch

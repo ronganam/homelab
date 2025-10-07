@@ -97,7 +97,7 @@ spec:
           ports:
             - containerPort: 9222
               name: debug
-          command:
+          args:
             - --no-sandbox
             - --disable-gpu
             - --disable-dev-shm-usage

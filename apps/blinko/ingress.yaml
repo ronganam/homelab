@@ -9,7 +9,7 @@ metadata:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: "Blinko"
     gethomepage.dev/description: "Notes Taking App"
-    gethomepage.dev/icon: "blinko.png"
+    gethomepage.dev/icon: "sh-Blinko"
     gethomepage.dev/group: "Applications"
     gethomepage.dev/weight: "20"
 spec:

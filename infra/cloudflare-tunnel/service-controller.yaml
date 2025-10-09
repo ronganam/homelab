@@ -29,7 +29,7 @@ spec:
               curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
               chmod +x kubectl
               mv kubectl /usr/local/bin/
-              pip install kubernetes pyyaml requests --quiet
+              pip install kubernetes pyyaml cloudflare --quiet
 
               echo "🔍 Starting Service Controller..."
               python -u /app/controller.py
@@ -76,6 +76,7 @@ data:
     import re
     from kubernetes import client, config, watch
     import threading
+    from cloudflare import Cloudflare
 
     LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
     logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s %(message)s")
@@ -100,6 +101,18 @@ data:
             # Ingress settings for internal services
             self.ingress_namespace = os.environ.get('INGRESS_NAMESPACE', 'ingress-nginx')
             self.ingress_service_name = os.environ.get('INGRESS_SERVICE_NAME', 'ingress-nginx-controller')
+            # Cloudflare client cache
+            self.cf = None
+
+        def ensure_cf_client(self):
+            """Initialize Cloudflare client if not already created."""
+            if self.cf is not None:
+                return self.cf
+            api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+            if not api_token:
+                raise RuntimeError("CLOUDFLARE_API_TOKEN is not set")
+            self.cf = Cloudflare(api_token=api_token)
+            return self.cf
 
         def get_service_port(self, service_name, namespace):
             """Get the port of a service"""
@@ -255,176 +268,149 @@ data:
                 return False
 
         def get_cloudflare_zone_id(self, domain, api_token):
-            """Get Cloudflare zone ID for a domain"""
+            """Get Cloudflare zone ID for a domain using SDK"""
             try:
-                import requests
-
-                headers = {
-                    'Authorization': f'Bearer {api_token}',
-                    'Content-Type': 'application/json'
-                }
-
-                url = f'https://api.cloudflare.com/client/v4/zones?name={domain}'
-                response = requests.get(url, headers=headers, timeout=10)
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get('success') and data.get('result'):
-                        zone_id = data['result'][0]['id']
-                        logger.debug("Found zone ID for %s: %s", domain, zone_id)
-                        return zone_id
-                    else:
-                        logger.error("No zone found for domain: %s", domain)
-                        return None
-                else:
-                    logger.error("Failed to get zone ID: %s - %s", response.status_code, response.text)
-                    return None
-
+                cf = self.ensure_cf_client()
+                zones = cf.zones.list(name=domain)
+                if zones and len(zones) > 0:
+                    zone_id = zones[0].id if hasattr(zones[0], 'id') else zones[0].get('id')
+                    logger.debug("Found zone ID for %s: %s", domain, zone_id)
+                    return zone_id
+                logger.error("No zone found for domain: %s", domain)
+                return None
             except Exception as e:
-                logger.exception("Error getting zone ID: %s", e)
+                logger.exception("Error getting zone ID via SDK: %s", e)
                 return None
 
         def get_existing_dns_record(self, zone_id, subdomain, domain, api_token):
-            """Get existing DNS record if it exists"""
+            """Get existing DNS A record if it exists using SDK"""
             try:
-                import requests
-
-                headers = {
-                    'Authorization': f'Bearer {api_token}',
-                    'Content-Type': 'application/json'
-                }
-
-                # Construct the full name for the record
+                cf = self.ensure_cf_client()
                 record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
-
-                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?name={record_name}&type=A'
-                response = requests.get(url, headers=headers, timeout=10)
-
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get('success') and data.get('result'):
-                        return data['result'][0]  # Return first matching record
-                    else:
-                        return None
-                else:
-                    logger.error("Failed to check existing records: %s", response.status_code)
-                    return None
-
+                records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='A')
+                if records:
+                    # Normalize to dict-like return
+                    rec = records[0]
+                    if hasattr(rec, 'model_dump'):
+                        return rec.model_dump()
+                    return rec
+                return None
             except Exception as e:
-                logger.exception("Error checking existing DNS record: %s", e)
+                logger.exception("Error checking existing DNS record via SDK: %s", e)
                 return None
 
         def get_cloudflare_records_by_names(self, zone_id, api_token, names):
-            """Fetch all A records in zone and return a map for the provided FQDN names."""
+            """Fetch A records for provided FQDN names using SDK. Return map name->{ip,id}."""
             results = {}
             try:
-                import requests
-
-                headers = {
-                    'Authorization': f'Bearer {api_token}',
-                    'Content-Type': 'application/json'
-                }
-
-                # List A records; assume manageable count (no pagination handling for simplicity)
-                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records?type=A'
-                response = requests.get(url, headers=headers, timeout=10)
-                if response.status_code == 200:
-                    data = response.json()
-                    if data.get('success'):
-                        wanted = set(n.lower().rstrip('.') for n in names)
-                        for record in data.get('result', []):
-                            name = (record.get('name') or '').lower().rstrip('.')
-                            if name in wanted:
-                                results[name] = {
-                                    'ip': record.get('content'),
-                                    'id': record.get('id')
-                                }
-                    else:
-                        logger.warning("Failed to list A records in zone %s: %s", zone_id, data)
-                else:
-                    logger.warning("Failed to list A records in zone %s: %s", zone_id, response.status_code)
+                cf = self.ensure_cf_client()
+                for n in names:
+                    recs = cf.dns.records.list(zone_id=zone_id, name=n, type='A')
+                    if recs:
+                        r0 = recs[0]
+                        if hasattr(r0, 'model_dump'):
+                            r0 = r0.model_dump()
+                        name = (r0.get('name') or '').lower().rstrip('.')
+                        results[name] = {
+                            'ip': r0.get('content'),
+                            'id': r0.get('id')
+                        }
             except Exception as e:
-                logger.exception("Error fetching DNS records by names: %s", e)
+                logger.exception("Error fetching DNS records by names via SDK: %s", e)
             return results
 
         def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):
-            """Create a new DNS A record"""
+            """Create a new DNS A record using SDK. Proactively replace conflicting CNAME."""
             try:
-                import requests
-
-                headers = {
-                    'Authorization': f'Bearer {api_token}',
-                    'Content-Type': 'application/json'
-                }
-
-                # Construct the full name for the record
+                cf = self.ensure_cf_client()
                 record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
 
-                data = {
-                    'type': 'A',
-                    'name': record_name,
-                    'content': ip_address,
-                    'ttl': 300,  # 5 minutes TTL
-                    'proxied': False  # Don't proxy internal services
-                }
+                # Proactively delete conflicting CNAME if present
+                cname_records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='CNAME')
+                if cname_records:
+                    rec = cname_records[0]
+                    rec_id = rec.id if hasattr(rec, 'id') else rec.get('id')
+                    if rec_id:
+                        cf.dns.records.delete(zone_id=zone_id, dns_record_id=rec_id)
+                        logger.info("Deleted conflicting CNAME for %s", record_name)
 
-                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records'
-                response = requests.post(url, headers=headers, json=data, timeout=10)
-
-                if response.status_code == 200:
-                    result = response.json()
-                    if result.get('success'):
-                        return True
-                    else:
-                        logger.error("Failed to create DNS record: %s", result.get('errors', []))
-                        return False
-                else:
-                    logger.error("Failed to create DNS record: %s - %s", response.status_code, response.text)
-                    return False
-
+                cf.dns.records.create(
+                    zone_id=zone_id,
+                    type='A',
+                    name=record_name,
+                    content=ip_address,
+                    ttl=300,
+                    proxied=False
+                )
+                return True
             except Exception as e:
-                logger.exception("Error creating DNS record: %s", e)
+                # Keep a helpful message if CNAME conflict arises due to race
+                msg = str(e).lower()
+                if '81054' in msg or 'cname' in msg:
+                    try:
+                        cname_records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='CNAME')
+                        if cname_records:
+                            rec = cname_records[0]
+                            rec_id = rec.id if hasattr(rec, 'id') else rec.get('id')
+                            if rec_id:
+                                cf.dns.records.delete(zone_id=zone_id, dns_record_id=rec_id)
+                                cf.dns.records.create(
+                                    zone_id=zone_id,
+                                    type='A',
+                                    name=record_name,
+                                    content=ip_address,
+                                    ttl=300,
+                                    proxied=False
+                                )
+                                return True
+                    except Exception as e2:
+                        logger.exception("Retry after CNAME deletion failed: %s", e2)
+                logger.exception("Error creating DNS record via SDK: %s", e)
                 return False
 
         def update_dns_record(self, zone_id, record_id, subdomain, ip_address, api_token):
-            """Update an existing DNS A record"""
+            """Update an existing DNS A record using SDK"""
             try:
-                import requests
-
-                headers = {
-                    'Authorization': f'Bearer {api_token}',
-                    'Content-Type': 'application/json'
-                }
-
-                # Include the record name to avoid 9000 DNS name is invalid errors
-                # Cloudflare requires 'name' when updating certain records
-                data = {
+                cf = self.ensure_cf_client()
+                name_value = subdomain if subdomain != '@' else None
+                update_payload = {
                     'type': 'A',
-                    'name': subdomain if subdomain != '@' else None,
                     'content': ip_address,
                     'ttl': 300,
                     'proxied': False
                 }
-                # Remove name if it's None to avoid sending null
-                if data['name'] is None:
-                    del data['name']
-
-                url = f'https://api.cloudflare.com/client/v4/zones/{zone_id}/dns_records/{record_id}'
-                response = requests.put(url, headers=headers, json=data, timeout=10)
-
-                if response.status_code == 200:
-                    result = response.json()
-                    if result.get('success'):
-                        return True
-                    else:
-                        logger.error("Failed to update DNS record: %s", result.get('errors', []))
-                        return False
-                else:
-                    logger.error("Failed to update DNS record: %s - %s", response.status_code, response.text)
-                    return False
-
+                if name_value:
+                    update_payload['name'] = name_value
+                cf.dns.records.update(zone_id=zone_id, dns_record_id=record_id, **update_payload)
+                return True
             except Exception as e:
-                logger.exception("Error updating DNS record: %s", e)
+                logger.exception("Error updating DNS record via SDK: %s", e)
+                return False
+
+        def find_dns_record_by_name_and_type(self, zone_id, record_name, record_type, api_token):
+            """Find a DNS record by exact name and type using SDK. Returns dict or None."""
+            try:
+                cf = self.ensure_cf_client()
+                recs = cf.dns.records.list(zone_id=zone_id, name=record_name, type=record_type)
+                if recs:
+                    r0 = recs[0]
+                    if hasattr(r0, 'model_dump'):
+                        return r0.model_dump()
+                    return r0
+                return None
+            except Exception as e:
+                logger.exception("Error finding DNS record by name/type via SDK: %s", e)
+                return None
+
+        def delete_dns_record(self, zone_id, record_id, api_token):
+            """Delete a DNS record by id using SDK. Returns True on success."""
+            try:
+                cf = self.ensure_cf_client()
+                cf.dns.records.delete(zone_id=zone_id, dns_record_id=record_id)
+                logger.info("Deleted DNS record id=%s", record_id)
+                return True
+            except Exception as e:
+                logger.exception("Error deleting DNS record via SDK id=%s: %s", record_id, e)
                 return False
 
         def calculate_config_hash(self, config_data):

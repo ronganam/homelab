@@ -7,7 +7,7 @@ data:
   settings.yaml: |
     title: Homelab Dashboard
     favicon: https://gethomepage.dev/img/favicon.ico
-    color: grey
+    color: gray
     headerStyle: boxedWidgets
     fullWidth: false
     useEqualHeights: true

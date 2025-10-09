@@ -272,10 +272,17 @@ data:
             try:
                 cf = self.ensure_cf_client()
                 zones = cf.zones.list(name=domain)
-                if zones and len(zones) > 0:
-                    zone_id = zones[0].id if hasattr(zones[0], 'id') else zones[0].get('id')
-                    logger.debug("Found zone ID for %s: %s", domain, zone_id)
-                    return zone_id
+                first_zone = None
+                for z in zones:
+                    first_zone = z
+                    break
+                if first_zone is not None:
+                    zone_id = getattr(first_zone, 'id', None)
+                    if zone_id is None and isinstance(first_zone, dict):
+                        zone_id = first_zone.get('id')
+                    if zone_id:
+                        logger.debug("Found zone ID for %s: %s", domain, zone_id)
+                        return zone_id
                 logger.error("No zone found for domain: %s", domain)
                 return None
             except Exception as e:
@@ -288,12 +295,20 @@ data:
                 cf = self.ensure_cf_client()
                 record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
                 records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='A')
-                if records:
-                    # Normalize to dict-like return
-                    rec = records[0]
-                    if hasattr(rec, 'model_dump'):
-                        return rec.model_dump()
-                    return rec
+                first_rec = None
+                for r in records:
+                    first_rec = r
+                    break
+                if first_rec is not None:
+                    # Normalize minimal fields used by callers
+                    rec_id = getattr(first_rec, 'id', None)
+                    rec_content = getattr(first_rec, 'content', None)
+                    rec_name = getattr(first_rec, 'name', None)
+                    if isinstance(first_rec, dict):
+                        rec_id = rec_id or first_rec.get('id')
+                        rec_content = rec_content or first_rec.get('content')
+                        rec_name = rec_name or first_rec.get('name')
+                    return {'id': rec_id, 'content': rec_content, 'name': rec_name}
                 return None
             except Exception as e:
                 logger.exception("Error checking existing DNS record via SDK: %s", e)
@@ -306,15 +321,20 @@ data:
                 cf = self.ensure_cf_client()
                 for n in names:
                     recs = cf.dns.records.list(zone_id=zone_id, name=n, type='A')
-                    if recs:
-                        r0 = recs[0]
-                        if hasattr(r0, 'model_dump'):
-                            r0 = r0.model_dump()
-                        name = (r0.get('name') or '').lower().rstrip('.')
-                        results[name] = {
-                            'ip': r0.get('content'),
-                            'id': r0.get('id')
-                        }
+                    first = None
+                    for r in recs:
+                        first = r
+                        break
+                    if first is not None:
+                        name_val = getattr(first, 'name', None)
+                        content_val = getattr(first, 'content', None)
+                        id_val = getattr(first, 'id', None)
+                        if isinstance(first, dict):
+                            name_val = name_val or first.get('name')
+                            content_val = content_val or first.get('content')
+                            id_val = id_val or first.get('id')
+                        key = (name_val or '').lower().rstrip('.')
+                        results[key] = {'ip': content_val, 'id': id_val}
             except Exception as e:
                 logger.exception("Error fetching DNS records by names via SDK: %s", e)
             return results
@@ -322,8 +342,8 @@ data:
         def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):
             """Create a new DNS A record using SDK. Proactively replace conflicting CNAME."""
             try:
-                cf = self.ensure_cf_client()
                 record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
+                cf = self.ensure_cf_client()
 
                 # Proactively delete conflicting CNAME if present
                 cname_records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='CNAME')
@@ -346,12 +366,17 @@ data:
             except Exception as e:
                 # Keep a helpful message if CNAME conflict arises due to race
                 msg = str(e).lower()
-                if '81054' in msg or 'cname' in msg:
+                if ('81054' in msg or 'cname' in msg) and 'cf' in locals():
                     try:
                         cname_records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='CNAME')
-                        if cname_records:
-                            rec = cname_records[0]
-                            rec_id = rec.id if hasattr(rec, 'id') else rec.get('id')
+                        first_cname = None
+                        for r in cname_records:
+                            first_cname = r
+                            break
+                        if first_cname is not None:
+                            rec_id = getattr(first_cname, 'id', None)
+                            if rec_id is None and isinstance(first_cname, dict):
+                                rec_id = first_cname.get('id')
                             if rec_id:
                                 cf.dns.records.delete(zone_id=zone_id, dns_record_id=rec_id)
                                 cf.dns.records.create(
@@ -392,11 +417,22 @@ data:
             try:
                 cf = self.ensure_cf_client()
                 recs = cf.dns.records.list(zone_id=zone_id, name=record_name, type=record_type)
-                if recs:
-                    r0 = recs[0]
-                    if hasattr(r0, 'model_dump'):
-                        return r0.model_dump()
-                    return r0
+                first = None
+                for r in recs:
+                    first = r
+                    break
+                if first is not None:
+                    # Normalize to dict
+                    rec_id = getattr(first, 'id', None)
+                    rec_name = getattr(first, 'name', None)
+                    rec_type = getattr(first, 'type', None)
+                    rec_content = getattr(first, 'content', None)
+                    if isinstance(first, dict):
+                        rec_id = rec_id or first.get('id')
+                        rec_name = rec_name or first.get('name')
+                        rec_type = rec_type or first.get('type')
+                        rec_content = rec_content or first.get('content')
+                    return {'id': rec_id, 'name': rec_name, 'type': rec_type, 'content': rec_content}
                 return None
             except Exception as e:
                 logger.exception("Error finding DNS record by name/type via SDK: %s", e)

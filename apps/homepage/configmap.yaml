@@ -8,7 +8,6 @@ data:
     title: Homelab Dashboard
     favicon: https://gethomepage.dev/img/favicon.ico
     color: grey
-    theme: light
     headerStyle: boxedWidgets
     fullWidth: false
     useEqualHeights: true
@@ -22,7 +21,7 @@ data:
       opacity: 30
       brightness: 40
       saturate: 120
-    cardBlur: lg
+    cardBlur: "lg"
     providers:
       longhorn:
         url: https://longhorn.buildin.group

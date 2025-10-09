@@ -10,7 +10,7 @@ data:
     theme: dark
     color: blue
     headerStyle: boxedWidgets
-    fullWidth: true
+    fullWidth: false
     useEqualHeights: true
     showStats: true
     statusStyle: "dot"
@@ -97,41 +97,41 @@ data:
   custom.css: |
     /* Enhanced readability styles */
     
-    /* Improve card background contrast */
-    .service-card, .bookmark-card {
-      background: rgba(0, 0, 0, 0.75) !important;
-      backdrop-filter: blur(20px) !important;
-      border: 1px solid rgba(255, 255, 255, 0.1) !important;
-    }
+    # /* Improve card background contrast */
+    # .service-card, .bookmark-card {
+    #   background: rgba(0, 0, 0, 0.75) !important;
+    #   backdrop-filter: blur(20px) !important;
+    #   border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    # }
     
-    /* Enhance text contrast */
-    .service-card .service-title,
-    .bookmark-card .bookmark-title {
-      color: #ffffff !important;
-      text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
-    }
+    # /* Enhance text contrast */
+    # .service-card .service-title,
+    # .bookmark-card .bookmark-title {
+    #   color: #ffffff !important;
+    #   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.8) !important;
+    # }
     
-    .service-card .service-description,
-    .bookmark-card .bookmark-description {
-      color: #e0e0e0 !important;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
-    }
+    # .service-card .service-description,
+    # .bookmark-card .bookmark-description {
+    #   color: #e0e0e0 !important;
+    #   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.6) !important;
+    # }
     
-    /* Improve header readability */
-    .header-title {
-      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
-    }
+    # /* Improve header readability */
+    # .header-title {
+    #   text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8) !important;
+    # }
     
-    /* Enhance widget text */
-    .widget-content {
-      color: #ffffff !important;
-      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7) !important;
-    }
+    # /* Enhance widget text */
+    # .widget-content {
+    #   color: #ffffff !important;
+    #   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.7) !important;
+    # }
     
-    /* Improve status indicators */
-    .status-dot {
-      box-shadow: 0 0 8px rgba(0, 255, 0, 0.5) !important;
-    }
+    # /* Improve status indicators */
+    # .status-dot {
+    #   box-shadow: 0 0 8px rgba(0, 255, 0, 0.5) !important;
+    # }
   custom.js: |
     // Custom JavaScript for Homepage
     // Add your custom scripts here

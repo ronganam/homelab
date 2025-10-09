@@ -10,7 +10,7 @@ metadata:
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: "Speakr"
     gethomepage.dev/description: "AI Voice Assistant"
-    gethomepage.dev/icon: "sh-Speakr"
+    gethomepage.dev/icon: "sh-speakr.webp"
     gethomepage.dev/group: "Applications"
     gethomepage.dev/weight: "15"
 spec:

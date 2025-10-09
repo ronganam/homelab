@@ -7,7 +7,7 @@ metadata:
     app: homepage
     dns.service-controller.io/enabled: "true"
     dns.service-controller.io/hostname: "homepage.buildin.group"
-    exposure.service-controller.io/type: "public"
+    exposure.service-controller.io/type: "internal"
   annotations:
 spec:
   type: ClusterIP

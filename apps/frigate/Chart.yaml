@@ -1,0 +1,12 @@
+apiVersion: v2
+name: frigate
+description: Helm wrapper chart to deploy Frigate via upstream dependency
+type: application
+version: 0.1.0
+appVersion: ""
+dependencies:
+  - name: frigate
+    version: 15.0.0
+    repository: https://blakeblackshear.github.io/blakeshome-charts/
+
+

@@ -32,7 +32,8 @@ frigate:
     hosts:
       - host: frigate.buildin.group
         paths:
-          - /
+          - path: /
+            pathType: Prefix
 
   # GPU configuration (NVIDIA)
   gpu:

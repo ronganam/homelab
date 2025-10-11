@@ -52,7 +52,7 @@ frigate:
       storageClass: longhorn
     config:
       enabled: true
-      size: 100Mi
+      size: 400Mi
       accessMode: ReadWriteOnce
       storageClass: longhorn
       ephemeralWritableConfigYaml: true
@@ -73,13 +73,16 @@ frigate:
         type: onnx
 
     model:
+      # YOLOv3/4/7/9 use the generic YOLO ONNX loader in Frigate
       model_type: yolo-generic
-      width: 320
-      height: 320
-      input_tensor: nchw
-      input_dtype: float
-      path: /config/model_cache/yolo.onnx
-      labelmap_path: /labelmap/coco-80.txt
+      width: 640           # yolov9-e is 640x640 by default
+      height: 640
+      input_tensor: nchw   # ONNX exports are channels-first
+      input_dtype: float   # YOLO-generic expects float inputs
+      path: /config/model_cache/yolov9-e.onnx
+      labelmap_path: /config/labels/coco-80.txt
+      confidence_threshold: 0.5
+      iou_threshold: 0.45
 
     go2rtc:
       streams:

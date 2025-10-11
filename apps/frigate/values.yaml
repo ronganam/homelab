@@ -1,0 +1,95 @@
+# Values to override the upstream Frigate chart
+
+frigate:
+  replicaCount: 1
+
+  image:
+    pullPolicy: IfNotPresent
+
+  service:
+    type: ClusterIP
+    externalPort: 5000
+    annotations: {}
+    labels:
+      dns.service-controller.io/enabled: "true"
+      dns.service-controller.io/hostname: frigate.buildin.group
+      exposure.service-controller.io/type: internal
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      # Homepage automatic service discovery annotations
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Frigate"
+      gethomepage.dev/description: "NVR with realtime object detection"
+      gethomepage.dev/icon: "frigate.png"
+      gethomepage.dev/group: "Applications"
+      gethomepage.dev/weight: "20"
+      gethomepage.dev/pod-selector: "app.kubernetes.io/name=frigate,app.kubernetes.io/instance=frigate"
+    hosts:
+      - name: frigate.buildin.group
+        path: /
+        tls: false
+
+  # GPU configuration (NVIDIA)
+  gpu:
+    nvidia:
+      enabled: true
+      runtimeClassName: nvidia
+
+  # Persistent storage
+  persistence:
+    data:
+      enabled: true
+      size: 1Gi
+      accessMode: ReadWriteOnce
+      storageClass: longhorn
+      mountPath: /media/frigate
+    config:
+      enabled: true
+      size: 100Mi
+      accessMode: ReadWriteOnce
+      storageClass: longhorn
+      mountPath: /config
+
+  # Example Frigate configuration (adjust to your environment)
+  config: |
+    mqtt:
+      host: "mqtt.buildin.group"
+      port: 1883
+      user: "frigate"
+      password: "change-me"
+    detectors:
+      coral:
+        type: edgetpu
+        device: usb
+    cameras: {}
+
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: "2"
+      memory: 4Gi
+      nvidia.com/gpu: 1
+
+  probes:
+    liveness:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 12
+    readiness:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 12
+
+

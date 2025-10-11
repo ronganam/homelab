@@ -347,9 +347,14 @@ data:
 
                 # Proactively delete conflicting CNAME if present
                 cname_records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='CNAME')
-                if cname_records:
-                    rec = cname_records[0]
-                    rec_id = rec.id if hasattr(rec, 'id') else rec.get('id')
+                first_cname = None
+                for r in cname_records:
+                    first_cname = r
+                    break
+                if first_cname is not None:
+                    rec_id = getattr(first_cname, 'id', None)
+                    if rec_id is None and isinstance(first_cname, dict):
+                        rec_id = first_cname.get('id')
                     if rec_id:
                         cf.dns.records.delete(zone_id=zone_id, dns_record_id=rec_id)
                         logger.info("Deleted conflicting CNAME for %s", record_name)

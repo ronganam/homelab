@@ -61,6 +61,9 @@ frigate:
       port: 1883
       user: "frigate"
       password: "change-me"
+      
+    ffmpeg:
+      hwaccel_args: preset-nvidia
 
     go2rtc:
       streams:

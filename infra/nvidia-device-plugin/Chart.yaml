@@ -1,0 +1,12 @@
+apiVersion: v2
+name: nvidia-device-plugin
+description: NVIDIA Kubernetes device plugin for GPU scheduling
+type: application
+version: 0.1.0
+appVersion: ""
+dependencies:
+  - name: nvidia-device-plugin
+    version: "0.15.0"
+    repository: https://nvidia.github.io/k8s-device-plugin
+
+

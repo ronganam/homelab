@@ -1,0 +1,17 @@
+nvidia-device-plugin:
+  nodeSelector:
+    nvidia.com/gpu.present: "true"
+  # Common toleration if you taint GPU nodes (optional)
+  # tolerations:
+  #   - key: "nvidia.com/gpu"
+  #     operator: "Exists"
+  #     effect: "NoSchedule"
+  resources:
+    requests:
+      cpu: 50m
+      memory: 64Mi
+    limits:
+      cpu: 200m
+      memory: 256Mi
+
+

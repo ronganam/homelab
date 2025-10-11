@@ -1,0 +1,6 @@
+name: nvidia-device-plugin
+namespace: kube-system
+path: infra/nvidia-device-plugin
+wave: "25"
+
+

@@ -19,6 +19,7 @@ frigate:
 
   ingress:
     enabled: true
+    ingressClassName: nginx
     annotations:
       kubernetes.io/ingress.class: nginx
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
@@ -34,7 +35,7 @@ frigate:
         paths:
           - path: /
             pathType: Prefix
-            servicePort: 5000
+            portName: http
 
   # GPU configuration (NVIDIA)
   gpu:

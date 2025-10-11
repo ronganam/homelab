@@ -5,10 +5,12 @@ frigate:
 
   image:
     pullPolicy: IfNotPresent
+    repository: ghcr.io/blakeblackshear/frigate
+    tag: amd64nvidia
 
   service:
     type: ClusterIP
-    externalPort: 5000
+    port: 5000
     annotations: {}
     labels:
       dns.service-controller.io/enabled: "true"
@@ -17,10 +19,8 @@ frigate:
 
   ingress:
     enabled: true
-    ingressClassName: nginx
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-      # Homepage automatic service discovery annotations
       gethomepage.dev/enabled: "true"
       gethomepage.dev/name: "Frigate"
       gethomepage.dev/description: "NVR with realtime object detection"
@@ -29,9 +29,10 @@ frigate:
       gethomepage.dev/weight: "20"
       gethomepage.dev/pod-selector: "app.kubernetes.io/name=frigate,app.kubernetes.io/instance=frigate"
     hosts:
-      - name: frigate.buildin.group
-        path: /
-        tls: false
+      - host: frigate.buildin.group
+        paths:
+          - path: /
+            portName: http
 
   # GPU configuration (NVIDIA)
   gpu:
@@ -41,18 +42,17 @@ frigate:
 
   # Persistent storage
   persistence:
-    data:
+    media:
       enabled: true
       size: 1Gi
       accessMode: ReadWriteOnce
       storageClass: longhorn
-      mountPath: /media/frigate
     config:
       enabled: true
       size: 100Mi
       accessMode: ReadWriteOnce
       storageClass: longhorn
-      mountPath: /config
+      ephemeralWritableConfigYaml: true
 
   # Example Frigate configuration (adjust to your environment)
   config: |
@@ -61,10 +61,6 @@ frigate:
       port: 1883
       user: "frigate"
       password: "change-me"
-    detectors:
-      coral:
-        type: edgetpu
-        device: usb
     cameras: {}
 
   resources:

@@ -6,7 +6,7 @@ frigate:
   image:
     pullPolicy: IfNotPresent
     repository: ghcr.io/blakeblackshear/frigate
-    tag: amd64nvidia
+    tag: "0.16.1-tensorrt"
 
   service:
     type: ClusterIP

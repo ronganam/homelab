@@ -6,7 +6,7 @@ version: 0.1.0
 appVersion: ""
 dependencies:
   - name: frigate
-    version: "7.3.0"
+    version: "7.8.0"
     repository: https://blakeblackshear.github.io/blakeshome-charts/
 
 

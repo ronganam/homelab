@@ -64,13 +64,22 @@ frigate:
       port: 1883
       user: "frigate"
       password: "change-me"
-    
+
+    ffmpeg:
+      hwaccel_args: preset-nvidia
+
     detectors:
       onnx:
         type: onnx
 
-    ffmpeg:
-      hwaccel_args: preset-nvidia
+    model:
+      model_type: yolo-generic
+      width: 320
+      height: 320
+      input_tensor: nchw
+      input_dtype: float
+      path: /config/model_cache/yolo.onnx
+      labelmap_path: /labelmap/coco-80.txt
 
     go2rtc:
       streams:

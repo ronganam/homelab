@@ -20,6 +20,7 @@ frigate:
   ingress:
     enabled: true
     annotations:
+      kubernetes.io/ingress.class: nginx
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
       gethomepage.dev/enabled: "true"
       gethomepage.dev/name: "Frigate"

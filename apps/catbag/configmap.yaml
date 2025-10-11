@@ -4,6 +4,48 @@ metadata:
   name: catbag-html
   namespace: catbag
 data:
+  nginx.conf: |
+    user nginx;
+    worker_processes auto;
+    error_log /var/log/nginx/error.log notice;
+    pid /var/run/nginx.pid;
+
+    events {
+        worker_connections 1024;
+    }
+
+    http {
+        include /etc/nginx/mime.types;
+        default_type application/octet-stream;
+        
+        # Disable access logs to avoid permission issues
+        access_log off;
+        
+        # Disable client body temp files
+        client_body_temp_path /tmp;
+        client_max_body_size 0;
+        
+        # Disable proxy temp files
+        proxy_temp_path /tmp;
+        fastcgi_temp_path /tmp;
+        uwsgi_temp_path /tmp;
+        scgi_temp_path /tmp;
+        
+        sendfile on;
+        tcp_nopush on;
+        keepalive_timeout 65;
+        
+        server {
+            listen 80;
+            server_name _;
+            root /usr/share/nginx/html;
+            index index.html;
+            
+            location / {
+                try_files $uri $uri/ =404;
+            }
+        }
+    }
   index.html: |
     <!DOCTYPE html>
     <html lang="he" dir="rtl">

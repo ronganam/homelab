@@ -61,7 +61,37 @@ frigate:
       port: 1883
       user: "frigate"
       password: "change-me"
-    cameras: {}
+
+    go2rtc:
+      streams:
+        front_door:
+          - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel7_main.bcs&user=viewer&password=HAViewer   # channel numbers are 0-15
+          - ffmpeg:front_door#audio=aac
+        front_door_sub:
+          - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel7_ext.bcs&user=viewer&password=HAViewer
+
+    cameras:
+      front_door:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+          width: 640
+          height: 480
+        objects:
+          track:
+            - person
+            - dog
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/front_door?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/front_door_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
 
   resources:
     requests:

@@ -31,8 +31,7 @@ frigate:
     hosts:
       - host: frigate.buildin.group
         paths:
-          - path: /
-            portName: http
+          - /
 
   # GPU configuration (NVIDIA)
   gpu:

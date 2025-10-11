@@ -79,10 +79,8 @@ frigate:
       height: 640
       input_tensor: nchw   # ONNX exports are channels-first
       input_dtype: float   # YOLO-generic expects float inputs
-      path: /config/model_cache/yolov9-e.onnx
+      path: /config/models/yolov9-e.onnx
       labelmap_path: /config/labels/coco-80.txt
-      confidence_threshold: 0.5
-      iou_threshold: 0.45
 
     go2rtc:
       streams:

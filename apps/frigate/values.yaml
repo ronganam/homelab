@@ -61,7 +61,11 @@ frigate:
       port: 1883
       user: "frigate"
       password: "change-me"
-      
+    
+    detectors:
+      onnx:
+        type: onnx
+
     ffmpeg:
       hwaccel_args: preset-nvidia
 

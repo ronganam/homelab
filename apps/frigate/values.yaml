@@ -34,6 +34,7 @@ frigate:
         paths:
           - path: /
             pathType: Prefix
+            servicePort: 5000
 
   # GPU configuration (NVIDIA)
   gpu:

@@ -69,16 +69,17 @@ frigate:
       hwaccel_args: preset-nvidia
 
     detectors:
-      tensorrt:
-        type: tensorrt
-        device: 0
+      onnx:
+        type: onnx
 
     model:
-      path: /config/model_cache/tensorrt/yolov7-320.trt
+      model_type: yolox
+      width: 320 # <--- should match the imgsize set during model export
+      height: 320 # <--- should match the imgsize set during model export
       input_tensor: nchw
-      input_pixel_format: rgb
-      width: 320
-      height: 320
+      input_dtype: float_denorm
+      path: /config/model_cache/yolov9-t-320.onnx
+      labelmap_path: /labelmap/coco-80.txt
 
     go2rtc:
       streams:

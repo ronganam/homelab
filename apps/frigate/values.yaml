@@ -69,18 +69,16 @@ frigate:
       hwaccel_args: preset-nvidia
 
     detectors:
-      onnx:
-        type: onnx
+      tensorrt:
+        type: tensorrt
+        device: 0
 
     model:
-      # YOLOv3/4/7/9 use the generic YOLO ONNX loader in Frigate
-      model_type: yolo-generic
-      width: 640           # yolov9-e is 640x640 by default
-      height: 640
-      input_tensor: nchw   # ONNX exports are channels-first
-      input_dtype: float   # YOLO-generic expects float inputs
-      path: /config/models/yolov9-e.onnx
-      labelmap_path: /config/labels/coco-80.txt
+      path: /config/model_cache/tensorrt/yolov7-320.trt
+      input_tensor: nchw
+      input_pixel_format: rgb
+      width: 320
+      height: 320
 
     go2rtc:
       streams:

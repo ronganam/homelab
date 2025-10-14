@@ -55,7 +55,7 @@ frigate:
       size: 400Mi
       accessMode: ReadWriteOnce
       storageClass: longhorn
-      ephemeralWritableConfigYaml: true
+      # ephemeralWritableConfigYaml: true
 
   # Example Frigate configuration (adjust to your environment)
   config: |
@@ -74,11 +74,11 @@ frigate:
 
     model:
       model_type: yolox
-      width: 320 # <--- should match the imgsize set during model export
-      height: 320 # <--- should match the imgsize set during model export
+      width: 320
+      height: 320
+      input_pixel_format: rgb
       input_tensor: nchw
-      input_dtype: float_denorm
-      path: /config/model_cache/yolov9-t-320.onnx
+      path: /config/model_cache/yolov9-t-320-frigate-u8.onnx
       labelmap_path: /labelmap/coco-80.txt
 
     go2rtc:
@@ -88,6 +88,11 @@ frigate:
           - ffmpeg:front_door#audio=aac
         front_door_sub:
           - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel7_ext.bcs&user=viewer&password=HAViewer
+        gate_right:
+          - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel9_main.bcs&user=viewer&password=HAViewer   # channel numbers are 0-15
+          - ffmpeg:gate_right#audio=aac
+        gate_right_sub:
+          - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel9_ext.bcs&user=viewer&password=HAViewer
 
     cameras:
       front_door:
@@ -108,6 +113,28 @@ frigate:
               roles:
                 - record
             - path: rtsp://127.0.0.1:8554/front_door_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+
+      gate_right:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+          width: 640
+          height: 480
+        objects:
+          track:
+            - person
+            - car
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/gate_right?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/gate_right_sub?video=copy
               input_args: preset-rtsp-restream
               roles:
                 - detect

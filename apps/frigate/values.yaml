@@ -83,16 +83,57 @@ frigate:
 
     go2rtc:
       streams:
+        home:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_01_main
+        home_sub:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_01_sub
+        ron_window:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_02_main
+        ron_window_sub:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_02_sub
+        pergula:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_03_main
+        pergula_sub:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_03_sub
+        back:
+          - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel3_main.bcs&user=viewer&password=HAViewer   # channel numbers are 0-15
+          - ffmpeg:back#audio=aac
+        back_sub:
+          - "ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel3_ext.bcs&user=viewer&password=HAViewer"
+        lee_work_room:
+          - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel4_main.bcs&user=viewer&password=HAViewer   # channel numbers are 0-15
+          - ffmpeg:lee_work_room#audio=aac
+        lee_work_room_sub:
+          - "ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel4_ext.bcs&user=viewer&password=HAViewer"
+        ptz:
+          - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel5_main.bcs&user=viewer&password=HAViewer   # channel numbers are 0-15
+          - ffmpeg:ptz#audio=aac
+        ptz_sub:
+          - "ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel5_ext.bcs&user=viewer&password=HAViewer"
+        parking:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_07_main
+        parking_sub:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_07_sub
         front_door:
           - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel7_main.bcs&user=viewer&password=HAViewer   # channel numbers are 0-15
           - ffmpeg:front_door#audio=aac
         front_door_sub:
           - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel7_ext.bcs&user=viewer&password=HAViewer
+        tree:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_09_main
+        tree_sub:
+          - ffmpeg:rtsp://viewer:HAViewer@192.168.1.250/Preview_09_sub
         gate_right:
           - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel9_main.bcs&user=viewer&password=HAViewer   # channel numbers are 0-15
           - ffmpeg:gate_right#audio=aac
         gate_right_sub:
           - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel9_ext.bcs&user=viewer&password=HAViewer
+        gate_left:
+          - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel10_main.bcs&user=viewer&password=HAViewer   # channel numbers are 0-15
+          - ffmpeg:gate_right#audio=aac
+        gate_left_sub:
+          - ffmpeg:http://192.168.1.250/flv?port=1935&app=bcs&stream=channel10_ext.bcs&user=viewer&password=HAViewer
+
 
     cameras:
       front_door:
@@ -145,6 +186,141 @@ frigate:
                 - detect
         motion:
           mask: 0,0,0,0.112,0.82,0.164,0.861,0
+      home:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/home?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/home_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+      ron_window:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/ron_window?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/ron_window_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+      pergula:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/pergula?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/pergula_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+      back:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/back?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/back_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+      lee_work_room:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/lee_work_room?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/lee_work_room_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+      ptz:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/ptz?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/ptz_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+      parking:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/parking?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/parking_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+      tree:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/tree?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/tree_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+      gate_left:
+        record:
+          enabled: true
+        detect:
+          enabled: true
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/gate_left?video=copy&audio=aac
+              input_args: preset-rtsp-restream
+              roles:
+                - record
+            - path: rtsp://127.0.0.1:8554/gate_left_sub?video=copy
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
     detect:
       enabled: true
     version: 0.16-0
@@ -155,10 +331,11 @@ frigate:
       enabled: false
       model_size: small
     lpr:
-      enabled: false
+      enabled: true
     classification:
       bird:
         enabled: false
+
 
   resources:
     requests:

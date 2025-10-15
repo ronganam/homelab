@@ -47,12 +47,12 @@ frigate:
   persistence:
     media:
       enabled: true
-      size: 1Gi
+      size: 2Gi
       accessMode: ReadWriteOnce
       storageClass: longhorn
     config:
       enabled: true
-      size: 400Mi
+      size: 1Gi
       accessMode: ReadWriteOnce
       storageClass: longhorn
       # ephemeralWritableConfigYaml: true

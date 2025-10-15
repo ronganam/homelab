@@ -60,10 +60,10 @@ frigate:
   # Example Frigate configuration (adjust to your environment)
   config: |
     mqtt:
-      host: "mqtt.buildin.group"
+      host: mqtt.buildin.group
       port: 1883
-      user: "frigate"
-      password: "change-me"
+      user: frigate
+      password: change-me
 
     ffmpeg:
       hwaccel_args: preset-nvidia
@@ -73,12 +73,12 @@ frigate:
         type: onnx
 
     model:
-      model_type: yolox
-      width: 320
-      height: 320
-      input_pixel_format: rgb
+      model_type: yolo-generic
+      width: 320          # must match IMG_SIZE used during export
+      height: 320         # must match IMG_SIZE used during export
       input_tensor: nchw
-      path: /config/model_cache/yolov9-t-320-frigate-u8.onnx
+      input_dtype: float
+      path: /config/model_cache/yolov9-s-320.onnx
       labelmap_path: /labelmap/coco-80.txt
 
     go2rtc:
@@ -117,6 +117,11 @@ frigate:
               roles:
                 - detect
 
+        motion:
+          threshold: 45
+          contour_area: 20
+          improve_contrast: true
+          mask: 0,0,0,0.208,1,0.063,1,0
       gate_right:
         record:
           enabled: true
@@ -138,6 +143,22 @@ frigate:
               input_args: preset-rtsp-restream
               roles:
                 - detect
+        motion:
+          mask: 0,0,0,0.112,0.82,0.164,0.861,0
+    detect:
+      enabled: true
+    version: 0.16-0
+    semantic_search:
+      enabled: true
+      model_size: large
+    face_recognition:
+      enabled: false
+      model_size: small
+    lpr:
+      enabled: false
+    classification:
+      bird:
+        enabled: false
 
   resources:
     requests:

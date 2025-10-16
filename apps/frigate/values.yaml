@@ -339,11 +339,11 @@ frigate:
 
   resources:
     requests:
-      cpu: 1000m
-      memory: 1Gi
+      cpu: 1531m
+      memory: 4652Mi
     limits:
-      cpu: "4"
-      memory: 8Gi
+      cpu: 2088m
+      memory: 6344Mi
       nvidia.com/gpu: 1
 
   probes:

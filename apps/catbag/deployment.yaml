@@ -39,11 +39,11 @@ spec:
               readOnly: true
           resources:
             limits:
-              memory: 128Mi
-              cpu: 100m
+              memory: 6Mi
+              cpu: 1m
             requests:
-              memory: 64Mi
-              cpu: 50m
+              memory: 4Mi
+              cpu: 1m
       volumes:
         - name: site
           configMap:

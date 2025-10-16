@@ -62,11 +62,11 @@ spec:
               mountPath: /home/node/.n8n
           resources:
             limits:
-              memory: 1Gi
-              cpu: 500m
+              memory: 365Mi
+              cpu: 3m
             requests:
-              memory: 512Mi
-              cpu: 250m
+              memory: 267Mi
+              cpu: 2m
           livenessProbe:
             httpGet:
               path: /healthz

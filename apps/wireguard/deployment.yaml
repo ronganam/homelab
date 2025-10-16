@@ -49,11 +49,11 @@ spec:
               readOnly: true
           resources:
             requests:
-              cpu: 100m
-              memory: 256Mi
+              cpu: 1m
+              memory: 28Mi
             limits:
-              cpu: 500m
-              memory: 1Gi
+              cpu: 2m
+              memory: 38Mi
           securityContext:
             capabilities:
               add:

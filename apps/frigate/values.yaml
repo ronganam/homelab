@@ -190,7 +190,7 @@ frigate:
         record:
           enabled: true
         detect:
-          enabled: true
+          enabled: false
         ffmpeg:
           inputs:
             - path: rtsp://127.0.0.1:8554/home?video=copy&audio=aac
@@ -205,7 +205,7 @@ frigate:
         record:
           enabled: true
         detect:
-          enabled: true
+          enabled: false
         ffmpeg:
           inputs:
             - path: rtsp://127.0.0.1:8554/ron_window?video=copy&audio=aac
@@ -265,7 +265,7 @@ frigate:
         record:
           enabled: true
         detect:
-          enabled: true
+          enabled: false
         ffmpeg:
           inputs:
             - path: rtsp://127.0.0.1:8554/ptz?video=copy&audio=aac
@@ -280,7 +280,7 @@ frigate:
         record:
           enabled: true
         detect:
-          enabled: true
+          enabled: false
         ffmpeg:
           inputs:
             - path: rtsp://127.0.0.1:8554/parking?video=copy&audio=aac
@@ -295,7 +295,7 @@ frigate:
         record:
           enabled: true
         detect:
-          enabled: true
+          enabled: false
         ffmpeg:
           inputs:
             - path: rtsp://127.0.0.1:8554/tree?video=copy&audio=aac

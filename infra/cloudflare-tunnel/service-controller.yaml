@@ -48,11 +48,11 @@ spec:
               mountPath: /app
           resources:
             limits:
-              memory: 330Mi
-              cpu: 24m
+              memory: 512Mi
+              cpu: 500m
             requests:
-              memory: 242Mi
-              cpu: 18m
+              memory: 128Mi
+              cpu: 100m
       volumes:
         - name: controller-script
           configMap:

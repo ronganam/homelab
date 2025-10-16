@@ -39,11 +39,11 @@ spec:
                   key: database_url
           resources:
             requests:
-              cpu: 1m
-              memory: 191Mi
+              cpu: 50m
+              memory: 128Mi
             limits:
-              cpu: 2m
-              memory: 261Mi
+              cpu: 500m
+              memory: 512Mi
           livenessProbe:
             httpGet:
               path: /

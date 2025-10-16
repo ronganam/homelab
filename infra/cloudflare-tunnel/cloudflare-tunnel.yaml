@@ -63,11 +63,11 @@ spec:
               readOnly: true
           resources:
             limits:
-              memory: 23Mi
-              cpu: 3m
+              memory: 256Mi
+              cpu: 200m
             requests:
-              memory: 17Mi
-              cpu: 2m
+              memory: 64Mi
+              cpu: 50m
           livenessProbe:
             httpGet:
               path: /ready

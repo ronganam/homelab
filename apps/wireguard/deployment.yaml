@@ -48,12 +48,12 @@ spec:
               mountPath: /lib/modules
               readOnly: true
           resources:
-            requests:
-              cpu: 1m
-              memory: 28Mi
             limits:
-              cpu: 2m
-              memory: 38Mi
+              memory: 256Mi
+              cpu: 200m
+            requests:
+              memory: 64Mi
+              cpu: 50m
           securityContext:
             capabilities:
               add:

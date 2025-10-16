@@ -80,11 +80,11 @@ spec:
               mountPath: /app/app-data
           resources:
             limits:
-              memory: 302Mi
-              cpu: 2m
+              memory: 1Gi
+              cpu: 500m
             requests:
-              memory: 221Mi
-              cpu: 1m
+              memory: 256Mi
+              cpu: 100m
           livenessProbe:
             httpGet:
               path: /

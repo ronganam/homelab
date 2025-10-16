@@ -40,11 +40,11 @@ spec:
               mountPath: /data
           resources:
             limits:
-              memory: 713Mi
-              cpu: 18m
+              memory: 1Gi
+              cpu: 500m
             requests:
-              memory: 523Mi
-              cpu: 13m
+              memory: 256Mi
+              cpu: 100m
           livenessProbe:
             httpGet:
               path: /
@@ -106,11 +106,11 @@ spec:
             - --hide-scrollbars
           resources:
             limits:
-              memory: 288Mi
-              cpu: 2m
+              memory: 512Mi
+              cpu: 200m
             requests:
-              memory: 211Mi
-              cpu: 1m
+              memory: 128Mi
+              cpu: 50m
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -153,11 +153,11 @@ spec:
               mountPath: /meili_data
           resources:
             limits:
-              memory: 26Mi
-              cpu: 2m
+              memory: 256Mi
+              cpu: 200m
             requests:
-              memory: 19Mi
-              cpu: 1m
+              memory: 64Mi
+              cpu: 50m
           livenessProbe:
             httpGet:
               path: /health

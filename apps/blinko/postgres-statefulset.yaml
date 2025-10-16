@@ -45,11 +45,11 @@ spec:
               mountPath: /var/lib/postgresql
           resources:
             requests:
-              cpu: 8m
-              memory: 31Mi
+              cpu: 50m
+              memory: 128Mi
             limits:
-              cpu: 11m
-              memory: 42Mi
+              cpu: 500m
+              memory: 512Mi
           readinessProbe:
             exec:
               command: ["sh","-lc","pg_isready -U \"$(echo $POSTGRES_USER)\" -d \"$(echo $POSTGRES_DB)\""]

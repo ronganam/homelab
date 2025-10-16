@@ -51,11 +51,11 @@ stirling-pdf-chart:
 
   resources:
     requests:
-      cpu: 7m
-      memory: 320Mi
+      cpu: 100m
+      memory: 256Mi
     limits:
-      cpu: 9m
-      memory: 437Mi
+      cpu: 500m
+      memory: 1Gi
 
 
   probes:

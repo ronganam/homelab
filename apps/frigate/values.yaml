@@ -331,7 +331,7 @@ frigate:
       enabled: false
       model_size: small
     lpr:
-      enabled: true
+      enabled: false
     classification:
       bird:
         enabled: false
@@ -339,11 +339,11 @@ frigate:
 
   resources:
     requests:
-      cpu: 1531m
-      memory: 4652Mi
+      cpu: 3000m
+      memory: 4000Mi
     limits:
-      cpu: 2088m
-      memory: 6344Mi
+      cpu: 4000m
+      memory: 6000Mi
       nvidia.com/gpu: 1
 
   probes:

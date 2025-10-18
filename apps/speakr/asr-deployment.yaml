@@ -34,6 +34,8 @@ spec:
               value: "transcribe"
             - name: TRANSLATE
               value: "false"
+            - name: LANGUAGE
+              value: "he"
             - name: BEAM_SIZE
               value: "5"
             - name: DIARIZATION

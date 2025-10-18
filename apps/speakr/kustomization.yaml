@@ -5,6 +5,7 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - asr-ingress.yaml
   - pvc-instance.yaml
   - pvc-uploads.yaml
   - asr-deployment.yaml

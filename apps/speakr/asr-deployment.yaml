@@ -32,8 +32,6 @@ spec:
               value: "faster_whisper"
             - name: BEAM_SIZE
               value: "5"
-            - name: LANGUAGE
-              value: "en"
             - name: DIARIZATION
               value: "true"
             - name: VAD

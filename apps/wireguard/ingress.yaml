@@ -25,5 +25,3 @@ spec:
                 name: wireguard
                 port:
                   number: 80
-
-

@@ -63,5 +63,3 @@ longhorn:
                       name: longhorn-ui
                       port:
                         number: 80
-
-

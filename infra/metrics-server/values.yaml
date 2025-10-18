@@ -17,5 +17,3 @@ metrics-server:
     limits:
       cpu: 200m
       memory: 300Mi
-
-

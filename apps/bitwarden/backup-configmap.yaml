@@ -57,5 +57,3 @@ data:
     find "$BACKUP_DIR" -type f -name 'db-*.sqlite3' -mtime +${SQLITE_LOCAL_KEEP_DAYS} -delete || true
 
     log "Backup completed"
-
-

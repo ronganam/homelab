@@ -1,40 +1,40 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: argocd
-  # Pin Argo CD to a specific version for reproducibility
+# Pin Argo CD to a specific version for reproducibility
 resources:
-- namespace.yaml
-- https://raw.githubusercontent.com/argoproj/argo-cd/v3.1.8/manifests/install.yaml
-- ingress.yaml
+  - namespace.yaml
+  - https://raw.githubusercontent.com/argoproj/argo-cd/v3.1.8/manifests/install.yaml
+  - ingress.yaml
 patches:
-- path: patch-service-argocd-server-labels.yaml
-  target:
-    kind: Service
-    name: argocd-server
-    version: v1
-- path: patch-deploy-argocd-server.yaml
-  target:
-    group: apps
-    kind: Deployment
-    name: argocd-server
-    version: v1
-- path: patch-cm-argocd-cm.yaml
-  target:
-    kind: ConfigMap
-    name: argocd-cm
-    version: v1
-- patch: |-
-    - op: add
-      path: /rules/-
-      value:
-        apiGroups:
-        - ""
-        resources:
-        - pods/exec
-        verbs:
-        - create
-  target:
-    group: rbac.authorization.k8s.io
-    kind: Role
-    name: argocd-server
-    version: v1
+  - path: patch-service-argocd-server-labels.yaml
+    target:
+      kind: Service
+      name: argocd-server
+      version: v1
+  - path: patch-deploy-argocd-server.yaml
+    target:
+      group: apps
+      kind: Deployment
+      name: argocd-server
+      version: v1
+  - path: patch-cm-argocd-cm.yaml
+    target:
+      kind: ConfigMap
+      name: argocd-cm
+      version: v1
+  - patch: |-
+      - op: add
+        path: /rules/-
+        value:
+          apiGroups:
+          - ""
+          resources:
+          - pods/exec
+          verbs:
+          - create
+    target:
+      group: rbac.authorization.k8s.io
+      kind: Role
+      name: argocd-server
+      version: v1

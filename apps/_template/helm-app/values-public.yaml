@@ -1,12 +1,9 @@
 # Values for PUBLIC Helm app (accessible via Cloudflare tunnel)
 # This app will be accessible via public DNS through Cloudflare tunnel
-
 CHANGEME-chart: # Replace with upstream chart name
   replicaCount: 1
-
   image:
     pullPolicy: IfNotPresent
-
   service:
     type: ClusterIP
     externalPort: 8080 # Replace with your app's port
@@ -15,23 +12,19 @@ CHANGEME-chart: # Replace with upstream chart name
       dns.service-controller.io/enabled: "true"
       dns.service-controller.io/hostname: "CHANGEME.yourdomain.com" # Replace with your public domain
       exposure.service-controller.io/type: "public"
-
   # No ingress needed for public apps - they use Cloudflare tunnel
   ingress:
     enabled: false
-
   persistence:
     enabled: true
     size: 1Gi # Adjust size as needed
     accessMode: ReadWriteOnce
     storageClass: longhorn
     path: /data # Replace with your app's data path
-
   # Add your app-specific environment variables
   envs:
     - name: EXAMPLE_ENV
       value: "example-value"
-
   resources:
     requests:
       cpu: 100m
@@ -39,7 +32,6 @@ CHANGEME-chart: # Replace with upstream chart name
     limits:
       cpu: 500m
       memory: 1Gi
-
   probes:
     liveness:
       enabled: true

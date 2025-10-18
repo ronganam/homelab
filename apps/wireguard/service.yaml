@@ -38,5 +38,3 @@ spec:
       protocol: UDP
   selector:
     app: wireguard
-
-

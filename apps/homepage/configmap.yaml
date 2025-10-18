@@ -38,7 +38,7 @@ data:
   services.yaml: |
     # All services with ingress annotations will be automatically discovered
     # Only add services here that don't have ingresses or need special configuration
-    
+
     # Public apps (no ingress) are added manually below
     - Applications:
         - N8N:
@@ -95,6 +95,6 @@ data:
     # Services will be automatically discovered and grouped by their annotations
   custom.css: |
     /* No custom CSS */
-  custom.js: |
+  custom.js: |-
     // Custom JavaScript for Homepage
     // Add your custom scripts here

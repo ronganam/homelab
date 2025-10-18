@@ -52,7 +52,7 @@ spec:
               memory: 512Mi
           readinessProbe:
             exec:
-              command: ["sh","-lc","pg_isready -U \"$(echo $POSTGRES_USER)\" -d \"$(echo $POSTGRES_DB)\""]
+              command: ["sh", "-lc", "pg_isready -U \"$(echo $POSTGRES_USER)\" -d \"$(echo $POSTGRES_DB)\""]
             initialDelaySeconds: 10
             periodSeconds: 10
             timeoutSeconds: 5
@@ -70,5 +70,3 @@ spec:
           requests:
             storage: 256Mi
         storageClassName: longhorn
-
-

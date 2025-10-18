@@ -14,5 +14,3 @@ spec:
       protocol: TCP
   selector:
     app: blinko-postgres
-
-

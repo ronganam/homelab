@@ -1,12 +1,8 @@
 # Values to override the upstream Stirling-PDF chart
-
 stirling-pdf-chart:
   replicaCount: 1
-
   image:
     pullPolicy: IfNotPresent
-
-
   service:
     type: ClusterIP
     externalPort: 8080
@@ -15,7 +11,6 @@ stirling-pdf-chart:
       dns.service-controller.io/enabled: "true"
       dns.service-controller.io/hostname: pdf.buildin.group
       exposure.service-controller.io/type: internal
-
   ingress:
     enabled: true
     ingressClassName: nginx
@@ -33,14 +28,12 @@ stirling-pdf-chart:
       - name: pdf.buildin.group
         path: /
         tls: false
-
   persistence:
     enabled: true
     size: 256Mi
     accessMode: ReadWriteOnce
     storageClass: longhorn
     path: /configs
-
   envs:
     - name: UI_APP_NAME
       value: "Stirling PDF"
@@ -48,7 +41,6 @@ stirling-pdf-chart:
       value: "Local PDF toolbox"
     - name: APP_LOCALE
       value: "en_GB"
-
   resources:
     requests:
       cpu: 100m
@@ -56,8 +48,6 @@ stirling-pdf-chart:
     limits:
       cpu: 500m
       memory: 1Gi
-
-
   probes:
     liveness:
       enabled: true
@@ -73,5 +63,3 @@ stirling-pdf-chart:
       timeoutSeconds: 3
       successThreshold: 1
       failureThreshold: 12
-
-

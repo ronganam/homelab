@@ -8,5 +8,3 @@ resources:
   - postgres-service.yaml
   - ingress.yaml
 namespace: blinko
-
-

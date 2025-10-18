@@ -11,5 +11,3 @@ data:
   resource.customizations.ignoreDifferences.argoproj.io_Application: |
     jsonPointers:
     - /spec/syncPolicy
-
-

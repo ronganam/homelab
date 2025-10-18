@@ -5,5 +5,3 @@ wave: "20"
 syncPolicy:
   syncOptions:
     - ServerSideApply=true
-
-

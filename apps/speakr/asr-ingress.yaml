@@ -18,5 +18,3 @@ spec:
                 name: whisper-asr
                 port:
                   number: 9000
-
-

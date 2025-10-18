@@ -65,5 +65,3 @@ spec:
         - name: asr-cache
           persistentVolumeClaim:
             claimName: speakr-asr-cache
-
-

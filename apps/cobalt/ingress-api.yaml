@@ -24,5 +24,3 @@ spec:
                 name: cobalt-api
                 port:
                   number: 80
-
-

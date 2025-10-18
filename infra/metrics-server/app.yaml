@@ -2,5 +2,3 @@ name: metrics-server
 namespace: kube-system
 path: infra/metrics-server
 wave: "15"
-
-

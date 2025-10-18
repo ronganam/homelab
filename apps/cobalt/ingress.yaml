@@ -24,5 +24,3 @@ spec:
                 name: cobalt
                 port:
                   number: 80
-
-

@@ -41,7 +41,7 @@ spec:
                   mountPath: /data
                 - name: backup-config
                   mountPath: /opt/backup
-              command: ["/bin/sh","-c"]
+              command: ["/bin/sh", "-c"]
               args:
                 - |
                   set -e
@@ -62,4 +62,3 @@ spec:
               configMap:
                 name: bitwarden-backup
                 defaultMode: 0755
-

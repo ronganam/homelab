@@ -9,5 +9,3 @@ resources:
   - service-api.yaml
   - ingress-api.yaml
 namespace: cobalt
-
-

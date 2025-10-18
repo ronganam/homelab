@@ -85,5 +85,3 @@ spec:
     requests:
       storage: 100Mi
   storageClassName: longhorn
-
-

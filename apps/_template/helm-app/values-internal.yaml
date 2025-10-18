@@ -1,12 +1,9 @@
 # Values for INTERNAL Helm app (accessible via ingress)
 # This app will be accessible via internal DNS using MetalLB IP + Ingress
-
 CHANGEME-chart: # Replace with upstream chart name
   replicaCount: 1
-
   image:
     pullPolicy: IfNotPresent
-
   service:
     type: ClusterIP
     externalPort: 8080 # Replace with your app's port
@@ -15,7 +12,6 @@ CHANGEME-chart: # Replace with upstream chart name
       dns.service-controller.io/enabled: "true"
       dns.service-controller.io/hostname: "CHANGEME.buildin.group" # Replace with your domain
       exposure.service-controller.io/type: "internal"
-
   ingress:
     enabled: true
     ingressClassName: nginx
@@ -32,19 +28,16 @@ CHANGEME-chart: # Replace with upstream chart name
       - name: CHANGEME.buildin.group # Replace with your domain
         path: /
         tls: false
-
   persistence:
     enabled: true
     size: 1Gi # Adjust size as needed
     accessMode: ReadWriteOnce
     storageClass: longhorn
     path: /data # Replace with your app's data path
-
   # Add your app-specific environment variables
   envs:
     - name: EXAMPLE_ENV
       value: "example-value"
-
   resources:
     requests:
       cpu: 100m
@@ -52,7 +45,6 @@ CHANGEME-chart: # Replace with upstream chart name
     limits:
       cpu: 500m
       memory: 1Gi
-
   probes:
     liveness:
       enabled: true

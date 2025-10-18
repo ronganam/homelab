@@ -1,13 +1,10 @@
 # Values to override the upstream Frigate chart
-
 frigate:
   replicaCount: 1
-
   image:
     pullPolicy: IfNotPresent
     repository: ghcr.io/blakeblackshear/frigate
     tag: "0.16.2-tensorrt"
-
   service:
     type: ClusterIP
     port: 5000
@@ -16,7 +13,6 @@ frigate:
       dns.service-controller.io/enabled: "true"
       dns.service-controller.io/hostname: frigate.buildin.group
       exposure.service-controller.io/type: internal
-
   ingress:
     enabled: true
     ingressClassName: nginx
@@ -36,13 +32,11 @@ frigate:
           - path: /
             pathType: Prefix
             portName: http
-
   # GPU configuration (NVIDIA)
   gpu:
     nvidia:
       enabled: true
       runtimeClassName: nvidia
-
   # Persistent storage
   persistence:
     media:
@@ -56,7 +50,6 @@ frigate:
       accessMode: ReadWriteOnce
       storageClass: longhorn
       # ephemeralWritableConfigYaml: true
-
   # Example Frigate configuration (adjust to your environment)
   config: |
     mqtt:
@@ -335,8 +328,6 @@ frigate:
     classification:
       bird:
         enabled: false
-
-
   resources:
     requests:
       cpu: 3000m
@@ -345,7 +336,6 @@ frigate:
       cpu: 4000m
       memory: 6000Mi
       nvidia.com/gpu: 1
-
   probes:
     liveness:
       enabled: true
@@ -361,5 +351,3 @@ frigate:
       timeoutSeconds: 5
       successThreshold: 1
       failureThreshold: 12
-
-

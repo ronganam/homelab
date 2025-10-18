@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whisper-asr
+  namespace: speakr
+  labels:
+    app: whisper-asr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: whisper-asr
+  template:
+    metadata:
+      labels:
+        app: whisper-asr
+    spec:
+      containers:
+        - name: whisper-asr
+          image: onerahmet/openai-whisper-asr-webservice:latest-gpu
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 9000
+              name: http
+          env:
+            - name: ASR_MODEL
+              value: "distil-large-v3"
+            - name: ASR_ENGINE
+              value: "faster_whisper"
+            - name: BEAM_SIZE
+              value: "5"
+            - name: LANGUAGE
+              value: "en"
+            - name: DIARIZATION
+              value: "true"
+            - name: VAD
+              value: "true"
+            - name: CORS
+              value: "*"
+            - name: NUM_BEAMS
+              value: "2"
+            - name: LM_TYPE
+              value: "none"
+            - name: COMPUTE_TYPE
+              value: "float16"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+              nvidia.com/gpu: 1
+          securityContext:
+            runAsNonRoot: true
+            allowPrivilegeEscalation: false
+          nodeSelector:
+            nvidia.com/gpu.present: "true"
+          volumeMounts:
+            - name: asr-cache
+              mountPath: /root/.cache
+      volumes:
+        - name: asr-cache
+          persistentVolumeClaim:
+            claimName: speakr-asr-cache
+
+

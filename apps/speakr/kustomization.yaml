@@ -7,4 +7,7 @@ resources:
   - ingress.yaml
   - pvc-instance.yaml
   - pvc-uploads.yaml
+  - asr-deployment.yaml
+  - asr-service.yaml
+  - pvc-asr-cache.yaml
 namespace: speakr

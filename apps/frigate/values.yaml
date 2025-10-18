@@ -6,7 +6,7 @@ frigate:
   image:
     pullPolicy: IfNotPresent
     repository: ghcr.io/blakeblackshear/frigate
-    tag: "0.16.1-tensorrt"
+    tag: "0.16.2-tensorrt"
 
   service:
     type: ClusterIP

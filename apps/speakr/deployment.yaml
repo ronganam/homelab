@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: speakr
-          image: ronganam/speakr:v2
+          image: ronganam/speakr:v3
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8899
@@ -28,11 +28,15 @@ spec:
             - name: TEXT_MODEL_BASE_URL
               value: "https://api.openai.com/v1"
             - name: TEXT_MODEL_NAME
-              value: "gpt-4o-mini"
-            - name: TRANSCRIPTION_BASE_URL
-              value: "https://api.openai.com/v1"
-            - name: WHISPER_MODEL
-              value: "whisper-1"
+              value: "gpt-5-mini"
+            - name: GPT5_REASONING_EFFORT
+              value: "medium"
+            - name: GPT5_VERBOSITY
+              value: "medium"
+            - name: USE_ASR_ENDPOINT
+              value: "true"
+            - name: ASR_BASE_URL
+              value: "http://whisper-asr:9000"
             - name: ALLOW_REGISTRATION
               value: "false"
             - name: SUMMARY_MAX_TOKENS
@@ -42,7 +46,7 @@ spec:
             - name: TIMEZONE
               value: "Asia/Jerusalem"
             - name: ENABLE_CHUNKING
-              value: "true"
+              value: "false"
             - name: CHUNK_LIMIT
               value: "20MB"
             - name: CHUNK_OVERLAP_SECONDS
@@ -55,20 +59,21 @@ spec:
               value: "true"
             - name: ENABLE_AUTO_PROCESSING
               value: "false"
+            - name: AUTO_PROCESS_MODE
+              value: "admin_only"
+            - name: AUTO_PROCESS_WATCH_DIR
+              value: "/data/auto-process"
+            - name: AUTO_PROCESS_CHECK_INTERVAL
+              value: "30"
             - name: SQLALCHEMY_DATABASE_URI
-              value: "sqlite:////app/instance/transcriptions.db"
+              value: "sqlite:////data/instance/transcriptions.db"
             - name: UPLOAD_FOLDER
-              value: "/app/uploads"
+              value: "/data/uploads"
             - name: TEXT_MODEL_API_KEY
               valueFrom:
                 secretKeyRef:
                   name: speakr-config
                   key: text_model_api_key
-            - name: TRANSCRIPTION_API_KEY
-              valueFrom:
-                secretKeyRef:
-                  name: speakr-config
-                  key: transcription_api_key
             - name: ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -83,9 +88,9 @@ spec:
               memory: 4Gi
           volumeMounts:
             - name: instance
-              mountPath: /app/instance
+              mountPath: /data/instance
             - name: uploads
-              mountPath: /app/uploads
+              mountPath: /data/uploads
           # livenessProbe:
           #   httpGet:
           #     path: /

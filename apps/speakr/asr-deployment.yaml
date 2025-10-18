@@ -30,6 +30,10 @@ spec:
               value: "distil-large-v3"
             - name: ASR_ENGINE
               value: "faster_whisper"
+            - name: TASK
+              value: "transcribe"
+            - name: TRANSLATE
+              value: "false"
             - name: BEAM_SIZE
               value: "5"
             - name: DIARIZATION

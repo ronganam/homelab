@@ -14,6 +14,23 @@ pihole:
     type: LoadBalancer
     loadBalancerIP: 192.168.1.150
     externalTrafficPolicy: Local
+    annotations:
+      metallb.universe.tf/allow-shared-ip: pihole
+
+  # Ensure both TCP and UDP DNS services request the same IP and share it
+  serviceDnsTcp:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.1.150
+    externalTrafficPolicy: Local
+    annotations:
+      metallb.universe.tf/allow-shared-ip: pihole
+
+  serviceDnsUdp:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.1.150
+    externalTrafficPolicy: Local
+    annotations:
+      metallb.universe.tf/allow-shared-ip: pihole
 
   ingress:
     enabled: true

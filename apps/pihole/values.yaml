@@ -46,10 +46,9 @@ pihole:
       gethomepage.dev/weight: "15"
       gethomepage.dev/pod-selector: "app.kubernetes.io/name=pihole,app.kubernetes.io/instance=pihole"
     hosts:
-      - host: pihole.buildin.group
-        paths:
-          - path: /
-            pathType: Prefix
+      - pihole.buildin.group
+    path: /
+    pathType: Prefix
 
   persistentVolumeClaim:
     enabled: true

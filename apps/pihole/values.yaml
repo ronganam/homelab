@@ -1,0 +1,71 @@
+# Values to override the upstream Pi-hole chart
+pihole:
+  replicaCount: 1
+
+  serviceWeb:
+    type: ClusterIP
+    annotations: {}
+    labels:
+      dns.service-controller.io/enabled: "true"
+      dns.service-controller.io/hostname: pihole.buildin.group
+      exposure.service-controller.io/type: internal
+
+  serviceDns:
+    type: LoadBalancer
+    loadBalancerIP: 192.168.1.150
+    externalTrafficPolicy: Local
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      # Homepage automatic service discovery annotations
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Pi-hole"
+      gethomepage.dev/description: "Network-wide ad blocking"
+      gethomepage.dev/icon: "pihole.png"
+      gethomepage.dev/group: "Infrastructure"
+      gethomepage.dev/weight: "15"
+      gethomepage.dev/pod-selector: "app.kubernetes.io/name=pihole,app.kubernetes.io/instance=pihole"
+    hosts:
+      - host: pihole.buildin.group
+        paths:
+          - path: /
+            pathType: Prefix
+
+  persistentVolumeClaim:
+    enabled: true
+    size: 400Mi
+    storageClass: longhorn
+    accessModes:
+      - ReadWriteOnce
+
+  admin:
+    existingSecret: pihole-admin
+    passwordKey: password
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+  probes:
+    liveness:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 12
+    readiness:
+      enabled: true
+      initialDelaySeconds: 20
+      periodSeconds: 5
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 12
+

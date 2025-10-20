@@ -1,0 +1,5 @@
+name: pihole
+namespace: pihole
+path: apps/pihole
+wave: "30"
+

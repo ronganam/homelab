@@ -5,7 +5,7 @@ pihole:
   serviceWeb:
     type: ClusterIP
     annotations: {}
-    labels:
+    extraLabels:
       dns.service-controller.io/enabled: "true"
       dns.service-controller.io/hostname: pihole.buildin.group
       exposure.service-controller.io/type: internal

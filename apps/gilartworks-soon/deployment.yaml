@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gilartworks-soon
+  namespace: gilartworks-soon
+  labels:
+    app: gilartworks-soon
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: gilartworks-soon
+  template:
+    metadata:
+      labels:
+        app: gilartworks-soon
+    spec:
+      containers:
+        - name: gilartworks-soon
+          image: ronganam/gilartworks-coming-soon:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            limits:
+              memory: 128Mi
+              cpu: 100m
+            requests:
+              memory: 32Mi
+              cpu: 10m
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3

@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gilartworks-soon
+  namespace: gilartworks-soon
+  labels:
+    app: gilartworks-soon
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "gilartworks.com"
+    exposure.service-controller.io/type: "public"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  selector:
+    app: gilartworks-soon

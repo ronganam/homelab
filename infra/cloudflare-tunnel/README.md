@@ -7,6 +7,7 @@ This is a comprehensive service management solution for your homelab that handle
 - **Service Controller** - Generic controller that manages both tunneled and internal services
 - **Label-based control** - Clean, intuitive labels for service configuration
 - **Automatic DNS management** - Handles both public and internal DNS entries
+- **Dynamic DNS (DDNS)** - Automatically keeps a DNS record pointing to your public IP
 - **Efficient resource usage** - Optimized label selectors and smart restart logic
 - **ArgoCD compatible** - Works with GitOps workflow
 
@@ -39,8 +40,73 @@ This is a comprehensive service management solution for your homelab that handle
 1. **Service Controller** watches for services with DNS management labels
 2. **Public services** are tunneled through Cloudflare with automatic DNS routes
 3. **Internal services** use MetalLB LoadBalancer IPs for internal DNS entries
-4. **Smart restarts** only occur when tunnel configuration actually changes
-5. **Efficient queries** use label selectors for optimal performance
+4. **DDNS** periodically checks and updates a DNS record to point to your current public IP
+5. **Smart restarts** only occur when tunnel configuration actually changes
+6. **Efficient queries** use label selectors for optimal performance
+
+## Dynamic DNS (DDNS)
+
+The service controller includes built-in DDNS functionality that automatically keeps a DNS A record pointing to your homelab's current public IP address. This is useful for:
+
+- Direct access to your homelab without going through the Cloudflare tunnel
+- VPN connections that need to know your public IP
+- Any service that requires your actual public IP address
+
+### Configuration
+
+DDNS is configured via environment variables in the service-controller deployment:
+
+| Environment Variable | Default | Description |
+|---------------------|---------|-------------|
+| `DDNS_ENABLED` | `"false"` | Set to `"true"` to enable DDNS |
+| `DDNS_HOSTNAME` | `""` | The hostname to update (e.g., `homelab.example.com`) |
+
+### Current Configuration
+
+```yaml
+env:
+  - name: DDNS_HOSTNAME
+    value: homelab.buildin.group
+  - name: DDNS_ENABLED
+    value: "true"
+```
+
+### How It Works
+
+1. **Periodic checks** - Every 5 minutes (configurable via `RECONCILE_INTERVAL_SEC`), the controller checks your public IP
+2. **Multiple IP services** - Uses multiple fallback services for reliability:
+   - `api.ipify.org`
+   - `ifconfig.me`
+   - `icanhazip.com`
+   - `checkip.amazonaws.com`
+   - `api.my-ip.io`
+3. **Efficient updates** - Only updates Cloudflare when the IP actually changes
+4. **CNAME handling** - Automatically replaces conflicting CNAME records with A records
+5. **Initial sync** - Runs immediately on startup, then periodically
+
+### Monitoring DDNS
+
+Check DDNS status in the controller logs:
+
+```bash
+kubectl logs -n cloudflare-tunnel deployment/service-controller | grep DDNS
+```
+
+Example log output:
+```
+DDNS: homelab.buildin.group already points to 203.0.113.42 (no change needed)
+DDNS: IP changed from 203.0.113.42 to 198.51.100.23, updating homelab.buildin.group
+DDNS: Successfully updated homelab.buildin.group -> 198.51.100.23
+```
+
+### Disabling DDNS
+
+To disable DDNS, set the environment variable:
+
+```yaml
+- name: DDNS_ENABLED
+  value: "false"
+```
 
 ## Service Configuration
 
@@ -171,6 +237,7 @@ kubectl get services --all-namespaces -l exposure.service-controller.io/type=int
 - **Internal services not accessible?** Ensure MetalLB is running and service has LoadBalancer type
 - **DNS not working?** Check if the appropriate DNS route was created
 - **ArgoCD conflicts?** Verify that the `ignoreDifferences` configuration is present in the ApplicationSet
+- **DDNS not updating?** Check that `DDNS_ENABLED=true` and verify Cloudflare API token has DNS edit permissions
 
 ### Debugging Commands
 
@@ -204,6 +271,7 @@ kubectl get services --all-namespaces -l dns.service-controller.io/enabled=true
 ### 🔧 **Enhanced Functionality**
 - **Dual exposure types**: Supports both public (tunneled) and internal (MetalLB) services
 - **Internal DNS support**: Framework for internal DNS management
+- **Dynamic DNS (DDNS)**: Automatically tracks and updates public IP changes
 - **Better error handling**: More robust error handling and logging
 
 ### 🛡️ **Security & Reliability**

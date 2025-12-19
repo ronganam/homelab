@@ -1,0 +1,22 @@
+# INTERNAL Service - accessible via ingress
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyfin
+  namespace: jellyfin
+  labels:
+    app: jellyfin
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "jellyfin.buildin.group"
+    exposure.service-controller.io/type: "internal"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8096
+      protocol: TCP
+  selector:
+    app: jellyfin
+
+

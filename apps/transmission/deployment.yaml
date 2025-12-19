@@ -63,6 +63,9 @@ spec:
             # Mount the same host media directory used by Jellyfin as Transmission's downloads directory.
             - name: media
               mountPath: /downloads
+            # Optional watch directory (kept ephemeral; avoids startup warnings if watch is enabled).
+            - name: watch
+              mountPath: /watch
           resources:
             requests:
               cpu: 50m
@@ -78,6 +81,8 @@ spec:
           hostPath:
             path: /media
             type: Directory
+        - name: watch
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

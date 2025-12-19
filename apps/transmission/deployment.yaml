@@ -38,7 +38,9 @@ spec:
             capabilities:
               drop: ["ALL"]
               # Needed for LSIO s6 init to chown volumes and drop privileges to PUID/PGID.
-              add: ["CHOWN", "SETGID", "SETUID"]
+              # Also include DAC_OVERRIDE so root can actually repair permissions on existing files
+              # within mounted volumes (otherwise "Permission denied" can occur even as root).
+              add: ["CHOWN", "SETGID", "SETUID", "DAC_OVERRIDE", "FOWNER"]
           ports:
             - name: http
               containerPort: 9091

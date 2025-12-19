@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: transmission
+  namespace: transmission
+  labels:
+    app: transmission
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: transmission
+  template:
+    metadata:
+      labels:
+        app: transmission
+        app.kubernetes.io/name: transmission
+    spec:
+      # If `/media` only exists on specific nodes, keep this aligned with Jellyfin.
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      securityContext:
+        # linuxserver images commonly use s6-overlay and expect to start as root, then drop to PUID/PGID.
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: transmission
+          image: lscr.io/linuxserver/transmission:4.0.6
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - name: http
+              containerPort: 9091
+              protocol: TCP
+            - name: peer-tcp
+              containerPort: 51413
+              protocol: TCP
+            - name: peer-udp
+              containerPort: 51413
+              protocol: UDP
+          env:
+            # Per LinuxServer compose example:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Asia/Jerusalem
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            # Mount the same host media directory used by Jellyfin as Transmission's downloads directory.
+            - name: media
+              mountPath: /downloads
+          resources:
+            requests:
+              cpu: 50m
+              memory: 256Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: transmission-config
+        - name: media
+          hostPath:
+            path: /media
+            type: Directory
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: transmission-config
+  namespace: transmission
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 512Mi
+  storageClassName: longhorn
+
+
+

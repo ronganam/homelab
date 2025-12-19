@@ -1,0 +1,31 @@
+# INTERNAL Service - accessible via ingress
+apiVersion: v1
+kind: Service
+metadata:
+  name: transmission
+  namespace: transmission
+  labels:
+    app: transmission
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "transmission.buildin.group"
+    exposure.service-controller.io/type: "internal"
+spec:
+  type: ClusterIP
+  selector:
+    app: transmission
+  ports:
+    - name: http
+      port: 80
+      targetPort: 9091
+      protocol: TCP
+    - name: peer-tcp
+      port: 51413
+      targetPort: 51413
+      protocol: TCP
+    - name: peer-udp
+      port: 51413
+      targetPort: 51413
+      protocol: UDP
+
+
+

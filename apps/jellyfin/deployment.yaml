@@ -106,7 +106,11 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 512Mi
+      # Jellyfin enforces a minimum free-space check on its data dir (under /config/data).
+      # Values below 2Gi will cause startup to fail with "insufficient free space".
+      # Note: PVC size != free space (filesystem overhead + Jellyfin writes). Give headroom.
+      # Practical minimum to pass Jellyfin's 2Gi free-space check is usually ~3Gi.
+      storage: 3Gi
   storageClassName: longhorn
 ---
 apiVersion: v1

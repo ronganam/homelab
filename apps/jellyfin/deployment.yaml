@@ -23,14 +23,22 @@ spec:
         nvidia.com/gpu.present: "true"
       runtimeClassName: nvidia
       securityContext:
+        runAsNonRoot: true
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
       containers:
         - name: jellyfin
           image: ghcr.io/jellyfin/jellyfin:10.11.5
           imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           ports:
             - containerPort: 8096
               name: http
@@ -42,6 +50,10 @@ spec:
               mountPath: /config
             - name: cache
               mountPath: /cache
+            # Optional: fast in-memory transcoding scratch space.
+            # If you want this, set Jellyfin's "Transcoding temporary directory" to `/transcode` in the admin UI.
+            - name: transcode
+              mountPath: /transcode
             - name: media
               mountPath: /media
               readOnly: true
@@ -74,6 +86,10 @@ spec:
         - name: cache
           persistentVolumeClaim:
             claimName: jellyfin-cache
+        - name: transcode
+          emptyDir:
+            medium: Memory
+            sizeLimit: 3Gi
         # Host media library mount (matches the docker example `-v /media:/media`)
         - name: media
           hostPath:
@@ -90,7 +106,7 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 2Gi
+      storage: 512Mi
   storageClassName: longhorn
 ---
 apiVersion: v1

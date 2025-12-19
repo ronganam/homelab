@@ -37,6 +37,8 @@ spec:
             allowPrivilegeEscalation: false
             capabilities:
               drop: ["ALL"]
+              # Needed for LSIO s6 init to chown volumes and drop privileges to PUID/PGID.
+              add: ["CHOWN", "SETGID", "SETUID"]
           ports:
             - name: http
               containerPort: 9091

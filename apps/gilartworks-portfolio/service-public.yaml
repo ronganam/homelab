@@ -1,0 +1,23 @@
+# PUBLIC Service - accessible via Cloudflare tunnel
+# This service will be accessible via public DNS through Cloudflare tunnel
+apiVersion: v1
+kind: Service
+metadata:
+  name: gilartworks-portfolio
+  namespace: gilartworks-portfolio
+  labels:
+    app: gilartworks-portfolio
+    # DNS Management Labels for Public Service
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "portfolio.gilartworks.com"
+    exposure.service-controller.io/type: "public"
+spec:
+  type: ClusterIP # Use ClusterIP for tunneled services
+  ports:
+    - name: http
+      port: 80 # External port
+      targetPort: 3000 # Container port
+      protocol: TCP
+  selector:
+    app: gilartworks-portfolio
+

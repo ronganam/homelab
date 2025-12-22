@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gilartworks-portfolio
+  namespace: gilartworks-portfolio
+  labels:
+    app: gilartworks-portfolio
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Use Recreate for apps with persistent storage
+  selector:
+    matchLabels:
+      app: gilartworks-portfolio
+  template:
+    metadata:
+      labels:
+        app: gilartworks-portfolio
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: gilartworks-portfolio
+          image: registry.buildin.group/gilartworks-portfolio:1.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: NODE_ENV
+              value: "production"
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gilartworks-portfolio-secret
+                  key: admin-password
+          volumeMounts:
+            - name: assets
+              mountPath: /app/assets
+            - name: uploads
+              mountPath: /app/uploads
+          resources:
+            limits:
+              memory: 1Gi
+              cpu: 500m
+            requests:
+              memory: 256Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: assets
+          persistentVolumeClaim:
+            claimName: gilartworks-portfolio-assets
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: gilartworks-portfolio-uploads
+---
+# PersistentVolumeClaim for assets storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gilartworks-portfolio-assets
+  namespace: gilartworks-portfolio
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: longhorn
+---
+# PersistentVolumeClaim for uploads storage
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gilartworks-portfolio-uploads
+  namespace: gilartworks-portfolio
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 128Mi
+  storageClassName: longhorn
+

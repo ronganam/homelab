@@ -17,8 +17,8 @@ Portfolio application deployed on Kubernetes.
 ## Storage
 
 Two persistent volumes are used:
-- `gilartworks-portfolio-assets`: 1Gi for assets
-- `gilartworks-portfolio-uploads`: 5Gi for uploads
+- `gilartworks-portfolio-assets`: 2Gi for assets
+- `gilartworks-portfolio-uploads`: 128Mi for uploads
 
 ## Setup
 
@@ -29,9 +29,11 @@ Two persistent volumes are used:
      -n gilartworks-portfolio
    ```
 
-2. Apply the kustomization:
+2. The app will be automatically discovered and deployed by Argo CD via the ApplicationSet.
+   
+   Alternatively, you can manually apply:
    ```bash
-   kubectl apply -k apps/gilartworks-portfolio/kustomization-public.yaml
+   kubectl apply -k apps/gilartworks-portfolio/
    ```
 
 ## Deployment

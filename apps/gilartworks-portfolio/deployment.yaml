@@ -24,7 +24,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: gilartworks-portfolio
-          image: registry.buildin.group/gilartworks-portfolio:1.0
+          image: registry.buildin.group/gilartworks-portfolio:2.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 3000

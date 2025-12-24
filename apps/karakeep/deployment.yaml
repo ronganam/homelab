@@ -138,7 +138,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: karakeep-meilisearch
-          image: getmeili/meilisearch:v1.29.0
+          image: getmeili/meilisearch:v1.31.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 7700

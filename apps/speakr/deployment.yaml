@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: speakr
-          image: ronganam/speakr:v3
+          image: learnedmachine/speakr:0.7.1-alpha
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8899

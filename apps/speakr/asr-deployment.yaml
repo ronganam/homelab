@@ -20,7 +20,7 @@ spec:
       runtimeClassName: nvidia
       containers:
         - name: whisper-asr
-          image: onerahmet/openai-whisper-asr-webservice:latest-gpu
+          image: onerahmet/openai-whisper-asr-webservice:v1.9.1-gpu
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9000

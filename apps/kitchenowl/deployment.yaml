@@ -34,7 +34,7 @@ spec:
               value: "http://kitchenowl.buildin.group/api"
           volumeMounts:
             - name: data
-              mountPath: /app/data
+              mountPath: /data
           resources:
             limits:
               memory: 1Gi
@@ -73,5 +73,5 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
-      storage: 1Gi
+      storage: 128Mi
   storageClassName: longhorn

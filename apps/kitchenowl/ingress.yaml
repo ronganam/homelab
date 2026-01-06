@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kitchenowl
+  namespace: kitchenowl
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "KitchenOwl"
+    gethomepage.dev/description: "A smart self-hosted grocery list and recipe manager."
+    gethomepage.dev/icon: "kitchenowl.svg"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "10"
+spec:
+  rules:
+    - host: kitchenowl.buildin.group
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kitchenowl
+                port:
+                  number: 80

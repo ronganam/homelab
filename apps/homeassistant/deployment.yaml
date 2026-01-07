@@ -42,11 +42,11 @@ spec:
               mountPath: /config
           resources:
             limits:
-              memory: 1Gi
-              cpu: 1000m
+              memory: 2Gi
+              cpu: 2000m
             requests:
-              memory: 256Mi
-              cpu: 100m
+              memory: 1Gi
+              cpu: 500m
           livenessProbe:
             httpGet:
               path: /

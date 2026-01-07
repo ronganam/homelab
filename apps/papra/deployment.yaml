@@ -34,7 +34,7 @@ spec:
             - name: APP_BASE_URL
               value: "https://papra.buildin.group"
             - name: AUTH_SECRET
-              value: "lkjasdoijadlaksjdlaskjdasd"
+              value: "lkjsdoijadlaksjdlaskjdasd1lskdjf"
             - name: AUTH_IS_REGISTRATION_ENABLED
               value: "true"
             - name: AUTH_IS_PASSWORD_RESET_ENABLED

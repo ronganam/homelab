@@ -6,5 +6,5 @@ version: 0.1.0
 appVersion: ""
 dependencies:
   - name: stirling-pdf-chart
-    version: 2.2.0
+    version: 3.0.0
     repository: https://stirling-tools.github.io/Stirling-PDF-chart

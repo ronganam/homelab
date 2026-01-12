@@ -5,10 +5,6 @@ infisical-standalone:
     kubeSecretRef: "infisical-secrets"
     service:
       type: ClusterIP
-      labels:
-        dns.service-controller.io/enabled: "true"
-        dns.service-controller.io/hostname: "infisical.buildin.group"
-        exposure.service-controller.io/type: "internal"
     
   ingress:
     enabled: true

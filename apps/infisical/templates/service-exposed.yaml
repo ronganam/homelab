@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: infisical-exposed
+  namespace: infisical
+  labels:
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "infisical.buildin.group"
+    exposure.service-controller.io/type: "internal"
+spec:
+  type: ClusterIP
+  selector:
+    app: infisical-standalone
+    component: infisical
+    release: infisical
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080

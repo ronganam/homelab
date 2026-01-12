@@ -1,0 +1,91 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: obsidian-livesync
+  namespace: obsidian-livesync
+  labels:
+    app: obsidian-livesync
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: obsidian-livesync
+  template:
+    metadata:
+      labels:
+        app: obsidian-livesync
+    spec:
+      securityContext:
+        runAsUser: 5984
+        runAsGroup: 5984
+        fsGroup: 5984
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: obsidian-livesync
+          image: couchdb:3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5984
+              name: http
+          env:
+            - name: COUCHDB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: obsidian-livesync-secret
+                  key: couchdb-user
+            - name: COUCHDB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: obsidian-livesync-secret
+                  key: couchdb-password
+          volumeMounts:
+            - name: data
+              mountPath: /opt/couchdb/data
+            - name: config
+              mountPath: /opt/couchdb/etc/local.d/livesync.ini
+              subPath: livesync.ini
+          resources:
+            limits:
+              memory: 1Gi
+              cpu: 500m
+            requests:
+              memory: 256Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /_up
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /_up
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: obsidian-livesync-data
+        - name: config
+          configMap:
+            name: obsidian-livesync-config
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: obsidian-livesync-data
+  namespace: obsidian-livesync
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: longhorn

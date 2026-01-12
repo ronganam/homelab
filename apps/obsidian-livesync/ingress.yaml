@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: obsidian-livesync
+  namespace: obsidian-livesync
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "4000m"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Obsidian Livesync"
+    gethomepage.dev/description: "Self-hosted Obsidian Livesync Server"
+    gethomepage.dev/icon: "obsidian.png"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "10"
+spec:
+  rules:
+    - host: obsidian-livesync.buildin.group
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: obsidian-livesync
+                port:
+                  number: 80

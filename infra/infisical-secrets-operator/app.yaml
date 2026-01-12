@@ -1,20 +1,4 @@
-apiVersion: argoproj.io/v1alpha1
-kind: Application
-metadata:
-  name: infisical-secrets-operator
-  namespace: argocd
-spec:
-  project: default
-  source:
-    path: infra/infisical-secrets-operator
-    repoURL: https://github.com/ronganam/homelab.git
-    targetRevision: main
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: infisical-operator-system
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-    syncOptions:
-      - CreateNamespace=true
+name: infisical-secrets-operator
+namespace: infisical-operator-system
+path: infra/infisical-secrets-operator
+wave: "10"

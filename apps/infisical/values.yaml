@@ -3,6 +3,17 @@ infisical-standalone:
   infisical:
     replicaCount: 1
     kubeSecretRef: "infisical-secrets"
+    extraEnv:
+      - name: DB_CONNECTION_URI
+        valueFrom:
+          secretKeyRef:
+            name: infisical-secrets
+            key: DB_CONNECTION_URI
+      - name: REDIS_URL
+        valueFrom:
+          secretKeyRef:
+            name: infisical-secrets
+            key: REDIS_URL
     service:
       type: ClusterIP
       annotations: {}

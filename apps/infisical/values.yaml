@@ -1,32 +1,19 @@
-# Values for Infisical
+# Values for Infisical (Simple Deployment)
 infisical-standalone:
   infisical:
     replicaCount: 1
     kubeSecretRef: "infisical-secrets"
-    extraEnv:
-      - name: DB_CONNECTION_URI
-        valueFrom:
-          secretKeyRef:
-            name: infisical-secrets
-            key: DB_CONNECTION_URI
-      - name: REDIS_URL
-        valueFrom:
-          secretKeyRef:
-            name: infisical-secrets
-            key: REDIS_URL
+    image:
+      tag: "v0.155.1"
     service:
       type: ClusterIP
-      annotations: {}
     
   ingress:
     enabled: true
     ingressClassName: nginx
-    nginx:
-      enabled: false
     hostName: infisical.buildin.group
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
-      # Homepage automatic service discovery annotations
       gethomepage.dev/enabled: "true"
       gethomepage.dev/name: "Infisical"
       gethomepage.dev/description: "Secret Management Platform"
@@ -36,21 +23,18 @@ infisical-standalone:
     
   postgresql:
     enabled: true
+    auth:
+      username: infisical
+      password: root
+      database: infisicalDB
     primary:
       persistence:
         size: 1Gi
-    auth:
-      username: infisical
-      database: infisicalDB
-      existingSecret: "infisical-secrets"
-      secretKeys:
-        userPasswordKey: "postgres-password"
 
   redis:
     enabled: true
+    auth:
+      password: "mysecretpassword"
     master:
       persistence:
         size: 1Gi
-    auth:
-      existingSecret: "infisical-secrets"
-      existingSecretPasswordKey: "redis-password"

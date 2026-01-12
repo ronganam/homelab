@@ -54,17 +54,21 @@ spec:
               memory: 256Mi
               cpu: 100m
           livenessProbe:
-            httpGet:
-              path: /_up
-              port: http
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -f -s -u ${COUCHDB_USER}:${COUCHDB_PASSWORD} http://127.0.0.1:5984/_up
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
-            httpGet:
-              path: /_up
-              port: http
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -f -s -u ${COUCHDB_USER}:${COUCHDB_PASSWORD} http://127.0.0.1:5984/_up
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3

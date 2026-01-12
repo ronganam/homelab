@@ -25,10 +25,13 @@ infisical-standalone:
     enabled: true
     auth:
       username: infisical
-      password: root
       database: infisicalDB
+      existingSecret: "infisical-secrets"
+      secretKeys:
+        userPasswordKey: "postgres-password"
 
   redis:
     enabled: true
     auth:
-      password: mysecretpassword
+      existingSecret: "infisical-secrets"
+      existingSecretPasswordKey: "redis-password"

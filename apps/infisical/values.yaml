@@ -1,10 +1,8 @@
-# Values for Infisical (Simple Deployment)
+# Values for Infisical (Secure Deployment)
 infisical-standalone:
   infisical:
     replicaCount: 1
     kubeSecretRef: "infisical-secrets"
-    image:
-      tag: "v0.155.1"
     service:
       type: ClusterIP
     
@@ -21,20 +19,41 @@ infisical-standalone:
       gethomepage.dev/group: "Security"
       gethomepage.dev/weight: "10"
     
+  # Disable bundled charts
   postgresql:
-    enabled: true
-    auth:
-      username: infisical
-      password: root
-      database: infisicalDB
-    primary:
-      persistence:
-        size: 1Gi
+    enabled: false
+    # Tell Infisical to use our secret for the connection string
+    useExistingPostgresSecret:
+      enabled: true
+      existingConnectionStringSecret:
+        name: "infisical-secrets"
+        key: "DB_CONNECTION_URI"
 
   redis:
-    enabled: true
-    auth:
-      password: "mysecretpassword"
-    master:
-      persistence:
-        size: 1Gi
+    enabled: false
+    # Redis URL will be picked up from envFrom (infisical-secrets)
+    # because the bundled redis is disabled, the chart won't override it.
+
+# Configure top-level PostgreSQL dependency
+postgresql:
+  enabled: true
+  auth:
+    username: infisical
+    database: infisicalDB
+    existingSecret: "infisical-secrets"
+    secretKeys:
+      userPasswordKey: "postgres-password"
+  primary:
+    persistence:
+      size: 1Gi
+
+# Configure top-level Redis dependency
+redis:
+  enabled: true
+  auth:
+    existingSecret: "infisical-secrets"
+    existingSecretPasswordKey: "redis-password"
+  master:
+    persistence:
+      size: 1Gi
+  architecture: standalone

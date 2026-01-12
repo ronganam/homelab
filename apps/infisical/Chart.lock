@@ -1,0 +1,12 @@
+dependencies:
+- name: infisical-standalone
+  repository: https://dl.cloudsmith.io/public/infisical/helm-charts/helm/charts/
+  version: 1.7.2
+- name: postgresql
+  repository: https://charts.bitnami.com/bitnami
+  version: 18.2.0
+- name: redis
+  repository: https://charts.bitnami.com/bitnami
+  version: 24.1.0
+digest: sha256:6923140c3e122ada4a122dd119ef44a4b3c4e8cb21c7f8cad8d6d0443673ad13
+generated: "2026-01-12T21:30:47.586309418Z"

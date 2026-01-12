@@ -25,6 +25,9 @@ infisical-standalone:
     
   postgresql:
     enabled: true
+    primary:
+      persistence:
+        size: 1Gi
     auth:
       username: infisical
       database: infisicalDB
@@ -34,6 +37,9 @@ infisical-standalone:
 
   redis:
     enabled: true
+    master:
+      persistence:
+        size: 1Gi
     auth:
       existingSecret: "infisical-secrets"
       existingSecretPasswordKey: "redis-password"

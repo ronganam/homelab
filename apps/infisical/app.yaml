@@ -1,0 +1,4 @@
+name: infisical
+namespace: infisical
+path: apps/infisical
+wave: "30"

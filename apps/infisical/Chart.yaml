@@ -1,0 +1,10 @@
+apiVersion: v2
+name: infisical
+description: Helm wrapper chart to deploy Infisical via upstream dependency
+type: application
+version: 0.1.0
+appVersion: "1.0.1"
+dependencies:
+  - name: infisical-standalone
+    version: "1.7.2"
+    repository: https://dl.cloudsmith.io/public/infisical/helm-charts/helm/charts/

@@ -1,0 +1,34 @@
+# Values for Infisical
+infisical-standalone:
+  infisical:
+    replicaCount: 1
+    kubeSecretRef: "infisical-secrets"
+    service:
+      type: ClusterIP
+      annotations: {}
+    
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostName: infisical.buildin.group
+    annotations:
+      nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+      # Homepage automatic service discovery annotations
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Infisical"
+      gethomepage.dev/description: "Secret Management Platform"
+      gethomepage.dev/icon: "infisical.png"
+      gethomepage.dev/group: "Security"
+      gethomepage.dev/weight: "10"
+    
+  postgresql:
+    enabled: true
+    auth:
+      username: infisical
+      password: root
+      database: infisicalDB
+
+  redis:
+    enabled: true
+    auth:
+      password: mysecretpassword

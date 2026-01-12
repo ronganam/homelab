@@ -10,6 +10,8 @@ infisical-standalone:
   ingress:
     enabled: true
     ingressClassName: nginx
+    nginx:
+      enabled: false
     hostName: infisical.buildin.group
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"

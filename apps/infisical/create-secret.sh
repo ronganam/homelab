@@ -4,10 +4,8 @@ kubectl create namespace infisical --dry-run=client -o yaml | kubectl apply -f -
 # Generate secrets
 ENCRYPTION_KEY=$(openssl rand -hex 16)
 AUTH_SECRET=$(openssl rand -base64 32)
-
-# Default passwords from values.yaml (change if you changed them there)
-DB_PASSWORD="root"
-REDIS_PASSWORD="mysecretpassword"
+DB_PASSWORD=$(openssl rand -base64 16)
+REDIS_PASSWORD=$(openssl rand -base64 16)
 
 # Service names based on fullnameOverride in values.yaml
 # PostgreSQL: fullnameOverride="postgresql" -> Service: postgresql
@@ -23,7 +21,9 @@ kubectl create secret generic infisical-secrets \
   --from-literal=DB_CONNECTION_URI=${DB_URI} \
   --from-literal=REDIS_URL=${REDIS_URL} \
   --from-literal=SITE_URL=${SITE_URL} \
+  --from-literal=postgres-password=${DB_PASSWORD} \
+  --from-literal=redis-password=${REDIS_PASSWORD} \
   --namespace infisical \
   --dry-run=client -o yaml | kubectl apply -f -
 
-echo "Secret infisical-secrets created in namespace infisical"
+echo "Secret infisical-secrets created in namespace infisical with generated passwords."

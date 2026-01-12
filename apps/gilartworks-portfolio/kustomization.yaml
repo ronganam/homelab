@@ -6,6 +6,7 @@ resources:
   - namespace.yaml
   - deployment.yaml
   - service-public.yaml
+  - infisical-secret.yaml
   # No ingress needed for public apps
 namespace: gilartworks-portfolio
 

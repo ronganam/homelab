@@ -18,6 +18,20 @@ spec:
       port: 80
       targetPort: 9091
       protocol: TCP
+---
+# PUBLIC-FACING P2P - pinned IP via MetalLB
+apiVersion: v1
+kind: Service
+metadata:
+  name: transmission-p2p
+  namespace: transmission
+  labels:
+    app: transmission
+spec:
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+  loadBalancerIP: 192.168.1.152
+  ports:
     - name: peer-tcp
       port: 51413
       targetPort: 51413
@@ -26,6 +40,5 @@ spec:
       port: 51413
       targetPort: 51413
       protocol: UDP
-
-
-
+  selector:
+    app: transmission

@@ -19,9 +19,9 @@ spec:
         app.kubernetes.io/name: jellyfin
     spec:
       # Schedule Jellyfin on your GPU node(s)
-      # nodeSelector:
-      #  nvidia.com/gpu.present: "true"
-      #runtimeClassName: nvidia
+      nodeSelector:
+       nvidia.com/gpu.present: "true"
+      runtimeClassName: nvidia
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -51,7 +51,7 @@ spec:
             - name: cache
               mountPath: /cache
             # Optional: fast in-memory transcoding scratch space.
-            # If you want this, set Jellyfin's "Transcoding temporary directory" to `/transcode` in the admin UI.
+              # If you want this, set Jellyfin's "Transcoding temporary directory" to `/transcode` in the admin UI.
             - name: transcode
               mountPath: /transcode
             - name: media
@@ -59,12 +59,12 @@ spec:
               readOnly: true
           resources:
             requests:
-              cpu: 200m
-              memory: 512Mi
-            limits:
               cpu: 2000m
-              memory: 4Gi
-              # nvidia.com/gpu: 1
+              memory: 2Gi
+            limits:
+              cpu: 4000m
+              memory: 6Gi
+              nvidia.com/gpu: 1
           livenessProbe:
             tcpSocket:
               port: 8096

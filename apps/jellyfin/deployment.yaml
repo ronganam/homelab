@@ -59,10 +59,10 @@ spec:
               readOnly: true
           resources:
             requests:
-              cpu: 2000m
+              cpu: 6000m
               memory: 2Gi
             limits:
-              cpu: 4000m
+              cpu: 8000m
               memory: 6Gi
               nvidia.com/gpu: 1
           livenessProbe:

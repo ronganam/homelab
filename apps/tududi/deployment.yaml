@@ -17,11 +17,6 @@ spec:
       labels:
         app: tududi
     spec:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
-        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: tududi
           image: chrisvel/tududi:latest

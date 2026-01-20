@@ -1,0 +1,102 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tududi
+  namespace: tududi
+  labels:
+    app: tududi
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: tududi
+  template:
+    metadata:
+      labels:
+        app: tududi
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: tududi
+          image: chrisvel/tududi:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3002
+              name: http
+          env:
+            - name: TUDUDI_ALLOWED_ORIGINS
+              value: "https://tududi.buildin.group"
+            - name: PUID
+              value: "1000"
+            - name: GUID
+              value: "1000"
+          envFrom:
+            - secretRef:
+                name: tududi-secrets
+          volumeMounts:
+            - name: db
+              mountPath: /app/backend/db
+            - name: uploads
+              mountPath: /app/backend/uploads
+          resources:
+            limits:
+              memory: 1Gi
+              cpu: 500m
+            requests:
+              memory: 256Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: db
+          persistentVolumeClaim:
+            claimName: tududi-db
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: tududi-uploads
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tududi-db
+  namespace: tududi
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+  storageClassName: longhorn
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: tududi-uploads
+  namespace: tududi
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: longhorn

@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: kan
+  namespace: kan
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Kan"
+    gethomepage.dev/description: "Simple Kanban Board"
+    gethomepage.dev/icon: "kanban-board.png"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "10"
+spec:
+  rules:
+    - host: kan.buildin.group
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: kan
+                port:
+                  number: 80

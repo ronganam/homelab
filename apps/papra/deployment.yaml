@@ -29,12 +29,13 @@ spec:
           ports:
             - containerPort: 1221
               name: http
+          envFrom:
+            - secretRef:
+                name: papra-secret
           env:
             # Papra Configuration
             - name: APP_BASE_URL
               value: "https://papra.buildin.group"
-            - name: AUTH_SECRET
-              value: "lkjsdoijadlaksjdlaskjdasd1lskdjf"
             - name: AUTH_IS_REGISTRATION_ENABLED
               value: "true"
             - name: AUTH_IS_PASSWORD_RESET_ENABLED

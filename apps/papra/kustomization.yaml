@@ -7,4 +7,5 @@ resources:
   - deployment.yaml
   - service.yaml
   - ingress.yaml
+  - infisical-secret.yaml
 namespace: papra

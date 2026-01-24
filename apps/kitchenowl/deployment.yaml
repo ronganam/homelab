@@ -24,7 +24,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: kitchenowl
-          image: tombursch/kitchenowl:v0.7.5
+          image: tombursch/kitchenowl:v0.7.6
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080

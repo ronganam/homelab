@@ -6,6 +6,10 @@ metadata:
   annotations:
     kubernetes.io/ingress.class: nginx
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    # ExcaliDash currently sets CSRF client cookie with SameSite=Lax.
+    # For Home Assistant iframe embeds, rewrite to SameSite=None; Secure.
+    nginx.ingress.kubernetes.io/proxy-cookie-path: '/ "/; SameSite=None; Secure; HttpOnly"'
+    nginx.ingress.kubernetes.io/proxy-cookie-flags: "SameSite=None Secure"
     gethomepage.dev/enabled: "true"
     gethomepage.dev/name: "ExcaliDraw"
     gethomepage.dev/description: "Self-hosted Excalidraw dashboard"

@@ -25,3 +25,7 @@ If this secret is not created, the backend still starts, but fixed secrets are r
 - Backend uses `TRUST_PROXY=1` because traffic comes through NGINX ingress.
 - Backend URL for frontend is set to the in-cluster service DNS:
   `excalidraw-backend.excalidraw.svc.cluster.local:8000`.
+- Ingress rewrites cookies to `SameSite=None; Secure` so CSRF/session cookies
+  can be used when ExcaliDash is embedded as an iframe (for example in
+  Home Assistant dashboards).
+

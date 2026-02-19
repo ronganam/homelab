@@ -6,7 +6,7 @@ metadata:
   labels:
     app: excalidraw-frontend
     dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: "excalidraw.buildin.group"
+    dns.service-controller.io/hostname: "excalidraw.ganam.app"
     exposure.service-controller.io/type: "internal"
 spec:
   type: ClusterIP

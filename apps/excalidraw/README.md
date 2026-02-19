@@ -6,7 +6,7 @@ Internal-only Kubernetes deployment of [ExcaliDash](https://github.com/ZimengXio
 
 - `excalidraw-backend` (1 replica, SQLite on PVC)
 - `excalidraw-frontend` (1 replica)
-- Internal ingress at `http://excalidraw.buildin.group`
+- Internal ingress at `http://excalidraw.ganam.app`
 
 ## Secrets (recommended)
 

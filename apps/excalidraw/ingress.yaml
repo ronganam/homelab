@@ -14,7 +14,7 @@ metadata:
     gethomepage.dev/weight: "25"
 spec:
   rules:
-    - host: excalidraw.buildin.group
+    - host: excalidraw.ganam.app
       http:
         paths:
           - path: /

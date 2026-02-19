@@ -37,7 +37,7 @@ spec:
             - name: TRUST_PROXY
               value: "1"
             - name: FRONTEND_URL
-              value: http://excalidraw.buildin.group,https://excalidraw.buildin.group
+              value: http://excalidraw.ganam.app,https://excalidraw.ganam.app
             - name: JWT_SECRET
               valueFrom:
                 secretKeyRef:

@@ -10,7 +10,7 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
 spec:
   rules:
-    - host: homepage.buildin.group
+    - host: homepage.ganam.app
       http:
         paths:
           - path: /

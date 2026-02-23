@@ -6,7 +6,7 @@ metadata:
   labels:
     app: homepage
     dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: "homepage.buildin.group"
+    dns.service-controller.io/hostname: "homepage.ganam.app"
     exposure.service-controller.io/type: "internal"
   annotations:
 spec:

@@ -16,8 +16,8 @@ A comprehensive monitoring solution for your homelab using the **kube-prometheus
 
 After deployment, your monitoring services will be available at:
 
-- **Prometheus**: `http://prometheus.buildin.group` (internal access via MetalLB)
-- **Grafana**: `http://grafana.buildin.group` (internal access via MetalLB)
+- **Prometheus**: `http://prometheus.ganam.app` (internal access via MetalLB)
+- **Grafana**: `http://grafana.ganam.app` (internal access via MetalLB)
   - Default login: `admin` / `admin`
   - **Change the default password after first login!**
   - **Longhorn Dashboard**: Pre-configured dashboard for storage monitoring
@@ -139,18 +139,18 @@ If you see permission errors like "permission denied" or "not writable":
 - Both use proper security contexts and fsGroup settings
 
 ### Check Prometheus targets:
-1. Go to `http://prometheus.buildin.group`
+1. Go to `http://prometheus.ganam.app`
 2. Click "Status" → "Targets"
 3. Verify all targets are "UP"
 
 ### Check Grafana datasource:
-1. Go to `http://grafana.buildin.group`
+1. Go to `http://grafana.ganam.app`
 2. Login with admin/admin
 3. Go to "Configuration" → "Data Sources"
 4. Verify Prometheus datasource is working
 
 ### Check Longhorn monitoring:
-1. Go to `http://grafana.buildin.group`
+1. Go to `http://grafana.ganam.app`
 2. Look for the "Longhorn" folder in the dashboards
 3. Open the "Longhorn Dashboard" to view storage metrics
-4. Verify Longhorn metrics are being collected in Prometheus at `http://prometheus.buildin.group`
+4. Verify Longhorn metrics are being collected in Prometheus at `http://prometheus.ganam.app`

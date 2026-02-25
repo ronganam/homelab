@@ -24,14 +24,14 @@ kube-prometheus-stack:
         gethomepage.dev/weight: "3"
         gethomepage.dev/pod-selector: "app.kubernetes.io/name=grafana,app.kubernetes.io/instance=monitoring"
       hosts:
-        - grafana.buildin.group
+        - grafana.ganam.app
     service:
       type: ClusterIP
       port: 80
       targetPort: 3000
       labels:
         dns.service-controller.io/enabled: "true"
-        dns.service-controller.io/hostname: grafana.buildin.group
+        dns.service-controller.io/hostname: grafana.ganam.app
         exposure.service-controller.io/type: internal
     persistence:
       enabled: true
@@ -80,14 +80,14 @@ kube-prometheus-stack:
         gethomepage.dev/weight: "4"
         gethomepage.dev/pod-selector: "app.kubernetes.io/name=prometheus,app.kubernetes.io/instance=monitoring"
       hosts:
-        - prometheus.buildin.group
+        - prometheus.ganam.app
     service:
       type: ClusterIP
       port: 80
       targetPort: 9090
       labels:
         dns.service-controller.io/enabled: "true"
-        dns.service-controller.io/hostname: prometheus.buildin.group
+        dns.service-controller.io/hostname: prometheus.ganam.app
         exposure.service-controller.io/type: internal
     additionalServiceMonitors:
       - name: "longhorn-monitoring"

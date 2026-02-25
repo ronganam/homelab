@@ -9,7 +9,7 @@ dependencies:
     version: "1.7.2"
     repository: https://dl.cloudsmith.io/public/infisical/helm-charts/helm/charts/
   - name: postgresql
-    version: "18.2.3"
+    version: "18.4.1"
     repository: https://charts.bitnami.com/bitnami
   - name: redis
     version: "24.1.0"

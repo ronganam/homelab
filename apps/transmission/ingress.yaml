@@ -16,7 +16,7 @@ metadata:
     gethomepage.dev/weight: "30"
 spec:
   rules:
-    - host: transmission.buildin.group
+    - host: transmission.ganam.app
       http:
         paths:
           - path: /

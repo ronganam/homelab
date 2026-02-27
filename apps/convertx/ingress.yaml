@@ -1,0 +1,30 @@
+# Ingress for INTERNAL apps only
+# This ingress is only needed for internal services
+# Public services use Cloudflare tunnel and don't need ingress
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: convertx
+  namespace: convertx
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m" # Adjust as needed
+    # Homepage automatic service discovery annotations
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "ConvertX"
+    gethomepage.dev/description: "A free and open source web-based tool for file conversion"
+    gethomepage.dev/icon: "convertx.png"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "50"
+spec:
+  rules:
+    - host: convertx.ganam.app
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: convertx
+                port:
+                  number: 80

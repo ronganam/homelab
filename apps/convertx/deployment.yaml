@@ -1,0 +1,83 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: convertx
+  namespace: convertx
+  labels:
+    app: convertx
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate # Use Recreate for apps with persistent storage
+  selector:
+    matchLabels:
+      app: convertx
+  template:
+    metadata:
+      labels:
+        app: convertx
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+      containers:
+        - name: convertx
+          image: ghcr.io/c4illin/convertx:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: JWT_SECRET
+              value: "a77a7b7cb0a2e71228f674cae1dc2dd781917da6ecde280761b59fa94fcb5be3"
+            - name: ALLOW_UNAUTHENTICATED
+              value: "true"
+            - name: HTTP_ALLOWED
+              value: "true"
+            - name: ACCOUNT_REGISTRATION
+              value: "false"
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+          resources:
+            limits:
+              memory: 1Gi
+              cpu: 500m
+            requests:
+              memory: 256Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: convertx-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: convertx-data
+  namespace: convertx
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: longhorn # Use Longhorn storage

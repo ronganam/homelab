@@ -1,0 +1,22 @@
+# INTERNAL Service - accessible via ingress
+# This service will be accessible via internal DNS using MetalLB IP + Ingress
+apiVersion: v1
+kind: Service
+metadata:
+  name: convertx
+  namespace: convertx
+  labels:
+    app: convertx
+    # DNS Management Labels for Internal Service
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "convertx.ganam.app"
+    exposure.service-controller.io/type: "internal"
+spec:
+  type: ClusterIP # Use ClusterIP for internal services with ingress
+  ports:
+    - name: http
+      port: 80 # External port
+      targetPort: 3000 # Replace with your app's container port
+      protocol: TCP
+  selector:
+    app: convertx

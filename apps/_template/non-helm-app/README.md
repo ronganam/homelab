@@ -39,13 +39,13 @@ This template shows how to create a non-Helm app for your homelab using Kubernet
 - Use `service-internal.yaml` with `exposure.service-controller.io/type: "internal"`
 - Include `ingress.yaml` in kustomization
 - Accessible via internal domain + ingress
-- Example: `speakr.buildin.group`
+- Example: `speakr.ganam.app`
 
 ### Public Apps
 - Use `service-public.yaml` with `exposure.service-controller.io/type: "public"`
 - No ingress needed
 - Accessible via public domain through Cloudflare tunnel
-- Example: `n9n.buildin.group`
+- Example: `n9n.ganam.app`
 
 ## DNS Management
 

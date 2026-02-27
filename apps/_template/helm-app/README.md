@@ -34,13 +34,13 @@ This template shows how to create a Helm-based app for your homelab.
 - Use `exposure.service-controller.io/type: "internal"`
 - Have `ingress.enabled: true`
 - Accessible via internal domain + ingress
-- Example: `pdf.buildin.group`
+- Example: `pdf.ganam.app`
 
 ### Public Apps
 - Use `exposure.service-controller.io/type: "public"`
 - Have `ingress.enabled: false`
 - Accessible via public domain through Cloudflare tunnel
-- Example: `n9n.buildin.group`
+- Example: `n9n.ganam.app`
 
 ## DNS Management
 

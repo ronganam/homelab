@@ -10,7 +10,7 @@ CHANGEME-chart: # Replace with upstream chart name
     annotations: {}
     labels:
       dns.service-controller.io/enabled: "true"
-      dns.service-controller.io/hostname: "CHANGEME.buildin.group" # Replace with your domain
+      dns.service-controller.io/hostname: "CHANGEME.ganam.app" # Replace with your domain
       exposure.service-controller.io/type: "internal"
   ingress:
     enabled: true
@@ -25,7 +25,7 @@ CHANGEME-chart: # Replace with upstream chart name
       gethomepage.dev/group: "Applications" # Replace with your group (Applications, Infrastructure, Monitoring)
       gethomepage.dev/weight: "10" # Replace with your weight (lower = higher priority)
     hosts:
-      - name: CHANGEME.buildin.group # Replace with your domain
+      - name: CHANGEME.ganam.app # Replace with your domain
         path: /
         tls: false
   persistence:

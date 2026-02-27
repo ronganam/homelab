@@ -40,7 +40,7 @@ Use this for apps that need custom Kubernetes manifests.
 - **Access**: Via internal domain + ingress
 - **DNS**: `exposure.service-controller.io/type: "internal"`
 - **Ingress**: Required (nginx ingress class)
-- **Example domains**: `app.buildin.group`
+- **Example domains**: `app.ganam.app`
 
 ### Public Apps
 - **Access**: Via public domain through Cloudflare tunnel

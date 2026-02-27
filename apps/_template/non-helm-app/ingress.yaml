@@ -18,7 +18,7 @@ metadata:
     gethomepage.dev/weight: "10" # Replace with your weight (lower = higher priority)
 spec:
   rules:
-    - host: CHANGEME.buildin.group # Replace with your internal domain
+    - host: CHANGEME.ganam.app # Replace with your internal domain
       http:
         paths:
           - path: /

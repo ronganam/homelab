@@ -9,7 +9,7 @@ metadata:
     app: CHANGEME # Replace with your app name
     # DNS Management Labels for Internal Service
     dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: "CHANGEME.buildin.group" # Replace with your internal domain
+    dns.service-controller.io/hostname: "CHANGEME.ganam.app" # Replace with your internal domain
     exposure.service-controller.io/type: "internal"
 spec:
   type: ClusterIP # Use ClusterIP for internal services with ingress

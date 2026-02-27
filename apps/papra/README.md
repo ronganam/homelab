@@ -15,11 +15,11 @@ Papra is a modern document management system that helps you organize, search, an
 
 ## Configuration
 
-This deployment is configured as an internal app accessible via `papra.buildin.group`.
+This deployment is configured as an internal app accessible via `papra.ganam.app`.
 
 ### Key Environment Variables
 
-- `APP_BASE_URL`: Set to `https://papra.buildin.group`
+- `APP_BASE_URL`: Set to `https://papra.ganam.app`
 - `AUTH_SECRET`: Authentication secret (change this!)
 - `DATABASE_URL`: SQLite database location
 - `DOCUMENT_STORAGE_DRIVER`: File system storage
@@ -42,7 +42,7 @@ This deployment is configured as an internal app accessible via `papra.buildin.g
 
 ## Access
 
-Once deployed, access Papra at: https://papra.buildin.group
+Once deployed, access Papra at: https://papra.ganam.app
 
 ## Initial Setup
 

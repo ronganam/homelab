@@ -9,7 +9,7 @@ metadata:
     app: papra
     # DNS Management Labels for Internal Service
     dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: "papra.buildin.group"
+    dns.service-controller.io/hostname: "papra.ganam.app"
     exposure.service-controller.io/type: "internal"
 spec:
   type: ClusterIP # Use ClusterIP for internal services with ingress

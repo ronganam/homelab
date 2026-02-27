@@ -23,7 +23,7 @@ DB_URI="postgresql://infisical:${DB_PASSWORD}@${DB_HOST}:5432/infisicalDB"
 REDIS_HOST="infisical-redis-master.infisical.svc.cluster.local"
 REDIS_URL="redis://:${REDIS_PASSWORD}@${REDIS_HOST}:6379"
 
-SITE_URL="https://infisical.buildin.group"
+SITE_URL="https://infisical.ganam.app"
 
 kubectl create secret generic infisical-secrets \
   --from-literal=ENCRYPTION_KEY=${ENCRYPTION_KEY} \

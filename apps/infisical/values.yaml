@@ -11,7 +11,7 @@ infisical-standalone:
     ingressClassName: nginx
     nginx:
       enabled: false
-    hostName: infisical.buildin.group
+    hostName: infisical.ganam.app
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"
       gethomepage.dev/enabled: "true"

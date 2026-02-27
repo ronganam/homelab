@@ -27,7 +27,7 @@ Before deploying (or syncing via ArgoCD), you **must** create the required secre
 
 ## Access
 
-The application will be available at `https://infisical.buildin.group`.
+The application will be available at `https://infisical.ganam.app`.
 
 ## Notes
 

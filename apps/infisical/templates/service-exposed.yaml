@@ -5,7 +5,7 @@ metadata:
   namespace: infisical
   labels:
     dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: "infisical.buildin.group"
+    dns.service-controller.io/hostname: "infisical.ganam.app"
     exposure.service-controller.io/type: "internal"
 spec:
   type: ClusterIP

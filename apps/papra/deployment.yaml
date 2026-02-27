@@ -24,7 +24,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: papra
-          image: ghcr.io/papra-hq/papra:25.12.0-rootless
+          image: ghcr.io/papra-hq/papra:26.2.2-rootless
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 1221

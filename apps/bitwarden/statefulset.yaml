@@ -27,7 +27,7 @@ spec:
         runAsNonRoot: true
       containers:
         - name: vaultwarden
-          image: vaultwarden/server:1.35.2
+          image: vaultwarden/server:1.35.4
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8443

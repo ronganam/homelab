@@ -6,7 +6,7 @@ metadata:
   labels:
     app: kan
     dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: "kan.buildin.group"
+    dns.service-controller.io/hostname: "kan.ganam.app"
     exposure.service-controller.io/type: "internal"
 spec:
   type: ClusterIP

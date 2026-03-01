@@ -27,7 +27,7 @@ kubectl create secret generic ${SECRET_NAME} \
     --from-literal=POSTGRES_PASSWORD="${PG_PASS}" \
     --from-literal=BETTER_AUTH_SECRET="${AUTH_SECRET}" \
     --from-literal=POSTGRES_URL="${POSTGRES_URL}" \
-    --from-literal=NEXT_PUBLIC_BASE_URL="https://kan.buildin.group" \
+    --from-literal=NEXT_PUBLIC_BASE_URL="https://kan.ganam.app" \
     --from-literal=SMTP_HOST="" \
     --from-literal=SMTP_PORT="465" \
     --from-literal=SMTP_USER="" \

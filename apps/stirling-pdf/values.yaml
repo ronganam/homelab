@@ -9,7 +9,7 @@ stirling-pdf-chart:
     annotations: {}
     labels:
       dns.service-controller.io/enabled: "true"
-      dns.service-controller.io/hostname: pdf.buildin.group
+      dns.service-controller.io/hostname: pdf.ganam.app
       exposure.service-controller.io/type: internal
   ingress:
     enabled: true
@@ -25,7 +25,7 @@ stirling-pdf-chart:
       gethomepage.dev/weight: "25"
       gethomepage.dev/pod-selector: "app.kubernetes.io/name=stirling-pdf-chart,app.kubernetes.io/instance=stirling-pdf"
     hosts:
-      - name: pdf.buildin.group
+      - name: pdf.ganam.app
         path: /
         tls: false
   persistence:

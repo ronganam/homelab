@@ -7,7 +7,7 @@ data:
   # Non-secret Vaultwarden settings
   ROCKET_PORT: "8443"
   ROCKET_WORKERS: "2"
-  DOMAIN: "https://bitwarden.buildin.group"
+  DOMAIN: "https://bitwarden.ganam.app"
   ROCKET_ADDRESS: "0.0.0.0"
   ROCKET_TLS: "{certs=\"/tls/tls.crt\",key=\"/tls/tls.key\"}"
   SIGNUPS_ALLOWED: "false"

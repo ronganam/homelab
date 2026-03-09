@@ -15,7 +15,7 @@ metadata:
     gethomepage.dev/weight: "5"
 spec:
   rules:
-    - host: bitwarden.buildin.group
+    - host: bitwarden.ganam.app
       http:
         paths:
           - path: /
@@ -35,7 +35,7 @@ metadata:
     kubernetes.io/ingress.class: nginx
 spec:
   rules:
-    - host: bitwarden.buildin.group
+    - host: bitwarden.ganam.app
       http:
         paths:
           - path: /notifications/hub

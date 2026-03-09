@@ -7,7 +7,7 @@ metadata:
     app: bitwarden
     app.kubernetes.io/name: bitwarden
     dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: "bitwarden.buildin.group"
+    dns.service-controller.io/hostname: "bitwarden.ganam.app"
     exposure.service-controller.io/type: "internal"
 spec:
   type: ClusterIP

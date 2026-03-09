@@ -32,7 +32,7 @@ kubectl -n bitwarden create secret generic vaultwarden-admin \
 # Generate self-signed certificate
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
   -keyout tls.key -out tls.crt \
-  -subj "/CN=bitwarden.buildin.group"
+  -subj "/CN=bitwarden.ganam.app"
 
 # Create the secret
 kubectl -n bitwarden create secret tls vaultwarden-tls \

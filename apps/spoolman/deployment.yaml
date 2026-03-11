@@ -18,6 +18,11 @@ spec:
         app: spoolman
     spec:
       enableServiceLinks: false
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: spoolman
           image: ghcr.io/donkie/spoolman:0.23.1
@@ -28,6 +33,10 @@ spec:
           env:
             - name: TZ
               value: "Asia/Jerusalem"
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
           volumeMounts:
             - name: data
               mountPath: /home/app/.local/share/spoolman

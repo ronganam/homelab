@@ -4,6 +4,7 @@ app-blueprint:
     tag: "0.23.1"
 
   containerPort: 8000
+  enableServiceLinks: false
 
   dns:
     hostname: spoolman.ganam.app

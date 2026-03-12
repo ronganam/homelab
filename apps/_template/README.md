@@ -1,118 +1,74 @@
 # Homelab App Templates
 
-This directory contains templates for creating new apps in your homelab. Choose the appropriate template based on your needs.
+This directory contains templates for creating new apps in your homelab.
 
 ## Template Types
 
-### 1. Helm App Template (`helm-app/`)
-Use this for apps that have upstream Helm charts available.
+### 1. Blueprint App (`blueprint-app/`) -- Recommended
 
-**Files:**
-- `Chart.yaml` - Helm chart definition
-- `app.yaml` - Argo CD application configuration
-- `values-internal.yaml` - Values for internal apps (with ingress)
-- `values-public.yaml` - Values for public apps (with Cloudflare tunnel)
-- `README.md` - Detailed usage instructions
+Use this for most apps. It uses the reusable `charts/app-blueprint` Helm chart, so each app only needs **2 files**: `Chart.yaml` and `values.yaml`.
 
-**Examples in your homelab:**
-- `stirling-pdf/` - Internal Helm app
+The blueprint handles namespace, deployment, PVC, service, ingress, infisical secrets, and homepage annotations automatically.
 
-### 2. Non-Helm App Template (`non-helm-app/`)
-Use this for apps that need custom Kubernetes manifests.
+**Quick start:**
+1. Copy `blueprint-app/` to `apps/<your-app-name>/`
+2. Replace all `CHANGEME` placeholders in both files
+3. Remove any sections you don't need (volumes, infisical, etc.)
 
-**Files:**
-- `namespace.yaml` - Kubernetes namespace
-- `deployment.yaml` - Application deployment with PVC
-- `service-internal.yaml` - Service for internal apps
-- `service-public.yaml` - Service for public apps
-- `ingress.yaml` - Ingress for internal apps only
-- `kustomization-internal.yaml` - Kustomization for internal apps
-- `kustomization-public.yaml` - Kustomization for public apps
-- `README.md` - Detailed usage instructions
+**What you specify in values.yaml:**
+- Image and tag
+- Container port
+- DNS hostname and exposure type (internal/public)
+- Homepage dashboard info
+- Persistent volumes
+- Environment variables
+- Infisical secret path (optional)
 
 **Examples in your homelab:**
-- `speakr/` - Internal non-Helm app
-- `n8n/` - Public non-Helm app
+- `papra/` - Internal app with infisical secrets
+- `convertx/` - Internal app with storage
+- `gilartworks-soon/` - Minimal public app (no storage)
+- `gilartworks-portfolio/` - Public app with 2 PVCs + infisical
+- `registry/` - Internal app with custom ingress annotations
+- `n8n/` - Public app with storage
+
+### 2. Helm Wrapper (`helm-app/`)
+
+Use this only for apps that have an **upstream Helm chart** you want to wrap.
+
+**Files:** `Chart.yaml`, `values.yaml`
+
+**Examples in your homelab:**
+- `stirling-pdf/` - Wraps upstream Stirling-PDF chart
+- `frigate/` - Wraps upstream Frigate chart
+- `pihole/` - Wraps upstream Pi-hole chart
+
+### 3. Custom Manifests (`non-helm-app/`)
+
+Use this only for complex apps that need resources beyond what the blueprint supports (StatefulSets, multiple deployments, GPU, RBAC, CronJobs, etc.).
+
+**Examples in your homelab:**
+- `bitwarden/` - StatefulSet with backup CronJob
+- `speakr/` - Multiple deployments (app + ASR)
+- `jellyfin/` - GPU passthrough, multiple PVC types
+- `homepage/` - RBAC, ConfigMap-heavy
 
 ## Access Types
 
 ### Internal Apps
-- **Access**: Via internal domain + ingress
-- **DNS**: `exposure.service-controller.io/type: "internal"`
-- **Ingress**: Required (nginx ingress class)
-- **Example domains**: `app.ganam.app`
+- **Access**: Via internal domain + nginx ingress
+- **DNS label**: `exposure.service-controller.io/type: "internal"`
+- **Example domains**: `app.ganam.app`, `app.buildin.group`
 
 ### Public Apps
 - **Access**: Via public domain through Cloudflare tunnel
-- **DNS**: `exposure.service-controller.io/type: "public"`
-- **Ingress**: Not needed (uses Cloudflare tunnel)
+- **DNS label**: `exposure.service-controller.io/type: "public"`
+- **No ingress needed**
 - **Example domains**: `app.yourdomain.com`
 
-## Quick Start
+## Conventions
 
-1. **Choose your template type** (Helm or Non-Helm)
-2. **Choose your access type** (Internal or Public)
-3. **Copy the template** to your app directory
-4. **Replace all `CHANGEME` placeholders** with your app name
-5. **Customize the configuration** for your app
-6. **Use the appropriate kustomization file**
-
-## DNS Management
-
-All apps use the DNS service controller with these labels:
-- `dns.service-controller.io/enabled: "true"`
-- `dns.service-controller.io/hostname: "your.domain.com"`
-- `exposure.service-controller.io/type: "internal"` or `"public"`
-
-## Storage
-
-All apps use Longhorn storage class for persistent volumes.
-
-## Security
-
-Non-Helm apps include security context with proper user/group settings. Helm apps should configure security context in their values files.
-
-## Homepage Integration
-
-All apps in this homelab are configured for automatic Homepage discovery. This eliminates the need to manually maintain service lists in Homepage.
-
-### Automatic Service Discovery
-
-Services are automatically discovered when they have the following annotations on their Ingress resources:
-
-```yaml
-annotations:
-  gethomepage.dev/enabled: "true"
-  gethomepage.dev/name: "Service Name"
-  gethomepage.dev/description: "Service Description"
-  gethomepage.dev/icon: "icon-name.png"
-  gethomepage.dev/group: "Group Name"
-  gethomepage.dev/weight: "10"
-```
-
-### Resource Monitoring
-
-For CPU and memory monitoring, deployments need proper Kubernetes labels:
-
-```yaml
-labels:
-  app: service-name
-```
-
-### Service Groups
-
-- **Applications** - User-facing applications
-- **Infrastructure** - Core infrastructure services  
-- **Monitoring** - Monitoring and observability tools
-
-### Instance Configuration
-
-- `internal` - Internal services accessible via ingress
-- `public` - Public services accessible via Cloudflare tunnel
-
-### Benefits
-
-1. **Automatic Discovery** - No need to manually add services to Homepage
-2. **Resource Monitoring** - CPU and memory usage displayed automatically
-3. **Consistent Configuration** - Services configured where they're deployed
-4. **Group Organization** - Services automatically organized by groups
+- **Storage**: Longhorn storage class for all persistent volumes
+- **DNS**: Labels on services for automatic DNS management
+- **Homepage**: Annotations on ingress for automatic dashboard discovery
+- **Secrets**: Infisical operator for secret management

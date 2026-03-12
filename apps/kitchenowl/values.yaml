@@ -1,0 +1,29 @@
+app-blueprint:
+  image:
+    repository: tombursch/kitchenowl
+    tag: v0.7.6
+
+  containerPort: 8080
+
+  dns:
+    hostname: kitchenowl.buildin.group
+    exposure: internal
+
+  homepage:
+    name: KitchenOwl
+    description: A smart self-hosted grocery list and recipe manager.
+    icon: kitchenowl.svg
+
+  volumes:
+    - name: data
+      size: 128Mi
+      mountPath: /data
+
+  env:
+    VITE_API_URL: "http://kitchenowl.buildin.group/api"
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch

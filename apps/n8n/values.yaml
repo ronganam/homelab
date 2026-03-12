@@ -1,0 +1,43 @@
+app-blueprint:
+  image:
+    repository: n8nio/n8n
+    tag: "2.12.0"
+
+  containerPort: 5678
+
+  dns:
+    hostname: n9n.buildin.group
+    exposure: public
+
+  volumes:
+    - name: data
+      size: 2Gi
+      mountPath: /home/node/.n8n
+
+  env:
+    N8N_HOST: "0.0.0.0"
+    N8N_PORT: "5678"
+    N8N_PROTOCOL: "http"
+    N8N_PROXY_HOPS: "1"
+    NODE_ENV: "production"
+    WEBHOOK_URL: "https://n9n.buildin.group"
+    GENERIC_TIMEZONE: "Asia/Jerusalem"
+    N8N_LOG_LEVEL: "info"
+    DB_TYPE: "sqlite"
+    DB_SQLITE_DATABASE: "/home/node/.n8n/database.sqlite"
+    DB_SQLITE_POOL_SIZE: "5"
+    N8N_RUNNERS_ENABLED: "true"
+    N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"
+    N8N_GIT_NODE_DISABLE_BARE_REPOS: "true"
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+  probes:
+    liveness:
+      path: "/healthz"
+    readiness:
+      path: "/healthz"

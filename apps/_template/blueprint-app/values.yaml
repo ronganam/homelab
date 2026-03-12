@@ -1,0 +1,57 @@
+app-blueprint:
+  image:
+    repository: CHANGEME        # e.g. ghcr.io/org/app
+    tag: CHANGEME               # e.g. v1.0.0
+
+  containerPort: 8080           # Port the container listens on
+
+  dns:
+    hostname: CHANGEME.ganam.app  # Your app's hostname
+    exposure: internal             # "internal" (ingress) or "public" (Cloudflare tunnel)
+
+  # Homepage dashboard integration (only used for internal apps)
+  homepage:
+    name: CHANGEME              # Display name on dashboard
+    description: CHANGEME       # Short description
+    icon: CHANGEME.png          # Icon filename
+    # group: "Applications"     # Applications, Infrastructure, or Monitoring
+    # weight: "10"              # Lower = higher priority
+
+  # Persistent volumes (remove if not needed)
+  volumes:
+    - name: data
+      size: 1Gi
+      mountPath: /data
+      # storageClass: longhorn  # Default
+      # accessMode: ReadWriteOnce  # Default
+
+  # Infisical secret management (remove if not needed)
+  # infisical:
+  #   enabled: true
+  #   identityId: "CHANGEME"
+  #   secretsPath: "/CHANGEME"
+  #   secretName: CHANGEME-secret
+
+  # Mount all keys from a secret as env vars (remove if not needed)
+  # envFrom:
+  #   - secretRef:
+  #       name: CHANGEME-secret
+
+  # Environment variables
+  env:
+    EXAMPLE_VAR: "example-value"
+
+  # Pod security context (remove to use defaults: uid/gid 1000)
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+  # Override defaults if needed:
+  # resources:
+  #   requests: { cpu: 100m, memory: 256Mi }
+  #   limits:   { cpu: 500m, memory: 1Gi }
+  # probes:
+  #   liveness:  { path: "/health" }
+  #   readiness: { path: "/health" }

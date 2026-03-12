@@ -1,0 +1,33 @@
+app-blueprint:
+  image:
+    repository: ghcr.io/c4illin/convertx
+    tag: latest
+
+  containerPort: 3000
+
+  dns:
+    hostname: convertx.ganam.app
+    exposure: internal
+
+  homepage:
+    name: ConvertX
+    description: A free and open source web-based tool for file conversion
+    icon: convertx.png
+    weight: "50"
+
+  volumes:
+    - name: data
+      size: 2Gi
+      mountPath: /app/data
+
+  env:
+    JWT_SECRET: "a77a7b7cb0a2e71228f674cae1dc2dd781917da6ecde280761b59fa94fcb5be3"
+    ALLOW_UNAUTHENTICATED: "true"
+    HTTP_ALLOWED: "true"
+    ACCOUNT_REGISTRATION: "false"
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch

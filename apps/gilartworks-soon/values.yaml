@@ -1,0 +1,25 @@
+app-blueprint:
+  image:
+    repository: ronganam/gilartworks-coming-soon
+    tag: v1
+
+  dns:
+    hostname: gilartworks.com
+    exposure: public
+
+  homepage:
+    enabled: false
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi
+
+  probes:
+    liveness:
+      initialDelaySeconds: 10
+    readiness:
+      initialDelaySeconds: 3

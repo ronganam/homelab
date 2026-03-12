@@ -1,0 +1,7 @@
+apiVersion: v2
+name: kitchenowl
+version: 0.1.0
+dependencies:
+  - name: app-blueprint
+    version: "0.1.0"
+    repository: "file://../../charts/app-blueprint"

@@ -1,0 +1,35 @@
+app-blueprint:
+  image:
+    repository: ghcr.io/donkie/spoolman
+    tag: "0.23.1"
+
+  containerPort: 8000
+
+  dns:
+    hostname: spoolman.ganam.app
+    exposure: internal
+
+  homepage:
+    name: Spoolman
+    description: Filament inventory management
+    icon: spoolman.png
+
+  volumes:
+    - name: data
+      size: 128Mi
+      mountPath: /home/app/.local/share/spoolman
+
+  env:
+    TZ: "Asia/Jerusalem"
+    PUID: "1000"
+    PGID: "1000"
+
+  securityContext:
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+  probes:
+    liveness:
+      path: "/api/v1/health"
+    readiness:
+      path: "/api/v1/health"

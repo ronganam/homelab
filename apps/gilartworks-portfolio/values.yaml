@@ -1,0 +1,43 @@
+app-blueprint:
+  image:
+    repository: registry.buildin.group/gilartworks-portfolio
+    tag: "5.0"
+
+  containerPort: 3000
+
+  dns:
+    hostname: portfolio.gilartworks.com
+    exposure: public
+
+  homepage:
+    enabled: false
+
+  volumes:
+    - name: assets
+      size: 2Gi
+      mountPath: /app/assets
+    - name: uploads
+      size: 128Mi
+      mountPath: /app/uploads
+
+  infisical:
+    enabled: true
+    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+    secretsPath: "gilartworks-portfolio"
+    secretName: gilartworks-portfolio-secret
+
+  env:
+    NODE_ENV: "production"
+
+  extraEnv:
+    - name: ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: gilartworks-portfolio-secret
+          key: admin-password
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch

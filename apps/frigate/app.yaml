@@ -1,4 +1,0 @@
-name: frigate
-namespace: frigate
-path: apps/frigate
-wave: "30"

@@ -6,7 +6,7 @@ app-blueprint:
   containerPort: 5678
 
   dns:
-    hostname: n9n.buildin.group
+    hostname: n8n.ganam.app
     exposure: public
 
   volumes:
@@ -20,7 +20,7 @@ app-blueprint:
     N8N_PROTOCOL: "http"
     N8N_PROXY_HOPS: "1"
     NODE_ENV: "production"
-    WEBHOOK_URL: "https://n9n.buildin.group"
+    WEBHOOK_URL: "https://n8n.ganam.app"
     GENERIC_TIMEZONE: "Asia/Jerusalem"
     N8N_LOG_LEVEL: "info"
     DB_TYPE: "sqlite"

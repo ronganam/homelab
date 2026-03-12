@@ -35,9 +35,15 @@ spec:
           ports:
             - containerPort: {{ .Values.containerPort }}
               name: http
-          {{- if .Values.envFrom }}
+          {{- if or .Values.envFrom (and .Values.infisical.enabled .Values.infisical.secretName) }}
           envFrom:
-            {{- toYaml .Values.envFrom | nindent 12 }}
+            {{- if and .Values.infisical.enabled .Values.infisical.secretName }}
+            - secretRef:
+                name: {{ .Values.infisical.secretName }}
+            {{- end }}
+            {{- with .Values.envFrom }}
+            {{- toYaml . | nindent 12 }}
+            {{- end }}
           {{- end }}
           {{- if or .Values.env .Values.extraEnv }}
           env:

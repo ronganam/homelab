@@ -25,10 +25,6 @@ app-blueprint:
     secretsPath: "/papra"
     secretName: papra-secret
 
-  envFrom:
-    - secretRef:
-        name: papra-secret
-
   env:
     APP_BASE_URL: "https://papra.ganam.app"
     AUTH_IS_REGISTRATION_ENABLED: "true"

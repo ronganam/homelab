@@ -26,16 +26,12 @@ app-blueprint:
       # accessMode: ReadWriteOnce  # Default
 
   # Infisical secret management (remove if not needed)
+  # The secret is automatically mounted as env vars via envFrom.
   # infisical:
   #   enabled: true
   #   identityId: "CHANGEME"
   #   secretsPath: "/CHANGEME"
   #   secretName: CHANGEME-secret
-
-  # Mount all keys from a secret as env vars (remove if not needed)
-  # envFrom:
-  #   - secretRef:
-  #       name: CHANGEME-secret
 
   # Environment variables
   env:

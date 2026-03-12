@@ -35,18 +35,13 @@ fi
 
 echo "✅ Cloudflare authentication verified"
 
-# Get domain from user
-read -p "Enter your domain (e.g., example.com): " DOMAIN
-if [ -z "$DOMAIN" ]; then
-    echo "❌ Domain is required"
-    exit 1
-fi
-
-# Get Cloudflare API token for internal DNS management
+# Get Cloudflare API token for DNS management
 echo ""
-echo "🔑 For internal DNS management, you'll need a Cloudflare API token."
+echo "🔑 For DNS management, you'll need a Cloudflare API token."
 echo "   Create one at: https://dash.cloudflare.com/profile/api-tokens"
-echo "   Required permissions: Zone:Read, DNS:Edit"
+echo "   Required permissions (for ALL zones you want to manage):"
+echo "     - Zone: Read"
+echo "     - DNS: Edit"
 echo ""
 read -p "Enter your Cloudflare API token (or press Enter to skip): " API_TOKEN
 
@@ -132,23 +127,20 @@ echo ""
 echo "🎉 Setup complete!"
 echo ""
 echo "What was configured:"
-echo "✅ Cloudflare Tunnel created and configured"
-echo "✅ Service controller deployed (manages both public and internal services)"
-echo "✅ Ready to manage services with labels"
+echo "  ✅ Cloudflare Tunnel created and configured"
+echo "  ✅ Service controller deployed (manages both public and internal services)"
+echo "  ✅ Works with any domain in your Cloudflare account"
 echo ""
 echo "📝 To expose a service to the internet (public), add these labels to your Service:"
 echo "   dns.service-controller.io/enabled: \"true\""
-echo "   dns.service-controller.io/hostname: \"service.$DOMAIN\""
+echo "   dns.service-controller.io/hostname: \"app.example.com\"    # any domain in your CF account"
 echo "   exposure.service-controller.io/type: \"public\""
 echo ""
 echo "🏠 To expose a service internally (MetalLB), add these labels to your Service:"
 echo "   dns.service-controller.io/enabled: \"true\""
-echo "   dns.service-controller.io/hostname: \"service.internal.$DOMAIN\""
+echo "   dns.service-controller.io/hostname: \"app.example.com\"    # any domain in your CF account"
 echo "   exposure.service-controller.io/type: \"internal\""
 echo "   (and set spec.type: LoadBalancer)"
-echo "   Note: Internal services will create DNS A records pointing to MetalLB IPs"
-echo ""
-echo "🔒 To keep a service cluster-only, don't add DNS management labels"
 echo ""
 echo "🔧 To check status:"
 echo "   kubectl get pods -n cloudflare-tunnel"

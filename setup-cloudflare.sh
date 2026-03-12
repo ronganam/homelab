@@ -116,6 +116,14 @@ else
     echo "⚠️  No API token provided - internal DNS management will be disabled"
 fi
 
+# Store tunnel ID in a ConfigMap so the service controller can reference it
+echo "🔧 Storing tunnel ID in ConfigMap..."
+kubectl create configmap cloudflare-tunnel-info \
+    --from-literal=tunnel-id="$TUNNEL_ID" \
+    --namespace=cloudflare-tunnel \
+    --dry-run=client -o yaml | kubectl apply -f -
+echo "✅ Tunnel ID stored in ConfigMap"
+
 # Deploy the tunnel and service controller (excluding the secrets we just created)
 echo "🚀 Deploying Cloudflare tunnel and service controller..."
 kubectl apply -k infra/cloudflare-tunnel/

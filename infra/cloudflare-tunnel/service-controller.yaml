@@ -47,6 +47,12 @@ spec:
               value: homelab.buildin.group
             - name: DDNS_ENABLED
               value: "true"
+            - name: TUNNEL_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: cloudflare-tunnel-info
+                  key: tunnel-id
+                  optional: true
           volumeMounts:
             - name: controller-script
               mountPath: /app
@@ -143,29 +149,55 @@ data:
             """Discover the CNAME target (<uuid>.cfargotunnel.com) for the named tunnel."""
             if self._tunnel_cname_target:
                 return self._tunnel_cname_target
+
+            # 1) Explicit env var — most reliable
+            tunnel_id = os.environ.get('TUNNEL_ID', '').strip()
+            if tunnel_id:
+                self._tunnel_cname_target = tunnel_id if tunnel_id.endswith('.cfargotunnel.com') else f"{tunnel_id}.cfargotunnel.com"
+                logger.info("Tunnel CNAME target (from TUNNEL_ID env): %s", self._tunnel_cname_target)
+                return self._tunnel_cname_target
+
+            # 2) Auto-discover from an existing CNAME record created by cloudflared
             try:
-                cf = self.ensure_cf_client()
-                account_id = None
-                for z in cf.zones.list():
-                    account = getattr(z, 'account', None)
-                    if account:
-                        account_id = getattr(account, 'id', None)
-                        if account_id:
-                            break
-                if not account_id:
-                    logger.error("Could not determine Cloudflare account ID")
-                    return None
-                for t in cf.zero_trust.tunnels.list(account_id=account_id, name=TUNNEL_NAME):
-                    tid = getattr(t, 'id', None)
+                api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+                if api_token:
+                    desired = self.build_desired_public_rules()
+                    for rule in desired:
+                        hostname = rule['hostname']
+                        domain = '.'.join(hostname.split('.')[-2:])
+                        zone_id = self.get_cloudflare_zone_id(domain, api_token)
+                        if not zone_id:
+                            continue
+                        existing = self.find_dns_record_by_name_and_type(zone_id, hostname, 'CNAME', api_token)
+                        if existing:
+                            content = (existing.get('content') or '').lower().strip()
+                            if content.endswith('.cfargotunnel.com'):
+                                self._tunnel_cname_target = content
+                                logger.info("Discovered tunnel CNAME target from existing record (%s): %s", hostname, self._tunnel_cname_target)
+                                return self._tunnel_cname_target
+            except Exception as e:
+                logger.debug("Could not discover tunnel CNAME from existing records: %s", e)
+
+            # 3) Read tunnel UUID from cloudflared credentials via kubectl exec
+            try:
+                cmd = [
+                    'kubectl', 'exec', '-n', 'cloudflare-tunnel',
+                    'deployment/cloudflared', '--',
+                    'cat', '/etc/cloudflared/credentials/credentials.json'
+                ]
+                result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+                if result.returncode == 0 and result.stdout.strip():
+                    creds = yaml.safe_load(result.stdout)
+                    tid = creds.get('TunnelID', '') if isinstance(creds, dict) else ''
                     if tid:
                         self._tunnel_cname_target = f"{tid}.cfargotunnel.com"
-                        logger.info("Discovered tunnel CNAME target: %s", self._tunnel_cname_target)
+                        logger.info("Discovered tunnel CNAME target from cloudflared credentials: %s", self._tunnel_cname_target)
                         return self._tunnel_cname_target
-                logger.error("Tunnel '%s' not found", TUNNEL_NAME)
-                return None
             except Exception as e:
-                logger.exception("Error discovering tunnel CNAME target: %s", e)
-                return None
+                logger.debug("Could not read tunnel credentials from cloudflared pod: %s", e)
+
+            logger.error("Cannot determine tunnel CNAME target. Set TUNNEL_ID env var with your Cloudflare tunnel UUID.")
+            return None
 
         # ========== DDNS Functions ==========
 

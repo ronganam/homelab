@@ -1,0 +1,15 @@
+{{- range .Values.volumes }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "app.name" $ }}-{{ .name }}
+  namespace: {{ include "app.namespace" $ }}
+spec:
+  accessModes:
+    - {{ .accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ .size }}
+  storageClassName: {{ .storageClass | default "longhorn" }}
+{{- end }}

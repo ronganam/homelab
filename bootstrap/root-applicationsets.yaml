@@ -79,6 +79,8 @@ spec:
           - path: apps/*
           - path: apps/_template
             exclude: true
+          - path: apps/_blueprint
+            exclude: true
   template:
     metadata:
       name: '{{path.basename}}'

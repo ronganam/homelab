@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "app.name" . }}
+  namespace: {{ include "app.namespace" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: {{ .Values.dns.hostname | quote }}
+    exposure.service-controller.io/type: {{ .Values.dns.exposure | quote }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: {{ .Values.containerPort }}
+      protocol: TCP
+  selector:
+    {{- include "app.selectorLabels" . | nindent 4 }}

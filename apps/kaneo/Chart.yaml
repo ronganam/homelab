@@ -1,0 +1,16 @@
+apiVersion: v2
+name: kaneo
+version: 0.1.0
+dependencies:
+  - name: app-blueprint
+    alias: db
+    version: "0.1.0"
+    repository: "file://../_blueprint"
+  - name: app-blueprint
+    alias: api
+    version: "0.1.0"
+    repository: "file://../_blueprint"
+  - name: app-blueprint
+    alias: web
+    version: "0.1.0"
+    repository: "file://../_blueprint"

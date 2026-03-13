@@ -1,6 +1,8 @@
+{{- if .Values.namespace.enabled -}}
 apiVersion: v1
 kind: Namespace
 metadata:
   name: {{ include "app.namespace" . }}
   labels:
     name: {{ include "app.namespace" . }}
+{{- end }}

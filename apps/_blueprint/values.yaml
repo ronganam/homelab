@@ -1,3 +1,5 @@
+nameOverride: ""
+
 image:
   repository: ""
   tag: "latest"
@@ -5,9 +7,14 @@ image:
 
 replicas: 1
 containerPort: 80
+servicePort: 80
 strategy: Recreate
 
+namespace:
+  enabled: true
+
 dns:
+  enabled: true
   hostname: ""
   exposure: "internal"
 
@@ -45,6 +52,12 @@ infisical:
 env: {}
 envFrom: []
 extraEnv: []
+
+initContainers: []
+# Example:
+#   - name: wait-db
+#     image: busybox
+#     command: ['sh', '-c', 'until nc -z db 5432; do sleep 1; done']
 
 securityContext: {}
 # Example:

@@ -29,7 +29,7 @@ app-blueprint:
   # The secret is automatically mounted as env vars via envFrom.
   # infisical:
   #   enabled: true
-  #   identityId: "CHANGEME"
+  #   identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
   #   secretsPath: "/CHANGEME"
   #   secretName: CHANGEME-secret
 

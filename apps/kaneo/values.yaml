@@ -57,8 +57,7 @@ api:
   
   ingress:
     path: /api
-    annotations:
-      nginx.ingress.kubernetes.io/rewrite-target: /
+    annotations: {}
   
   homepage:
     enabled: false

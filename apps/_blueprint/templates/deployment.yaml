@@ -72,9 +72,18 @@ spec:
           {{- end }}
           {{- if .Values.probes.liveness.enabled }}
           livenessProbe:
+            {{- if eq .Values.probes.liveness.type "httpGet" }}
             httpGet:
               path: {{ .Values.probes.liveness.path }}
               port: http
+            {{- else if eq .Values.probes.liveness.type "tcpSocket" }}
+            tcpSocket:
+              port: http
+            {{- else if eq .Values.probes.liveness.type "exec" }}
+            exec:
+              command:
+                {{- toYaml .Values.probes.liveness.command | nindent 16 }}
+            {{- end }}
             initialDelaySeconds: {{ .Values.probes.liveness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.liveness.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.liveness.timeoutSeconds }}
@@ -82,9 +91,18 @@ spec:
           {{- end }}
           {{- if .Values.probes.readiness.enabled }}
           readinessProbe:
+            {{- if eq .Values.probes.readiness.type "httpGet" }}
             httpGet:
               path: {{ .Values.probes.readiness.path }}
               port: http
+            {{- else if eq .Values.probes.readiness.type "tcpSocket" }}
+            tcpSocket:
+              port: http
+            {{- else if eq .Values.probes.readiness.type "exec" }}
+            exec:
+              command:
+                {{- toYaml .Values.probes.readiness.command | nindent 16 }}
+            {{- end }}
             initialDelaySeconds: {{ .Values.probes.readiness.initialDelaySeconds }}
             periodSeconds: {{ .Values.probes.readiness.periodSeconds }}
             timeoutSeconds: {{ .Values.probes.readiness.timeoutSeconds }}

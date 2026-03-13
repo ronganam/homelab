@@ -24,15 +24,19 @@ db:
 
   volumes:
     - name: data
-      size: 128Mi
+      size: 5Gi # Restored to 5Gi as per original plan
       mountPath: /var/lib/postgresql/data
 
-  # Secrets will be injected via envFrom (kaneo-secret)
   env:
     POSTGRES_USER: kaneo
     POSTGRES_DB: kaneo
     PGDATA: /var/lib/postgresql/data/pgdata
-    # POSTGRES_PASSWORD will come from Infisical
+
+  probes:
+    liveness:
+      type: tcpSocket
+    readiness:
+      type: tcpSocket
 
 api:
   nameOverride: kaneo-api
@@ -70,6 +74,12 @@ api:
   extraEnv:
     - name: DATABASE_URL
       value: "postgresql://kaneo:$(POSTGRES_PASSWORD)@kaneo-db:5432/kaneo"
+
+  probes:
+    liveness:
+      type: tcpSocket # Safe default if health path is unknown
+    readiness:
+      type: tcpSocket
 
 web:
   nameOverride: kaneo-web

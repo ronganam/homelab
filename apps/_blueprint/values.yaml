@@ -28,6 +28,7 @@ homepage:
 
 ingress:
   proxyBodySize: "100m"
+  path: "/"
   annotations: {}
 
 containerSecurityContext: {}

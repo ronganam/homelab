@@ -51,7 +51,14 @@ api:
     enabled: false
   
   dns:
-    enabled: false
+    enabled: true
+    hostname: kaneo.ganam.app
+    exposure: internal
+  
+  ingress:
+    path: /api
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
   
   homepage:
     enabled: false

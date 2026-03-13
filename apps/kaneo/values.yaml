@@ -24,7 +24,7 @@ db:
 
   volumes:
     - name: data
-      size: 5Gi
+      size: 128Mi
       mountPath: /var/lib/postgresql/data
 
   # Secrets will be injected via envFrom (kaneo-secret)

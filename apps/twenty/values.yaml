@@ -143,6 +143,7 @@ db:
     POSTGRES_USER: "postgres"
     POSTGRES_DB: "default"
     POSTGRES_PASSWORD: "$(POSTGRES_PASSWORD)"
+    PGDATA: "/var/lib/postgresql/data/pgdata"
   
   probes:
     liveness:

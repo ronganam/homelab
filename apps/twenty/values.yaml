@@ -137,7 +137,7 @@ db:
   volumes:
     - name: db-data
       mountPath: /var/lib/postgresql/data
-      size: 10Gi
+      size: 128Mi
 
   env:
     POSTGRES_USER: "postgres"

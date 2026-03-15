@@ -32,6 +32,14 @@ spec:
         - name: {{ include "app.name" . }}
           image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
           imagePullPolicy: {{ .Values.image.pullPolicy }}
+          {{- with .Values.command }}
+          command:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          {{- with .Values.args }}
+          args:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
           {{- with .Values.containerSecurityContext }}
           securityContext:
             {{- toYaml . | nindent 12 }}
@@ -112,7 +120,15 @@ spec:
       volumes:
         {{- range .Values.volumes }}
         - name: {{ .name }}
+          {{- if .hostPath }}
+          hostPath:
+            path: {{ .hostPath }}
+            {{- if .hostPathType }}
+            type: {{ .hostPathType }}
+            {{- end }}
+          {{- else }}
           persistentVolumeClaim:
             claimName: {{ include "app.name" $ }}-{{ .name }}
+          {{- end }}
         {{- end }}
       {{- end }}

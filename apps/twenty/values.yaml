@@ -142,6 +142,7 @@ db:
   env:
     POSTGRES_USER: "postgres"
     POSTGRES_DB: "default"
+    POSTGRES_PASSWORD: "$(POSTGRES_PASSWORD)"
   
   probes:
     liveness:

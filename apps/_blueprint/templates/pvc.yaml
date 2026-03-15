@@ -1,4 +1,5 @@
 {{- range .Values.volumes }}
+{{- if not .hostPath }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -12,4 +13,5 @@ spec:
     requests:
       storage: {{ .size }}
   storageClassName: {{ .storageClass | default "longhorn" }}
+{{- end }}
 {{- end }}

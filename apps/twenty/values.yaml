@@ -58,10 +58,13 @@ server:
       enabled: true
       type: httpGet
       path: "/healthz"
+      initialDelaySeconds: 120
+      failureThreshold: 5
     readiness:
       enabled: true
       type: httpGet
       path: "/healthz"
+      initialDelaySeconds: 60
 
 worker:
   nameOverride: "twenty-worker"

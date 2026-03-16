@@ -117,7 +117,7 @@ db:
   nameOverride: "twenty-db"
   image:
     repository: "postgres"
-    tag: "16"
+    tag: "18"
   
   containerPort: 5432
   servicePort: 5432

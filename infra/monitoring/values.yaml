@@ -184,7 +184,17 @@ kube-prometheus-stack:
         - bot_token_file: /etc/alertmanager/secrets/alertmanager-secrets/TELEGRAM_BOT_TOKEN
           api_url: "https://api.telegram.org"
           chat_id: -668037263
-          message: '{{ template "telegram.default.message" . }}'
+          parse_mode: 'HTML'
+          message: |-
+            {{ range .Alerts }}
+            {{ if eq .Status "firing" }}🔥 <b>[{{ .Labels.severity | toUpper }}]</b> {{ .Labels.alertname }}{{ else }}✅ <b>[RESOLVED]</b> {{ .Labels.alertname }}{{ end }}
+            {{ if .Annotations.summary }}<b>Summary:</b> {{ .Annotations.summary }}{{ end }}
+            {{ if .Annotations.description }}<b>Description:</b> <i>{{ .Annotations.description }}</i>{{ end }}
+            
+            <b>Labels:</b>
+            {{ range .Labels.SortedPairs }}  • {{ .Name }}: <code>{{ .Value }}</code>
+            {{ end }}
+            {{ end }}
   nodeExporter:
     enabled: true
   kubeStateMetrics:

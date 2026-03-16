@@ -1,3 +1,11 @@
+infisical:
+  enabled: true
+  identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+  projectSlug: "homelab-k8s"
+  envSlug: "prod"
+  secretsPath: "/monitoring"
+  resyncInterval: 60
+
 kube-prometheus-stack:
   admissionWebhooks:
     enabled: false
@@ -130,7 +138,53 @@ kube-prometheus-stack:
         runAsNonRoot: true
         fsGroup: 65534
   alertmanager:
-    enabled: false
+    enabled: true
+    # Add proper labels for homepage discovery
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      annotations:
+        gethomepage.dev/enabled: "true"
+        gethomepage.dev/name: "Alertmanager"
+        gethomepage.dev/description: "Alert Management"
+        gethomepage.dev/icon: "alertmanager.png"
+        gethomepage.dev/group: "Monitoring"
+        gethomepage.dev/weight: "5"
+        gethomepage.dev/pod-selector: "app.kubernetes.io/name=alertmanager,app.kubernetes.io/instance=monitoring"
+      hosts:
+        - alertmanager.ganam.app
+    service:
+      type: ClusterIP
+      port: 80
+      targetPort: 9093
+      labels:
+        dns.service-controller.io/enabled: "true"
+        dns.service-controller.io/hostname: alertmanager.ganam.app
+        exposure.service-controller.io/type: internal
+    alertmanagerSpec:
+      secrets:
+        - alertmanager-secrets
+    config:
+      global:
+        resolve_timeout: 5m
+      route:
+        group_by: ['alertname', 'namespace']
+        group_wait: 30s
+        group_interval: 5m
+        repeat_interval: 12h
+        receiver: 'telegram'
+        routes:
+        - match:
+            alertname: Watchdog
+          receiver: 'null'
+      receivers:
+      - name: 'null'
+      - name: 'telegram'
+        telegram_configs:
+        - bot_token_file: /etc/alertmanager/secrets/alertmanager-secrets/TELEGRAM_BOT_TOKEN
+          api_url: "https://api.telegram.org"
+          chat_id: 668037263
+          message: '{{ template "telegram.default.message" . }}'
   nodeExporter:
     enabled: true
   kubeStateMetrics:

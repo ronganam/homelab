@@ -169,6 +169,12 @@ ai:
     icon: "si-openai" # Using generic AI icon
     group: "Applications"
 
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: Always
+
   # Equivalent to security_opt: no-new-privileges=true
   containerSecurityContext:
     allowPrivilegeEscalation: false

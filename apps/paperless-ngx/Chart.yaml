@@ -1,0 +1,16 @@
+apiVersion: v2
+name: paperless-ngx
+version: 0.1.0
+dependencies:
+  - name: app-blueprint
+    alias: webserver
+    version: "0.1.0"
+    repository: "file://../_blueprint"
+  - name: app-blueprint
+    alias: db
+    version: "0.1.0"
+    repository: "file://../_blueprint"
+  - name: app-blueprint
+    alias: broker
+    version: "0.1.0"
+    repository: "file://../_blueprint"

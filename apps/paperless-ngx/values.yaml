@@ -1,0 +1,132 @@
+webserver:
+  nameOverride: "paperless-webserver"
+  
+  image:
+    repository: "ghcr.io/paperless-ngx/paperless-ngx"
+    tag: "v2.20.13"
+
+  containerPort: 8000
+  servicePort: 8000
+
+  dns:
+    enabled: true
+    hostname: "paperless.ganam.app"
+    exposure: "internal"
+
+  homepage:
+    enabled: true
+    name: "Paperless-NGX"
+    description: "Document Management"
+    icon: "si-paperlessngx"
+    group: "Applications"
+
+  infisical:
+    enabled: true
+    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+    secretsPath: "/paperless-ngx"
+    secretName: paperless-ngx-secret
+
+  env:
+    PAPERLESS_URL: "https://paperless.ganam.app"
+    PAPERLESS_TIME_ZONE: "Asia/Jerusalem"
+    PAPERLESS_OCR_LANGUAGE: "heb"
+    PAPERLESS_OCR_LANGUAGES: "heb eng"
+    PAPERLESS_REDIS: "redis://paperless-ngx-broker:6379"
+    PAPERLESS_DBHOST: "paperless-ngx-db"
+    PAPERLESS_DBNAME: "paperless"
+    PAPERLESS_DBUSER: "paperless"
+    PAPERLESS_DBPASS: "$(POSTGRES_PASSWORD)"
+    PAPERLESS_SECRET_KEY: "$(PAPERLESS_SECRET_KEY)"
+    USERMAP_UID: "1000"
+    USERMAP_GID: "1000"
+
+  volumes:
+    - name: data
+      size: 256Mi
+      mountPath: /usr/src/paperless/data
+    - name: media
+      size: 1Gi
+      mountPath: /usr/src/paperless/media
+    - name: export
+      size: 128Mi
+      mountPath: /usr/src/paperless/export
+    - name: consume
+      size: 128Mi
+      mountPath: /usr/src/paperless/consume
+
+db:
+  nameOverride: "paperless-ngx-db"
+  image:
+    repository: "postgres"
+    tag: "18.3"
+  
+  containerPort: 5432
+  servicePort: 5432
+  
+  namespace:
+    enabled: false
+    
+  dns:
+    enabled: false
+    
+  homepage:
+    enabled: false
+
+  infisical:
+    enabled: true
+    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+    secretsPath: "/paperless-ngx"
+    secretName: paperless-ngx-secret
+
+  volumes:
+    - name: db-data
+      mountPath: /var/lib/postgresql/data
+      size: 256Mi
+
+  env:
+    POSTGRES_USER: "paperless"
+    POSTGRES_DB: "paperless"
+    POSTGRES_PASSWORD: "$(POSTGRES_PASSWORD)"
+    PGDATA: "/var/lib/postgresql/data/pgdata"
+  
+  probes:
+    liveness:
+      enabled: true
+      type: tcpSocket
+    readiness:
+      enabled: true
+      type: tcpSocket
+
+broker:
+  nameOverride: "paperless-ngx-broker"
+  image:
+    repository: "redis"
+    tag: "8.6"
+  
+  command: ["redis-server"]
+  args: ["--maxmemory-policy", "noeviction"]
+
+  containerPort: 6379
+  servicePort: 6379
+  
+  namespace:
+    enabled: false
+    
+  dns:
+    enabled: false
+    
+  homepage:
+    enabled: false
+
+  probes:
+    liveness:
+      enabled: true
+      type: tcpSocket
+    readiness:
+      enabled: true
+      type: tcpSocket
+
+  volumes:
+    - name: redis-data
+      mountPath: /data
+      size: 128Mi

@@ -20,9 +20,13 @@ webserver:
     liveness:
       enabled: true
       path: "/accounts/login/"
+      initialDelaySeconds: 120
+      failureThreshold: 10
     readiness:
       enabled: true
       path: "/accounts/login/"
+      initialDelaySeconds: 60
+      failureThreshold: 5
 
   homepage:
     enabled: true
@@ -180,7 +184,8 @@ ai:
     PUID: "1000"
     PGID: "1000"
     PAPERLESS_AI_PORT: "3000"
-    RAG_SERVICE_URL: "http://paperless-webserver:8000"
+    PAPERLESS_URL: "http://paperless-webserver:8000"
+    RAG_SERVICE_URL: "http://localhost:3000"
     RAG_SERVICE_ENABLED: "true"
 
   volumes:

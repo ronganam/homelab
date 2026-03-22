@@ -8,6 +8,9 @@ webserver:
   containerPort: 8000
   servicePort: 8000
 
+  namespace:
+    enabled: false
+
   dns:
     enabled: true
     hostname: "paperless.ganam.app"
@@ -87,7 +90,7 @@ db:
     POSTGRES_USER: "paperless"
     POSTGRES_DB: "paperless"
     POSTGRES_PASSWORD: "$(POSTGRES_PASSWORD)"
-    PGDATA: "/var/lib/postgresql/data/pgdata"
+    PGDATA: "/var/lib/postgresql/data/paperless"
 
   probes:
     liveness:
@@ -125,6 +128,11 @@ broker:
     readiness:
       enabled: true
       type: tcpSocket
+
+  volumes:
+    - name: redis-data
+      mountPath: /data
+      size: 128Mi
 
 ai:
   nameOverride: "paperless-ai"

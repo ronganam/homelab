@@ -192,11 +192,14 @@ ai:
     - name: ai-data
       mountPath: /app/data
       size: 128Mi
+    - name: ai-logs
+      mountPath: /app/logs
+      size: 128Mi
 
   probes:
     liveness:
       enabled: true
-      path: "/" # Standard check
+      path: "/api/health" # Correct health path for this app
     readiness:
       enabled: true
-      path: "/"
+      path: "/api/health"

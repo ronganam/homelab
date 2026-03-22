@@ -14,3 +14,7 @@ dependencies:
     alias: broker
     version: "0.1.0"
     repository: "file://../_blueprint"
+  - name: app-blueprint
+    alias: ai
+    version: "0.1.0"
+    repository: "file://../_blueprint"

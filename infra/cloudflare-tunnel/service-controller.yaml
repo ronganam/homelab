@@ -134,6 +134,8 @@ data:
             self._tunnel_cname_target = None
             # DDNS state tracking
             self.last_known_public_ip = None
+            # Zone ID cache: domain -> zone_id
+            self.zone_id_cache = {}
 
         def ensure_cf_client(self):
             """Initialize Cloudflare client if not already created."""
@@ -445,25 +447,40 @@ data:
                 return False
 
         def get_cloudflare_zone_id(self, domain, api_token):
-            """Get Cloudflare zone ID for a domain using SDK"""
+            """Get Cloudflare zone ID for a domain using SDK with caching"""
+            if domain in self.zone_id_cache:
+                return self.zone_id_cache[domain]
+
             try:
                 cf = self.ensure_cf_client()
+                if not cf:
+                    return None
+                
+                logger.debug("Fetching zone ID for domain: %s", domain)
                 zones = cf.zones.list(name=domain)
                 first_zone = None
                 for z in zones:
                     first_zone = z
                     break
+                
+                zone_id = None
                 if first_zone is not None:
                     zone_id = getattr(first_zone, 'id', None)
                     if zone_id is None and isinstance(first_zone, dict):
                         zone_id = first_zone.get('id')
-                    if zone_id:
-                        logger.debug("Found zone ID for %s: %s", domain, zone_id)
-                        return zone_id
+                
+                if zone_id:
+                    logger.debug("Found zone ID for %s: %s", domain, zone_id)
+                    self.zone_id_cache[domain] = zone_id
+                    return zone_id
+                
                 logger.error("No zone found for domain: %s", domain)
                 return None
             except Exception as e:
-                logger.exception("Error getting zone ID via SDK: %s", e)
+                if '429' in str(e):
+                    logger.warning("Cloudflare Rate Limit (429) hit while fetching zone ID for %s", domain)
+                else:
+                    logger.exception("Error getting zone ID via SDK: %s", e)
                 return None
 
         def get_existing_dns_record(self, zone_id, subdomain, domain, api_token):
@@ -1064,6 +1081,9 @@ data:
                 logger.info("Processing %s event for %s.%s -> %s (exposure: %s)", event_type, service_name, namespace, hostname, exposure_type)
 
                 if event_type in ["ADDED", "MODIFIED", "EXISTING"]:
+                    # Small delay to prevent API bursts when many services are updated at once
+                    time.sleep(0.5) 
+                    
                     if exposure_type == EXPOSURE_PUBLIC:
                         self.create_cloudflare_dns_route(hostname)
                     elif exposure_type == EXPOSURE_INTERNAL:

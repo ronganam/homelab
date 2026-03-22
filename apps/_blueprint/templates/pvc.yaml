@@ -1,5 +1,5 @@
 {{- range .Values.volumes }}
-{{- if and (not .hostPath) (not (hasKey . "emptyDir")) }}
+{{- if not .hostPath }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

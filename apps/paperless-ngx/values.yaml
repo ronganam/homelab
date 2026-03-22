@@ -62,12 +62,6 @@ webserver:
     - name: media
       size: 1Gi
       mountPath: /usr/src/paperless/media
-    - name: export
-      emptyDir: {}
-      mountPath: /usr/src/paperless/export
-    - name: consume
-      emptyDir: {}
-      mountPath: /usr/src/paperless/consume
 
 db:
   nameOverride: "paperless-ngx-db"
@@ -167,12 +161,6 @@ ai:
     icon: "si-openai" # Using generic AI icon
     group: "Applications"
 
-  securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
-    fsGroupChangePolicy: OnRootMismatch
-
   # Equivalent to security_opt: no-new-privileges=true
   containerSecurityContext:
     allowPrivilegeEscalation: false
@@ -192,12 +180,6 @@ ai:
     - name: ai-data
       mountPath: /app/data
       size: 128Mi
-    - name: ai-logs
-      mountPath: /app/logs
-      emptyDir: {}
-    - name: ai-openapi
-      mountPath: /app/OPENAPI
-      emptyDir: {}
 
   probes:
     liveness:

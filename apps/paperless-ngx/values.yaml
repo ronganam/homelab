@@ -197,6 +197,12 @@ ai:
     - name: ai-logs
       mountPath: /app/logs
       size: 64Mi
+    - name: ai-openapi
+      mountPath: /app/OPENAPI
+      size: 64Mi
+    - name: ai-public
+      mountPath: /app/public
+      size: 128Mi
 
   resources:
     requests:

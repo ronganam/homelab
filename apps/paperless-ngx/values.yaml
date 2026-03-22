@@ -63,6 +63,14 @@ webserver:
       size: 1Gi
       mountPath: /usr/src/paperless/media
 
+  resources:
+    requests:
+      cpu: 300m
+      memory: 768Mi
+    limits:
+      cpu: 1500m
+      memory: 3Gi
+
 db:
   nameOverride: "paperless-ngx-db"
   image:
@@ -180,6 +188,14 @@ ai:
     - name: ai-data
       mountPath: /app/data
       size: 128Mi
+
+  resources:
+    requests:
+      cpu: 300m
+      memory: 768Mi
+    limits:
+      cpu: 1500m
+      memory: 3Gi
 
   probes:
     liveness:

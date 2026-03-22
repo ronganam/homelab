@@ -141,9 +141,14 @@ data:
                 return self.cf
             api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
             if not api_token:
-                raise RuntimeError("CLOUDFLARE_API_TOKEN is not set")
-            self.cf = Cloudflare(api_token=api_token)
-            return self.cf
+                logger.error("CLOUDFLARE_API_TOKEN is not set")
+                return None
+            try:
+                self.cf = Cloudflare(api_token=api_token)
+                return self.cf
+            except Exception as e:
+                logger.error("Failed to initialize Cloudflare client: %s", e)
+                return None
 
         def get_tunnel_cname_target(self):
             """Discover the CNAME target (<uuid>.cfargotunnel.com) for the named tunnel."""
@@ -490,24 +495,28 @@ data:
             results = {}
             try:
                 cf = self.ensure_cf_client()
-                for n in names:
-                    recs = cf.dns.records.list(zone_id=zone_id, name=n, type='A')
-                    first = None
-                    for r in recs:
-                        first = r
-                        break
-                    if first is not None:
-                        name_val = getattr(first, 'name', None)
-                        content_val = getattr(first, 'content', None)
-                        id_val = getattr(first, 'id', None)
-                        if isinstance(first, dict):
-                            name_val = name_val or first.get('name')
-                            content_val = content_val or first.get('content')
-                            id_val = id_val or first.get('id')
-                        key = (name_val or '').lower().rstrip('.')
-                        results[key] = {'ip': content_val, 'id': id_val}
+                if not cf:
+                    return results
+                
+                # Fetch ALL 'A' records once per zone to avoid multiple API calls
+                # For many records this might be paged, the SDK iterator handles it
+                all_recs = cf.dns.records.list(zone_id=zone_id, type='A')
+                names_lower = {n.lower().rstrip('.') for n in names}
+                
+                for r in all_recs:
+                    name_val = (getattr(r, 'name', None) or '').lower().rstrip('.')
+                    if name_val in names_lower:
+                        content_val = getattr(r, 'content', None)
+                        id_val = getattr(r, 'id', None)
+                        if isinstance(r, dict):
+                            content_val = content_val or r.get('content')
+                            id_val = id_val or r.get('id')
+                        results[name_val] = {'ip': content_val, 'id': id_val}
             except Exception as e:
-                logger.exception("Error fetching DNS records by names via SDK: %s", e)
+                if '429' in str(e):
+                    logger.warning("Cloudflare Rate Limit (429) hit while fetching DNS records for zone %s", zone_id)
+                else:
+                    logger.exception("Error fetching DNS records by names via SDK: %s", e)
             return results
 
         def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):
@@ -621,11 +630,16 @@ data:
             """Delete a DNS record by id using SDK. Returns True on success."""
             try:
                 cf = self.ensure_cf_client()
+                if not cf:
+                    return False
                 cf.dns.records.delete(zone_id=zone_id, dns_record_id=record_id)
                 logger.info("Deleted DNS record id=%s", record_id)
                 return True
             except Exception as e:
-                logger.exception("Error deleting DNS record via SDK id=%s: %s", record_id, e)
+                if '429' in str(e):
+                    logger.warning("Cloudflare Rate Limit (429) hit while deleting DNS record %s", record_id)
+                else:
+                    logger.exception("Error deleting DNS record via SDK id=%s: %s", record_id, e)
                 return False
 
         def calculate_config_hash(self, config_data):
@@ -881,6 +895,8 @@ data:
                     domain_groups.setdefault(domain, []).append(h)
 
                 cf = self.ensure_cf_client()
+                if not cf:
+                    return False
 
                 for domain, names in domain_groups.items():
                     zone_id = self.get_cloudflare_zone_id(domain, api_token)
@@ -888,9 +904,30 @@ data:
                         logger.warning("No zone ID for domain %s; skipping %d public hostnames", domain, len(names))
                         continue
 
+                    # Optimization: fetch all CNAME records for the zone once
+                    try:
+                        all_cnames = list(cf.dns.records.list(zone_id=zone_id, type='CNAME'))
+                        cname_map = { (getattr(r, 'name', '') or '').lower().rstrip('.'): r for r in all_cnames }
+                    except Exception as e:
+                        if '429' in str(e):
+                            logger.warning("Cloudflare Rate Limit (429) hit while listing CNAMEs for zone %s", zone_id)
+                            continue
+                        raise
+
                     for hostname in names:
                         try:
-                            existing = self.find_dns_record_by_name_and_type(zone_id, hostname, 'CNAME', api_token)
+                            norm_hostname = hostname.lower().rstrip('.')
+                            existing_obj = cname_map.get(norm_hostname)
+                            
+                            existing = None
+                            if existing_obj:
+                                rec_id = getattr(existing_obj, 'id', None)
+                                rec_content = getattr(existing_obj, 'content', None)
+                                if isinstance(existing_obj, dict):
+                                    rec_id = rec_id or existing_obj.get('id')
+                                    rec_content = rec_content or existing_obj.get('content')
+                                existing = {'id': rec_id, 'content': rec_content}
+
                             if existing and existing.get('content') == cname_target:
                                 logger.debug("Public DNS CNAME for %s already correct", hostname)
                                 continue
@@ -918,8 +955,10 @@ data:
                                 )
                         except Exception as e:
                             msg = str(e).lower()
-                            if '81058' in msg:
+                            if '81058' in msg or 'identical' in msg:
                                 logger.debug("Public DNS CNAME for %s already exists (identical)", hostname)
+                            elif '429' in msg:
+                                logger.warning("Cloudflare Rate Limit (429) hit while ensuring CNAME for %s", hostname)
                             else:
                                 logger.exception("Error ensuring public DNS CNAME for %s: %s", hostname, e)
 
@@ -1047,13 +1086,21 @@ data:
             self.reconcile_internal_dns()
 
         def start_periodic_reconciliation(self):
+            # Use a static attribute to track if the thread is already running
+            if getattr(self, '_periodic_thread_started', False):
+                logger.debug("Periodic reconciliation thread already running")
+                return
+            
             def periodic_reconcile():
+                logger.info("Starting periodic reconciliation thread")
                 while True:
                     time.sleep(RECONCILE_INTERVAL_SEC)
                     try:
                         self.reconcile_all()
                     except Exception as e:
                         logger.exception("Error in periodic reconciliation: %s", e)
+            
+            self._periodic_thread_started = True
             thread = threading.Thread(target=periodic_reconcile, daemon=True)
             thread.start()
             logger.info("Started periodic reconciliation every %s seconds", RECONCILE_INTERVAL_SEC)
@@ -1070,65 +1117,46 @@ data:
 
         def main(self):
             """Main controller loop"""
-            try:
-                logger.info("Loading Kubernetes config...")
-
-                logger.debug("KUBERNETES_SERVICE_HOST: %s", os.environ.get('KUBERNETES_SERVICE_HOST', 'Not set'))
-                logger.debug("KUBERNETES_SERVICE_PORT: %s", os.environ.get('KUBERNETES_SERVICE_PORT', 'Not set'))
-                logger.debug("KUBECONFIG: %s", os.environ.get('KUBECONFIG', 'Not set'))
-
+            logger.info("Starting Service Controller...")
+            
+            while True:
                 try:
-                    config.load_incluster_config()
-                    logger.info("Kubernetes in-cluster config loaded")
-                except Exception as e:
-                    logger.warning("In-cluster config failed: %s", e)
-                    logger.info("Trying kubeconfig...")
-                    config.load_kube_config()
-                    logger.info("Kubernetes kubeconfig loaded")
+                    logger.info("Initializing Kubernetes client...")
+                    try:
+                        config.load_incluster_config()
+                        logger.info("Kubernetes in-cluster config loaded")
+                    except Exception as e:
+                        logger.debug("In-cluster config failed: %s, trying kubeconfig...", e)
+                        config.load_kube_config()
+                        logger.info("Kubernetes kubeconfig loaded")
 
-                self.v1 = client.CoreV1Api()
-                self.apps_v1 = client.AppsV1Api()
+                    self.v1 = client.CoreV1Api()
+                    self.apps_v1 = client.AppsV1Api()
 
-                logger.info("Service Controller initialized")
-
-                # Log DDNS configuration
-                if DDNS_ENABLED:
-                    logger.info("DDNS enabled for hostname: %s", DDNS_HOSTNAME)
-                else:
-                    logger.info("DDNS disabled")
-
-                try:
-                    logger.info("Testing Kubernetes API connection...")
-                    self.v1.list_namespace()
+                    # Test connection
+                    self.v1.list_namespace(limit=1)
                     logger.info("Kubernetes API connection successful")
-                except Exception as e:
-                    logger.error("Kubernetes API connection failed: %s", e)
-                    logger.info("Retrying in 10 seconds...")
-                    time.sleep(10)
-                    return self.main()
 
-                logger.info("Performing initial full reconciliation...")
-                self.reconcile_all()
+                    if DDNS_ENABLED:
+                        logger.info("DDNS enabled for hostname: %s", DDNS_HOSTNAME)
+                    else:
+                        logger.info("DDNS disabled")
 
-                self.start_periodic_reconciliation()
+                    logger.info("Performing initial full reconciliation...")
+                    self.reconcile_all()
+                    self.start_periodic_reconciliation()
 
-                logger.info("Watching for service changes with DNS enabled...")
-                w = watch.Watch()
-
-                label_selector = f"{DNS_ENABLED_LABEL}=true"
-                try:
+                    logger.info("Watching for service changes with DNS enabled...")
+                    w = watch.Watch()
+                    label_selector = f"{DNS_ENABLED_LABEL}=true"
+                    
                     for event in w.stream(self.v1.list_service_for_all_namespaces, label_selector=label_selector):
                         self.process_service_event(event["type"], event["object"])
+                        
                 except Exception as e:
-                    logger.error("Watch stream error: %s", e)
-                    logger.info("Restarting watch in 5 seconds...")
-                    time.sleep(5)
-                    return self.main()
-
-            except Exception as e:
-                logger.exception("Controller error: %s", e)
-                time.sleep(10)
-                self.main()
+                    logger.exception("Controller loop encountered an error: %s", e)
+                    logger.info("Restarting loop in 10 seconds...")
+                    time.sleep(10)
 
     if __name__ == "__main__":
         controller = ServiceController()

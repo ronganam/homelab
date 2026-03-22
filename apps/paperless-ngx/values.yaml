@@ -196,7 +196,7 @@ ai:
       size: 128Mi
     - name: ai-logs
       mountPath: /app/logs
-      emptyDir: {}
+      size: 64Mi
 
   resources:
     requests:

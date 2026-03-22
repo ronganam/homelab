@@ -126,9 +126,6 @@ spec:
             {{- if .hostPathType }}
             type: {{ .hostPathType }}
             {{- end }}
-          {{- else if .emptyDir }}
-          emptyDir:
-            {{- toYaml .emptyDir | nindent 12 }}
           {{- else }}
           persistentVolumeClaim:
             claimName: {{ include "app.name" $ }}-{{ .name }}

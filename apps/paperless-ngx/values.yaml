@@ -16,6 +16,14 @@ webserver:
     hostname: "paperless.ganam.app"
     exposure: "internal"
 
+  probes:
+    liveness:
+      enabled: true
+      path: "/accounts/login/"
+    readiness:
+      enabled: true
+      path: "/accounts/login/"
+
   homepage:
     enabled: true
     name: "Paperless-NGX"
@@ -159,13 +167,14 @@ ai:
     runAsUser: 1000
     runAsGroup: 1000
     fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
 
   # Equivalent to security_opt: no-new-privileges=true
   containerSecurityContext:
     allowPrivilegeEscalation: false
-    capabilities:
-      drop:
-        - ALL
+    # capabilities:
+    #   drop:
+    #     - ALL
 
   env:
     PUID: "1000"

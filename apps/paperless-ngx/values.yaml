@@ -201,7 +201,7 @@ ai:
       mountPath: /app/OPENAPI
       size: 64Mi
     - name: ai-public
-      mountPath: /app/public
+      mountPath: /app/public/images
       size: 128Mi
 
   resources:

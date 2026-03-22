@@ -63,10 +63,10 @@ webserver:
       size: 1Gi
       mountPath: /usr/src/paperless/media
     - name: export
-      size: 128Mi
+      emptyDir: {}
       mountPath: /usr/src/paperless/export
     - name: consume
-      size: 128Mi
+      emptyDir: {}
       mountPath: /usr/src/paperless/consume
 
 db:
@@ -184,7 +184,7 @@ ai:
     PUID: "1000"
     PGID: "1000"
     PAPERLESS_AI_PORT: "3000"
-    PAPERLESS_URL: "http://paperless-webserver:8000"
+    PAPERLESS_URL: "http://paperless-webserver:8000/"
     RAG_SERVICE_URL: "http://localhost:3000"
     RAG_SERVICE_ENABLED: "true"
 
@@ -194,7 +194,10 @@ ai:
       size: 128Mi
     - name: ai-logs
       mountPath: /app/logs
-      size: 128Mi
+      emptyDir: {}
+    - name: ai-openapi
+      mountPath: /app/OPENAPI
+      emptyDir: {}
 
   probes:
     liveness:

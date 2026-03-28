@@ -70,7 +70,7 @@ api:
 
   initContainers:
     - name: wait-db
-      image: busybox:1.36
+      image: busybox:1.37
       command: ['sh', '-c', 'until nc -z kaneo-db 5432; do echo waiting for db; sleep 2; done;']
 
   env:
@@ -118,7 +118,7 @@ web:
 
   initContainers:
     - name: wait-api
-      image: busybox:1.36
+      image: busybox:1.37
       command: ['sh', '-c', 'until nc -z kaneo-api 1337; do echo waiting for api; sleep 2; done;']
 
   env:

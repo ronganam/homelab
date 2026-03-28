@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: ghcr.io/papra-hq/papra
-    tag: 26.2.2-rootless
+    tag: 26.3.0-rootless
 
   containerPort: 1221
 

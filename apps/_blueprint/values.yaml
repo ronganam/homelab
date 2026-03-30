@@ -40,6 +40,12 @@ volumes: []
 #     mountPath: /data
 #     storageClass: longhorn    (default)
 #     accessMode: ReadWriteOnce (default)
+#   - name: shared-nfs
+#     mountPath: /shared
+#     nfs:
+#       server: 192.168.1.201
+#       path: /shared-data/nas-storage
+#       readOnly: true
 
 infisical:
   enabled: false

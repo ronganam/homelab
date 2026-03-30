@@ -120,7 +120,14 @@ spec:
       volumes:
         {{- range .Values.volumes }}
         - name: {{ .name }}
-          {{- if .hostPath }}
+          {{- if .nfs }}
+          nfs:
+            server: {{ .nfs.server }}
+            path: {{ .nfs.path }}
+            {{- if hasKey .nfs "readOnly" }}
+            readOnly: {{ .nfs.readOnly }}
+            {{- end }}
+          {{- else if .hostPath }}
           hostPath:
             path: {{ .hostPath }}
             {{- if .hostPathType }}

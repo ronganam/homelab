@@ -20,7 +20,7 @@ spec:
     spec:
       # Schedule Jellyfin on your GPU node(s)
       nodeSelector:
-       nvidia.com/gpu.present: "true"
+        nvidia.com/gpu.present: "true"
       runtimeClassName: nvidia
       securityContext:
         runAsNonRoot: true
@@ -51,7 +51,7 @@ spec:
             - name: cache
               mountPath: /cache
             # Optional: fast in-memory transcoding scratch space.
-              # If you want this, set Jellyfin's "Transcoding temporary directory" to `/transcode` in the admin UI.
+            # If you want this, set Jellyfin's "Transcoding temporary directory" to `/transcode` in the admin UI.
             - name: transcode
               mountPath: /transcode
             - name: media
@@ -90,11 +90,11 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 3Gi
-        # Host media library mount (matches the docker example `-v /media:/media`)
+        # Host media library mount
         - name: media
-          hostPath:
-            path: /media
-            type: Directory
+          nfs:
+            server: 192.168.1.201
+            path: /shared-data/nas-storage/media
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -125,5 +125,3 @@ spec:
     requests:
       storage: 5Gi
   storageClassName: longhorn
-
-

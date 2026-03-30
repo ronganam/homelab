@@ -1,5 +1,5 @@
 {{- range .Values.volumes }}
-{{- if not .hostPath }}
+{{- if and (not .hostPath) (not .nfs) }}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

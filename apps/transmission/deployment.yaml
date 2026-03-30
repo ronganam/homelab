@@ -80,9 +80,9 @@ spec:
           persistentVolumeClaim:
             claimName: transmission-config
         - name: media
-          hostPath:
-            path: /media
-            type: Directory
+          nfs:
+            server: 192.168.1.201
+            path: /shared-data/nas-storage/media
         - name: watch
           emptyDir: {}
 ---
@@ -98,6 +98,3 @@ spec:
     requests:
       storage: 512Mi
   storageClassName: longhorn
-
-
-

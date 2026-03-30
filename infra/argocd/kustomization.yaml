@@ -23,6 +23,12 @@ patches:
       kind: ConfigMap
       name: argocd-cm
       version: v1
+  - path: patch-deploy-argocd-repo-server.yaml
+    target:
+      group: apps
+      kind: Deployment
+      name: argocd-repo-server
+      version: v1
   - patch: |-
       - op: add
         path: /rules/-

@@ -5,7 +5,7 @@ metadata:
   namespace: argocd
   labels:
     dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: argo.buildin.group
+    dns.service-controller.io/hostname: argo.ganam.app
     exposure.service-controller.io/type: internal
 spec:
   type: ClusterIP

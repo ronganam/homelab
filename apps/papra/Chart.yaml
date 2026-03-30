@@ -1,7 +1,0 @@
-apiVersion: v2
-name: papra
-version: 0.1.0
-dependencies:
-  - name: app-blueprint
-    version: "0.1.0"
-    repository: "file://../_blueprint"

@@ -8,7 +8,7 @@ REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 echo "🚀 Installing Argo CD via kustomize (infra/argocd)..."
 
 # Apply kustomization (includes namespace, pinned Argo CD version, ingress, and patches)
-kubectl apply -k "${REPO_ROOT}/infra/argocd"
+kubectl apply --server-side --force-conflicts -k "${REPO_ROOT}/infra/argocd"
 
 echo "⏳ Waiting for Argo CD to be ready..."
 kubectl -n argocd rollout status deploy/argocd-server --timeout=300s
@@ -24,7 +24,7 @@ echo "1. Get the admin password:"
 echo "   kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath=\"{.data.password}\" | base64 -d; echo"
 echo ""
 echo "2. Access Argo CD UI via ingress:"
-echo "   https://argo.buildin.group/ (or https://argocd.buildin.group/)"
+echo "   https://argo.ganam.app/ (or https://argocd.ganam.app/)"
 echo "   Username: admin"
 echo "   Password: <from step 1>"
 echo ""

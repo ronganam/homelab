@@ -2,7 +2,7 @@ db:
   nameOverride: kaneo-db
   image:
     repository: postgres
-    tag: "16-alpine"
+    tag: "18-alpine"
   
   containerPort: 5432
   servicePort: 5432

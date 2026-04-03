@@ -39,3 +39,11 @@ app-blueprint:
       path: "/ping"
     readiness:
       path: "/ping"
+
+  resources:
+    requests:
+      cpu: 2
+      memory: 2Gi
+    limits:
+      cpu: 4
+      memory: 4Gi

@@ -16,10 +16,10 @@ app-blueprint:
 
   volumes:
     - name: sessions
-      size: 256Mi
+      size: 128Mi
       mountPath: /app/.sessions
     - name: media
-      size: 1Gi
+      size: 512Mi
       mountPath: /app/.media
 
   infisical:

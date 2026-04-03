@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: devlikeapro/waha
-    tag: "latest-2026.3.4"
+    tag: "noweb-2026.3.4"
 
   containerPort: 3000
 
@@ -29,7 +29,7 @@ app-blueprint:
     secretName: waha-secret
 
   env:
-    WAHA_WEBJS_PUPPETEER_ARGS: "--disable-dev-shm-usage --no-sandbox"
+    WHATSAPP_DEFAULT_ENGINE: "NOWEB"
 
   securityContext:
     runAsUser: 1000

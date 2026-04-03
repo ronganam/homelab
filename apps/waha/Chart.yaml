@@ -1,0 +1,7 @@
+apiVersion: v2
+name: waha
+version: 0.1.0
+dependencies:
+  - name: app-blueprint
+    version: "0.1.0"
+    repository: "file://../_blueprint"

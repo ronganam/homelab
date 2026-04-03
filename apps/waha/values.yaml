@@ -28,6 +28,9 @@ app-blueprint:
     secretsPath: "/waha"
     secretName: waha-secret
 
+  env:
+    WAHA_WEBJS_PUPPETEER_ARGS: "--disable-dev-shm-usage --no-sandbox"
+
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000

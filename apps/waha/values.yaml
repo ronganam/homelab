@@ -36,6 +36,6 @@ app-blueprint:
 
   probes:
     liveness:
-      path: "/dashboard"
+      path: "/ping"
     readiness:
-      path: "/dashboard"
+      path: "/ping"

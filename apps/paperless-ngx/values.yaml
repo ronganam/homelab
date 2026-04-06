@@ -65,11 +65,11 @@ webserver:
 
   resources:
     requests:
-      cpu: 300m
-      memory: 768Mi
+      cpu: 10m
+      memory: 1Gi
     limits:
-      cpu: 1500m
-      memory: 3Gi
+      cpu: 30m
+      memory: 2Gi
 
 db:
   nameOverride: "paperless-ngx-db"
@@ -99,6 +99,14 @@ db:
     - name: db-data
       mountPath: /var/lib/postgresql/data
       size: 256Mi
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 30m
+      memory: 128Mi
 
   env:
     POSTGRES_USER: "paperless"
@@ -148,7 +156,15 @@ broker:
       mountPath: /data
       size: 128Mi
 
-ai:
+  resources:
+    requests:
+      cpu: 10m
+      memory: 16Mi
+    limits:
+      cpu: 30m
+      memory: 16Mi
+
+  ai:
   nameOverride: "paperless-ai"
   image:
     repository: "clusterzx/paperless-ai"
@@ -206,11 +222,11 @@ ai:
 
   resources:
     requests:
-      cpu: 300m
-      memory: 768Mi
+      cpu: 10m
+      memory: 2Gi
     limits:
-      cpu: 1500m
-      memory: 3Gi
+      cpu: 30m
+      memory: 4Gi
 
   probes:
     liveness:

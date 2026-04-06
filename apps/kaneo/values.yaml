@@ -27,6 +27,14 @@ db:
       size: 5Gi # Restored to 5Gi as per original plan
       mountPath: /var/lib/postgresql/data
 
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 30m
+      memory: 96Mi
+
   env:
     POSTGRES_USER: kaneo
     POSTGRES_DB: kaneo
@@ -81,6 +89,14 @@ api:
     - name: DATABASE_URL
       value: "postgresql://kaneo:$(POSTGRES_PASSWORD)@kaneo-db:5432/kaneo"
 
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+    limits:
+      cpu: 30m
+      memory: 320Mi
+
   probes:
     liveness:
       type: tcpSocket # Safe default if health path is unknown
@@ -120,6 +136,14 @@ web:
     - name: wait-api
       image: busybox:1.37
       command: ['sh', '-c', 'until nc -z kaneo-api 1337; do echo waiting for api; sleep 2; done;']
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 32Mi
+    limits:
+      cpu: 30m
+      memory: 32Mi
 
   env:
     KANEO_API_URL: "https://kaneo.ganam.app/api"

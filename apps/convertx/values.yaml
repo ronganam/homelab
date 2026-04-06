@@ -31,3 +31,11 @@ app-blueprint:
     runAsGroup: 1000
     fsGroup: 1000
     fsGroupChangePolicy: OnRootMismatch
+
+  resources:
+    requests:
+      cpu: 15m
+      memory: 256Mi
+    limits:
+      cpu: 45m
+      memory: 448Mi

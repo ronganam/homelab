@@ -36,6 +36,14 @@ app-blueprint:
     fsGroup: 1000
     fsGroupChangePolicy: OnRootMismatch
 
+  resources:
+    requests:
+      cpu: 10m
+      memory: 512Mi
+    limits:
+      cpu: 30m
+      memory: 1Gi
+
   probes:
     liveness:
       path: "/healthz"

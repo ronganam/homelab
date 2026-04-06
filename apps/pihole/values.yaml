@@ -67,11 +67,11 @@ pihole:
 
   resources:
     requests:
-      cpu: 100m
-      memory: 256Mi
+      cpu: 10m
+      memory: 32Mi
     limits:
-      cpu: 500m
-      memory: 1Gi
+      cpu: 30m
+      memory: 64Mi
 
   probes:
     liveness:

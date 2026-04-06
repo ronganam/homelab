@@ -55,11 +55,11 @@ spec:
               mountPath: /app/prisma
           resources:
             requests:
-              cpu: 50m
+              cpu: 10m
               memory: 128Mi
             limits:
-              cpu: 500m
-              memory: 512Mi
+              cpu: 30m
+              memory: 256Mi
           livenessProbe:
             tcpSocket:
               port: http
@@ -109,11 +109,11 @@ spec:
               value: excalidraw-backend.excalidraw.svc.cluster.local:8000
           resources:
             requests:
-              cpu: 25m
-              memory: 64Mi
+              cpu: 10m
+              memory: 32Mi
             limits:
-              cpu: 250m
-              memory: 256Mi
+              cpu: 30m
+              memory: 32Mi
           livenessProbe:
             httpGet:
               path: /

@@ -1,6 +1,8 @@
 # Values to override the upstream Pi-hole chart
 pihole:
   replicaCount: 1
+  image:
+    tag: "2026.04.0"
   DNS1: "1.1.1.1"
   DNS2: "1.0.0.1"
 

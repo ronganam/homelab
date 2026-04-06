@@ -3,9 +3,9 @@ name: pihole
 description: Helm wrapper chart to deploy Pi-hole via upstream dependency
 type: application
 version: 0.1.0
-appVersion: ""
+appVersion: "2026.04.0"
 dependencies:
   - name: pihole
-    version: ">=0.0.0"
+    version: "2.35.0"
     repository: https://mojo2600.github.io/pihole-kubernetes/
 

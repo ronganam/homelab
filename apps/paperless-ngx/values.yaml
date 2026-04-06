@@ -65,10 +65,10 @@ webserver:
 
   resources:
     requests:
-      cpu: 10m
+      cpu: 50m
       memory: 1Gi
     limits:
-      cpu: 30m
+      cpu: 150m
       memory: 2Gi
 
 db:
@@ -164,7 +164,7 @@ broker:
       cpu: 30m
       memory: 16Mi
 
-  ai:
+ai:
   nameOverride: "paperless-ai"
   image:
     repository: "clusterzx/paperless-ai"
@@ -222,10 +222,10 @@ broker:
 
   resources:
     requests:
-      cpu: 10m
+      cpu: 50m
       memory: 2Gi
     limits:
-      cpu: 30m
+      cpu: 150m
       memory: 4Gi
 
   probes:

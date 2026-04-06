@@ -70,10 +70,10 @@ spec:
               mountPath: /watch
           resources:
             requests:
-              cpu: 30m
+              cpu: 100m
               memory: 1Gi
             limits:
-              cpu: 90m
+              cpu: 300m
               memory: 2Gi
       volumes:
         - name: config

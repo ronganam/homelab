@@ -31,10 +31,10 @@ app-blueprint:
 
   resources:
     requests:
-      cpu: 10m
+      cpu: 50m
       memory: 256Mi
     limits:
-      cpu: 30m
+      cpu: 150m
       memory: 400Mi
 
   probes:

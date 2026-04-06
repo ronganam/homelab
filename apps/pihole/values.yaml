@@ -9,7 +9,7 @@ pihole:
     annotations: {}
     extraLabels:
       dns.service-controller.io/enabled: "true"
-      dns.service-controller.io/hostname: pihole.buildin.group
+      dns.service-controller.io/hostname: pihole.ganam.app
       exposure.service-controller.io/type: internal
 
   serviceDns:
@@ -48,7 +48,7 @@ pihole:
       gethomepage.dev/weight: "15"
       gethomepage.dev/pod-selector: "app.kubernetes.io/name=pihole,app.kubernetes.io/instance=pihole"
     hosts:
-      - pihole.buildin.group
+      - pihole.ganam.app
     path: /
     pathType: Prefix
 

@@ -1,0 +1,34 @@
+app-blueprint:
+  image:
+    repository: registry.ganam.app/yermi
+    tag: "0.1.0"
+
+  containerPort: 3000
+
+  dns:
+    hostname: yermi.ganam.app
+    exposure: internal
+
+  homepage:
+    name: Yermi
+    description: Internal utility app
+    icon: default.png
+
+  volumes:
+    - name: data
+      size: 128Mi
+      mountPath: /app/data
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 64Mi
+    limits:
+      cpu: 100m
+      memory: 128Mi

@@ -1,6 +1,6 @@
 app-blueprint:
   image:
-    repository: registry.buildin.group/gilartworks-portfolio
+    repository: registry.ganam.app/gilartworks-portfolio
     tag: "5.0"
 
   containerPort: 3000

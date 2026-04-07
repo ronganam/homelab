@@ -6,7 +6,7 @@ app-blueprint:
   containerPort: 5000
 
   dns:
-    hostname: registry.buildin.group
+    hostname: registry.ganam.app
     exposure: internal
 
   homepage:

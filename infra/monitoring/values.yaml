@@ -177,6 +177,16 @@ kube-prometheus-stack:
         - match:
             alertname: Watchdog
           receiver: 'null'
+        - match:
+            alertname: InfoInhibitor
+          receiver: 'null'
+      inhibit_rules:
+      - source_match:
+          alertname: InfoInhibitor
+        target_match:
+          severity: info
+        equal:
+        - namespace
       receivers:
       - name: 'null'
       - name: 'telegram'

@@ -71,7 +71,7 @@ pihole:
       memory: 32Mi
     limits:
       cpu: 30m
-      memory: 64Mi
+      memory: 256Mi
 
   probes:
     liveness:
@@ -88,4 +88,3 @@ pihole:
       timeoutSeconds: 5
       successThreshold: 1
       failureThreshold: 12
-

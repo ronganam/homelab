@@ -1,0 +1,55 @@
+app-blueprint:
+  image:
+    repository: registry.ganam.app/gilartworks-store
+    tag: "0.1.0"
+
+  containerPort: 3000
+
+  dns:
+    hostname: store.gilartworks.com
+    exposure: internal
+
+  homepage:
+    enabled: true
+    name: "GilArtworks Store"
+    group: "Creative"
+    icon: "material-symbols:storefront-outline"
+
+  volumes:
+    - name: uploads
+      size: 1Gi
+      mountPath: /app/public/uploads
+    - name: database
+      size: 128Mi
+      mountPath: /app/db
+
+  infisical:
+    enabled: true
+    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+    secretsPath: "gilartworks-store"
+    secretName: gilartworks-store-secret
+
+  env:
+    NODE_ENV: "production"
+    DATABASE_URL: "file:/app/db/dev.db"
+
+  extraEnv:
+    - name: ADMIN_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: gilartworks-store-secret
+          key: ADMIN_PASSWORD
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 128Mi
+    limits:
+      cpu: 100m
+      memory: 256Mi

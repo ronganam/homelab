@@ -26,7 +26,7 @@ app-blueprint:
   infisical:
     enabled: true
     identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
-    secretsPath: "gilartworks-store"
+    secretsPath: "/gilartworks-store"
     secretName: gilartworks-store-secret
 
   env:

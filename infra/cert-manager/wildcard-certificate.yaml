@@ -11,3 +11,4 @@ spec:
   dnsNames:
     - "*.buildin.group"
     - "*.ganam.app"
+    - "*.gilartworks.com"

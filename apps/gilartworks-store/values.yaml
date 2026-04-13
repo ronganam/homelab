@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: registry.ganam.app/gilartworks-store
-    tag: "0.1.0"
+    tag: "0.1.1"
 
   containerPort: 3000
 
@@ -41,9 +41,9 @@ app-blueprint:
           key: ADMIN_PASSWORD
 
   securityContext:
-    runAsUser: 1000
-    runAsGroup: 1000
-    fsGroup: 1000
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
     fsGroupChangePolicy: OnRootMismatch
 
   resources:

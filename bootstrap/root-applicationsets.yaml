@@ -54,6 +54,7 @@ spec:
       syncPolicy:
         syncOptions:
           - CreateNamespace=true
+          - ServerSideApply=true
       # Auto-sync is still disabled; only syncOptions are set
       ignoreDifferences:
         - group: ""
@@ -99,4 +100,5 @@ spec:
       syncPolicy:
         syncOptions:
           - CreateNamespace=true
+          - ServerSideApply=true
       # Auto-sync is still disabled; only syncOptions are set

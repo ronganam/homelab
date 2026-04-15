@@ -1,0 +1,6 @@
+gha-runner-scale-set-controller:
+  replicaCount: 1
+  serviceAccount:
+    create: true
+  leaderElection:
+    enabled: true

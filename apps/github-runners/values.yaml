@@ -1,0 +1,6 @@
+gha-runner-scale-set:
+  githubConfigUrl: "https://github.com/ronganam/homelab"
+  githubConfigSecret: github-runner-auth
+  minRunners: 0
+  maxRunners: 5
+  runnerScaleSetName: "selfhosted-homelab"

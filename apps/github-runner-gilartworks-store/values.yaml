@@ -1,0 +1,11 @@
+gha-runner-scale-set:
+  githubConfigUrl: "https://github.com/ronganam/gilartworks-store"
+  githubConfigSecret: github-runner-auth
+  controllerServiceAccount:
+    namespace: arc-systems
+    name: arc-systems-gha-rs-controller
+  minRunners: 0
+  maxRunners: 5
+  runnerScaleSetName: "self-hosted-gilartworks-store"
+  containerMode:
+    type: "dind"

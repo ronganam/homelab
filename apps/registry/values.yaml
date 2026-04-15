@@ -45,8 +45,8 @@ app-blueprint:
       cpu: 10m
       memory: 32Mi
     limits:
-      cpu: 30m
-      memory: 64Mi
+      cpu: 300m
+      memory: 128Mi
 
   probes:
     liveness:

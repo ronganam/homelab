@@ -50,7 +50,7 @@ api:
   nameOverride: kaneo-api
   image:
     repository: ghcr.io/usekaneo/api
-    tag: latest
+    tag: "2.6.8"
   
   containerPort: 1337
   servicePort: 1337
@@ -107,7 +107,7 @@ web:
   nameOverride: kaneo-web
   image:
     repository: ghcr.io/usekaneo/web
-    tag: latest
+    tag: "2.6.8"
   
   containerPort: 5173
   servicePort: 80

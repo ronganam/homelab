@@ -11,7 +11,7 @@ infisical:
   identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
   secretsPath: "/kaneo"
   secretName: "kaneo-secret"
-  projectSlug: "homelab"
+  projectSlug: "homelab-k8s"
   envSlug: "prod"
 
 postgresql:

@@ -20,7 +20,7 @@ spec:
     spec:
       containers:
         - name: backend
-          image: zimengxiong/excalidash-backend:0.4.28
+          image: zimengxiong/excalidash-backend:0.5.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8000
@@ -99,7 +99,7 @@ spec:
     spec:
       containers:
         - name: frontend
-          image: zimengxiong/excalidash-frontend:0.4.28
+          image: zimengxiong/excalidash-frontend:0.5.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80

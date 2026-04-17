@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: registry
-    tag: "3.0.0"
+    tag: "3.1.0"
 
   containerPort: 5000
 

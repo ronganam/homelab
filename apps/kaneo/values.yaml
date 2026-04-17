@@ -1,150 +1,120 @@
-db:
-  nameOverride: kaneo-db
+fullnameOverride: "kaneo"
+autoscaling:
+  enabled: false
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+infisical:
+  enabled: true
+  identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+  secretsPath: "/kaneo"
+  secretName: "kaneo-secret"
+  projectSlug: "homelab"
+  envSlug: "prod"
+
+postgresql:
+  enabled: true
   image:
     repository: postgres
-    tag: "16-alpine"
-  
-  containerPort: 5432
-  servicePort: 5432
-  
-  namespace:
+    tag: 16-alpine
+    pullPolicy: IfNotPresent
+  auth:
+    database: "kaneo"
+    username: "kaneo"
+    existingSecret: "kaneo-secret"
+    secretKeys:
+      adminPasswordKey: postgres-password
+      userPasswordKey: POSTGRES_PASSWORD
+  persistence:
     enabled: true
-  
-  dns:
-    enabled: false
-  
-  homepage:
-    enabled: false
-
-  infisical:
-    enabled: true
-    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
-    secretsPath: "/kaneo"
-    secretName: kaneo-secret
-
-  volumes:
-    - name: data
-      size: 5Gi # Restored to 5Gi as per original plan
-      mountPath: /var/lib/postgresql/data
-
-  resources:
-    requests:
-      cpu: 10m
-      memory: 64Mi
-    limits:
-      cpu: 30m
-      memory: 96Mi
-
-  env:
-    POSTGRES_USER: kaneo
-    POSTGRES_DB: kaneo
-    PGDATA: /var/lib/postgresql/data/pgdata
-
-  probes:
-    liveness:
-      type: tcpSocket
-    readiness:
-      type: tcpSocket
+    size: 5Gi
+    accessMode: ReadWriteOnce
+  service:
+    type: ClusterIP
+    port: 5432
+  resources: {}
 
 api:
-  nameOverride: kaneo-api
   image:
     repository: ghcr.io/usekaneo/api
     tag: "2.6.8"
-  
-  containerPort: 1337
-  servicePort: 1337
-  
-  namespace:
-    enabled: false
-  
-  dns:
-    enabled: true
-    hostname: kaneo.ganam.app
-    exposure: internal
-  
-  ingress:
-    path: /api
-    annotations: {}
-  
-  homepage:
-    enabled: false
-
-  infisical:
-    enabled: true
-    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
-    secretsPath: "/kaneo"
-    secretName: kaneo-secret
-
-  initContainers:
-    - name: wait-db
-      image: busybox:1.37
-      command: ['sh', '-c', 'until nc -z kaneo-db 5432; do echo waiting for db; sleep 2; done;']
-
+    pullPolicy: IfNotPresent
+  securityContext: {}
+  service:
+    type: ClusterIP
+    port: 1337
+    targetPort: 1337
+  resources: {}
   env:
     KANEO_API_URL: "https://kaneo.ganam.app/api"
     KANEO_CLIENT_URL: "https://kaneo.ganam.app"
-
-  extraEnv:
-    - name: DATABASE_URL
-      value: "postgresql://kaneo:$(POSTGRES_PASSWORD)@kaneo-db:5432/kaneo"
-
-  resources:
-    requests:
-      cpu: 50m
-      memory: 128Mi
-    limits:
-      cpu: 150m
-      memory: 320Mi
-
-  probes:
-    liveness:
-      type: tcpSocket # Safe default if health path is unknown
-    readiness:
-      type: tcpSocket
+    existingSecret:
+      enabled: true
+      name: "kaneo-secret"
+      key: "AUTH_SECRET"
+    disableRegistration: false
+    disablePasswordRegistration: false
+    database:
+      external:
+        enabled: false
+  livenessProbe:
+    httpGet:
+      path: /api/health
+      port: api
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: api
+    initialDelaySeconds: 5
+    periodSeconds: 10
 
 web:
-  nameOverride: kaneo-web
   image:
     repository: ghcr.io/usekaneo/web
     tag: "2.6.8"
-  
-  containerPort: 5173
-  servicePort: 80
-  
-  namespace:
-    enabled: false
-  
-  dns:
-    hostname: kaneo.ganam.app
-    exposure: internal
-  
-  homepage:
-    enabled: true
-    name: "Kaneo"
-    description: "Kanban board"
-    icon: "si-kanban"
-    group: "Applications"
-
-  infisical:
-    enabled: true
-    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
-    secretsPath: "/kaneo"
-    secretName: kaneo-secret
-
-  initContainers:
-    - name: wait-api
-      image: busybox:1.37
-      command: ['sh', '-c', 'until nc -z kaneo-api 1337; do echo waiting for api; sleep 2; done;']
-
-  resources:
-    requests:
-      cpu: 50m
-      memory: 64Mi
-    limits:
-      cpu: 500m
-      memory: 128Mi
-
+    pullPolicy: IfNotPresent
+  securityContext: {}
+  service:
+    type: ClusterIP
+    port: 80
+    targetPort: 5173
+    labels:
+      dns.service-controller.io/enabled: "true"
+      dns.service-controller.io/hostname: "kaneo.ganam.app"
+      exposure.service-controller.io/type: "internal"
+  resources: {}
   env:
-    KANEO_API_URL: "https://kaneo.ganam.app/api"
-    KANEO_CLIENT_URL: "https://kaneo.ganam.app"
+    apiUrl: "https://kaneo.ganam.app"
+
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    nginx.ingress.kubernetes.io/rewrite-target: /$1
+    nginx.ingress.kubernetes.io/use-regex: "true"
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Kaneo"
+    gethomepage.dev/description: "Kanban board"
+    gethomepage.dev/icon: "si-kanban"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "10"
+  hosts:
+    - host: kaneo.ganam.app
+      paths:
+        - path: /?(.*)
+          pathType: ImplementationSpecific
+          service: web
+          port: 80
+        - path: /api/?(.*)
+          pathType: ImplementationSpecific
+          service: api
+          port: 1337
+  tls: []
+
+gateway:
+  enabled: false

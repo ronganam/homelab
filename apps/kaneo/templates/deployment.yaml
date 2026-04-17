@@ -34,6 +34,15 @@ spec:
               containerPort: {{ .Values.api.service.targetPort }}
               protocol: TCP
           env:
+            - name: POSTGRES_PASSWORD
+              {{- if .Values.postgresql.auth.existingSecret }}
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.postgresql.auth.existingSecret }}
+                  key: {{ .Values.postgresql.auth.secretKeys.userPasswordKey }}
+              {{- else }}
+              value: "{{ .Values.postgresql.auth.password }}"
+              {{- end }}
             # Updated to support Better Auth
             - name: BETTER_AUTH_SECRET
               {{- if .Values.api.env.existingSecret.enabled }}
@@ -84,7 +93,7 @@ spec:
               value: "postgresql://{{ .Values.api.env.database.external.username }}:{{ .Values.api.env.database.external.password }}@{{ .Values.api.env.database.external.host }}:{{ .Values.api.env.database.external.port }}/{{ .Values.api.env.database.external.database }}"
               {{- end }}
               {{- else }}
-              value: "postgresql://{{ .Values.postgresql.auth.username }}:{{ .Values.postgresql.auth.password }}@{{ include "kaneo.fullname" . }}-postgresql:{{ .Values.postgresql.service.port }}/{{ .Values.postgresql.auth.database }}"
+              value: "postgresql://{{ .Values.postgresql.auth.username }}:$(POSTGRES_PASSWORD)@{{ include "kaneo.fullname" . }}-postgresql:{{ .Values.postgresql.service.port }}/{{ .Values.postgresql.auth.database }}"
               {{- end }}
             - name: DISABLE_REGISTRATION
               value: {{ .Values.api.env.disableRegistration | quote }}

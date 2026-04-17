@@ -99,6 +99,11 @@ spec:
               value: {{ .Values.api.env.disableRegistration | quote }}
             - name: DISABLE_PASSWORD_REGISTRATION
               value: {{ .Values.api.env.disablePasswordRegistration | quote }}
+          envFrom:
+            {{- if .Values.infisical.enabled }}
+            - secretRef:
+                name: {{ .Values.infisical.secretName | default (printf "%s-secret" (include "kaneo.fullname" .)) }}
+            {{- end }}
           livenessProbe:
             {{- toYaml .Values.api.livenessProbe | nindent 12 }}
           readinessProbe:

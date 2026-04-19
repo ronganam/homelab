@@ -1,0 +1,29 @@
+app-blueprint:
+  image:
+    repository: ghcr.io/anomalyco/opencode
+    tag: "1.14.18"
+
+  containerPort: 4096
+
+  dns:
+    hostname: opencode.ganam.app
+    exposure: internal
+
+  homepage:
+    name: "OpenCode"
+    description: "OpenCode AI Server"
+    icon: "si-code"
+
+  command: ["opencode"]
+  args: ["serve", "--hostname", "0.0.0.0", "--port", "4096"]
+
+  volumes:
+    - name: opencode-data
+      size: 3Gi
+      mountPath: /root
+
+  infisical:
+    enabled: true
+    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+    secretsPath: "/opencode"
+    secretName: opencode-secret

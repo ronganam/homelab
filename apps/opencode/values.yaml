@@ -35,3 +35,11 @@ app-blueprint:
     readiness:
       enabled: true
       type: tcpSocket
+
+  resources:
+    limits:
+      memory: 4Gi
+      cpu: 100m
+    requests:
+      memory: 2Gi
+      cpu: 50m

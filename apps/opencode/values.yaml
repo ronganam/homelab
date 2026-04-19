@@ -27,3 +27,11 @@ app-blueprint:
     identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
     secretsPath: "/opencode"
     secretName: opencode-secret
+
+  probes:
+    liveness:
+      enabled: true
+      type: tcpSocket
+    readiness:
+      enabled: true
+      type: tcpSocket

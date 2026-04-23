@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: lscr.io/linuxserver/webtop
-    tag: "debian-xfce-f525c1e8-ls183"
+    tag: "debian-xfce-2ed75ebf-ls191"
 
   containerPort: 3001
   servicePort: 3001

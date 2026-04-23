@@ -32,10 +32,16 @@ app-blueprint:
     TZ: "Asia/Jerusalem"
 
   securityContext:
-    runAsUser: 1000
+    runAsUser: 0
     runAsGroup: 1000
     fsGroup: 1000
     fsGroupChangePolicy: OnRootMismatch
+
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      add: ["CHOWN", "SETGID", "SETUID", "DAC_OVERRIDE", "FOWNER"]
+      drop: ["ALL"]
 
   resources:
     requests:

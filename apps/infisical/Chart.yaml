@@ -12,5 +12,5 @@ dependencies:
     version: "18.5.15"
     repository: https://charts.bitnami.com/bitnami
   - name: redis
-    version: "25.3.9"
+    version: "25.4.1"
     repository: https://charts.bitnami.com/bitnami

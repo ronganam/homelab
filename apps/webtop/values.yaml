@@ -1,0 +1,52 @@
+app-blueprint:
+  image:
+    repository: lscr.io/linuxserver/webtop
+    tag: "debian-xfce"
+
+  containerPort: 3001
+  servicePort: 3001
+
+  dns:
+    hostname: webtop.ganam.app
+    exposure: internal
+
+  homepage:
+    name: webtop
+    description: LinuxServer.io Webtop (Debian XFCE)
+    icon: webtop
+
+  volumes:
+    - name: config
+      size: 1Gi
+      mountPath: /config
+      storageClass: longhorn
+    - name: media
+      mountPath: /nfs
+      nfs:
+        server: 192.168.1.201
+        path: /shared-data/nas-storage/media
+
+  env:
+    PUID: "1000"
+    PGID: "1000"
+    TZ: "Asia/Jerusalem"
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+  probes:
+    liveness:
+      enabled: false
+    readiness:
+      enabled: false

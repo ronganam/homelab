@@ -66,12 +66,12 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: homeassistant-config
+            claimName: homeassistant-config-local
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: homeassistant-config
+  name: homeassistant-config-local
   namespace: homeassistant
 spec:
   accessModes:
@@ -79,4 +79,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: longhorn
+  storageClassName: local-path

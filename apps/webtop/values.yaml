@@ -16,10 +16,10 @@ app-blueprint:
     icon: webtop
 
   volumes:
-    - name: config
+    - name: config-local
       size: 1Gi
       mountPath: /config
-      storageClass: longhorn
+      storageClass: local-path
     - name: media
       mountPath: /nfs
       nfs:

@@ -36,6 +36,10 @@ velero:
         # prefix under which all Velero data is stored in the bucket
         prefix: velero
         default: true
+        # Explicit credential reference required by Velero v1.18+
+        credential:
+          name: velero-credentials
+          key: cloud
         config:
           region: il-jerusalem-1
           # OCI S3-compatible endpoint  (namespace: axpf1b4npys0)

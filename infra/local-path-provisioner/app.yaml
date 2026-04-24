@@ -1,0 +1,4 @@
+name: local-path-provisioner
+namespace: local-path-storage
+path: infra/local-path-provisioner
+wave: "10"

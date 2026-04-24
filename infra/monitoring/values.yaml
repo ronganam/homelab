@@ -44,7 +44,7 @@ kube-prometheus-stack:
     persistence:
       enabled: true
       size: 1Gi
-      storageClassName: longhorn
+      storageClassName: local-path
     defaultDashboardsEnabled: true
     plugins:
       - grafana-piechart-panel
@@ -127,7 +127,7 @@ kube-prometheus-stack:
       storageSpec:
         volumeClaimTemplate:
           spec:
-            storageClassName: longhorn
+            storageClassName: local-path
             accessModes: ["ReadWriteOnce"]
             resources:
               requests:

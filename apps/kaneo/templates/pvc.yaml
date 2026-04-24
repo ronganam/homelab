@@ -2,7 +2,7 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: {{ include "kaneo.fullname" . }}-postgresql-data
+  name: {{ include "kaneo.fullname" . }}-postgresql-data{{ if eq .Values.postgresql.persistence.storageClass "local-path" }}-local{{ end }}
   labels:
     {{- include "kaneo.labels" . | nindent 4 }}
     app.kubernetes.io/component: postgresql

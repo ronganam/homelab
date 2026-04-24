@@ -75,6 +75,6 @@ spec:
       volumes:
         - name: postgresql-data
           persistentVolumeClaim:
-            claimName: {{ include "kaneo.fullname" . }}-postgresql-data
+            claimName: {{ include "kaneo.fullname" . }}-postgresql-data{{ if eq .Values.postgresql.persistence.storageClass "local-path" }}-local{{ end }}
       {{- end }}
 {{- end }}

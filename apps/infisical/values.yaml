@@ -48,6 +48,7 @@ postgresql:
   primary:
     persistence:
       size: 1Gi
+      storageClass: local-path
 
 # Configure top-level Redis dependency
 redis:
@@ -58,4 +59,5 @@ redis:
   master:
     persistence:
       size: 1Gi
+      storageClass: local-path
   architecture: standalone

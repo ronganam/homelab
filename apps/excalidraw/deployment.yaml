@@ -77,7 +77,7 @@ spec:
       volumes:
         - name: backend-data
           persistentVolumeClaim:
-            claimName: excalidraw-backend-data
+            claimName: excalidraw-backend-data-local
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -134,7 +134,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: excalidraw-backend-data
+  name: excalidraw-backend-data-local
   namespace: excalidraw
 spec:
   accessModes:
@@ -142,4 +142,4 @@ spec:
   resources:
     requests:
       storage: 256Mi
-  storageClassName: longhorn
+  storageClassName: local-path

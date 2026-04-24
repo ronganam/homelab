@@ -1,0 +1,7 @@
+name: velero
+namespace: velero
+path: infra/velero
+wave: "15"
+syncPolicy:
+  syncOptions:
+    - ServerSideApply=true

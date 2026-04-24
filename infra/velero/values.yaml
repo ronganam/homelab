@@ -1,0 +1,97 @@
+# Infisical: syncs OCI credentials into the 'velero-credentials' K8s secret.
+# Store the credentials in Infisical at path /velero with key: cloud
+# Value format (INI):
+#   [default]
+#   aws_access_key_id=<YOUR_KEY_ID>
+#   aws_secret_access_key=<YOUR_SECRET>
+infisical:
+  enabled: true
+  identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+  projectSlug: "homelab-k8s"
+  envSlug: "prod"
+  secretsPath: "/velero"
+  resyncInterval: 60
+
+velero:
+  # ── Credentials ─────────────────────────────────────────────────────────────
+  # Secret is created manually by running: infra/velero/setup-velero-credentials.sh
+  credentials:
+    useSecret: true
+    # Secret is synced from Infisical via the InfisicalSecret CR in templates/
+    existingSecret: velero-credentials
+
+  # ── Storage & Snapshot Configuration ────────────────────────────────────────
+  configuration:
+    # Use Kopia (default) for file-system-level PV backup (no OCI snapshot plugin)
+    uploaderType: kopia
+
+    # Back up all PVs via file-system backup by default (opt individual pods out
+    # with annotation backup.velero.io/backup-volumes-excludes if needed)
+    defaultVolumesToFsBackup: true
+
+    backupStorageLocation:
+      - name: default
+        provider: aws
+        bucket: homelab-ganam
+        # prefix under which all Velero data is stored in the bucket
+        prefix: velero
+        default: true
+        config:
+          region: il-jerusalem-1
+          # OCI S3-compatible endpoint  (namespace: axpf1b4npys0)
+          s3Url: https://axpf1b4npys0.compat.objectstorage.il-jerusalem-1.oraclecloud.com
+          s3ForcePathStyle: "true"
+
+    # Volume snapshot location is declared but not actively used (no OCI snapshot plugin).
+    # Kopia file-system backup via nodeAgent handles PV data instead.
+    volumeSnapshotLocation:
+      - name: default
+        provider: aws
+        config:
+          region: il-jerusalem-1
+
+  # ── Plugin: AWS (required for OCI S3-compatible API) ────────────────────────
+  initContainers:
+    - name: velero-plugin-for-aws
+      image: velero/velero-plugin-for-aws:v1.13.1
+      imagePullPolicy: IfNotPresent
+      volumeMounts:
+        - mountPath: /target
+          name: plugins
+
+  # ── Node Agent DaemonSet (required for Kopia PV backup) ─────────────────────
+  # Top-level flag to deploy the nodeAgent DaemonSet
+  deployNodeAgent: true
+
+  nodeAgent:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+
+  # ── Resources ────────────────────────────────────────────────────────────────
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # ── Schedules ────────────────────────────────────────────────────────────────
+  schedules:
+    # Daily full-cluster backup at 02:00 UTC, retained for 14 days
+    daily-full:
+      disabled: false
+      schedule: "0 2 * * *"
+      useOwnerReferencesInBackup: false
+      template:
+        ttl: "336h"  # 14 days
+        defaultVolumesToFsBackup: true
+        storageLocation: default
+        # Exclude velero's own namespace to avoid circular dependencies
+        excludedNamespaces:
+          - velero

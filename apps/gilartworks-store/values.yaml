@@ -19,12 +19,14 @@ app-blueprint:
     icon: "material-symbols:storefront-outline"
 
   volumes:
-    - name: uploads
+    - name: uploads-local
       size: 2Gi
       mountPath: /app/public/uploads
-    - name: database
+      storageClass: local-path
+    - name: database-local
       size: 128Mi
       mountPath: /app/db
+      storageClass: local-path
 
   infisical:
     enabled: true

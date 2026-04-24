@@ -13,12 +13,14 @@ app-blueprint:
     enabled: false
 
   volumes:
-    - name: assets
+    - name: assets-local
       size: 2Gi
       mountPath: /app/assets
-    - name: uploads
+      storageClass: local-path
+    - name: uploads-local
       size: 128Mi
       mountPath: /app/uploads
+      storageClass: local-path
 
   infisical:
     enabled: true

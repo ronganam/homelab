@@ -49,29 +49,8 @@ kube-prometheus-stack:
     plugins:
       - grafana-piechart-panel
       - grafana-worldmap-panel
-    dashboardProviders:
-      dashboardproviders.yaml:
-        apiVersion: 1
-        providers:
-          - name: 'longhorn-dashboards'
-            orgId: 1
-            folder: 'Longhorn'
-            type: file
-            disableDeletion: false
-            editable: true
-            options:
-              path: /var/lib/grafana/dashboards/longhorn
-    dashboards:
-      longhorn:
-        longhorn-dashboard:
-          gnetId: 17626
-          revision: 1
-          datasource: Prometheus
-          inputs:
-            - name: DS_PROMETHEUS
-              type: datasource
-              pluginId: prometheus
-              value: Prometheus
+    dashboardProviders: {}
+    dashboards: {}
   prometheus:
     enabled: true
     # Add proper labels for homepage discovery (keep defaults; use pod-selector annotation instead)
@@ -97,17 +76,7 @@ kube-prometheus-stack:
         dns.service-controller.io/enabled: "true"
         dns.service-controller.io/hostname: prometheus.ganam.app
         exposure.service-controller.io/type: internal
-    additionalServiceMonitors:
-      - name: "longhorn-monitoring"
-        selector:
-          matchLabels:
-            app: longhorn-manager
-        namespaceSelector:
-          matchNames:
-            - "longhorn-system"
-        endpoints:
-          - port: manager
-            path: /metrics
+    additionalServiceMonitors: []
     prometheusSpec:
       serviceMonitorSelectorNilUsesHelmValues: false
       podMonitorSelectorNilUsesHelmValues: false

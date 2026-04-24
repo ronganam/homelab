@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Simple helper to create/update the Secret used by the Vaultwarden backup CronJob.
 # - Targets Oracle Object Storage (OCI S3-compatible)
-# - Parses bucket/region defaults from infra/longhorn/helm/values.yaml if available
+# - Targets Oracle Object Storage (OCI S3-compatible)
 # - Prompts for RESTIC_PASSWORD and OCI Customer Secret Key ID/Secret
 # - Creates/updates Secret: bitwarden-backup (namespace: bitwarden)
 
@@ -26,21 +26,7 @@ command -v oci >/dev/null 2>&1 || { error "OCI CLI not found in PATH"; exit 1; }
 
 info "🔧 Creating/Updating Secret: bitwarden-backup (namespace: bitwarden)"
 
-# Try parse defaults from Longhorn values
-DEFAULT_BUCKET=""
-DEFAULT_REGION=""
-VFILE="$(git rev-parse --show-toplevel 2>/dev/null)/infra/longhorn/helm/values.yaml"
-if [ -f "$VFILE" ]; then
-  # Expect line like: backupTarget: s3://homelab-ganam@il-jerusalem-1/
-  LINE=$(grep -E "backupTarget:\s*s3://" "$VFILE" || true)
-  if [ -n "$LINE" ]; then
-    # Extract bucket@region
-    # shellcheck disable=SC2001
-    BR=$(echo "$LINE" | sed -E 's/.*s3:\/\/([^@]+)@([^\/]+)\/.*/\1 \2/') || true
-    DEFAULT_BUCKET=$(echo "$BR" | awk '{print $1}')
-    DEFAULT_REGION=$(echo "$BR" | awk '{print $2}')
-  fi
-fi
+
 
 # Fallbacks
 DEFAULT_BUCKET=${DEFAULT_BUCKET:-homelab-ganam}
@@ -61,7 +47,7 @@ PREFIX=${PREFIX:-$DEFAULT_PREFIX}
 
 # Prompt for credentials
 warn "Enter OCI Customer Secret Key credentials (ID and Secret)."
-warn "If you need to create one, see infra/longhorn/setup-oci-backup.sh or OCI Console."
+warn "If you need to create one, see OCI Console (Identity -> Users -> User Details -> Customer Secret Keys)."
 read -rp "AWS_ACCESS_KEY_ID (Customer Secret Key ID): " ACCESS_KEY_ID
 read -rsp "AWS_SECRET_ACCESS_KEY (Customer Secret Key Secret): " SECRET_ACCESS_KEY
 echo ""

@@ -22,9 +22,7 @@ data:
       brightness: 40
       saturate: 120
     cardBlur: "lg"
-    providers:
-      longhorn:
-        url: https://longhorn.buildin.group
+    providers: {}
     layout:
       Infrastructure:
         style: row
@@ -66,10 +64,7 @@ data:
         cpu: true
         memory: true
         network: default
-    - longhorn:
-        expanded: true
-        total: true
-        nodes: true
+
     - datetime:
         text_size: l
         format:

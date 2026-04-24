@@ -32,7 +32,7 @@ CHANGEME-chart: # Replace with upstream chart name
     enabled: true
     size: 1Gi # Adjust size as needed
     accessMode: ReadWriteOnce
-    storageClass: longhorn
+    storageClass: local-path
     path: /data # Replace with your app's data path
   # Add your app-specific environment variables
   envs:

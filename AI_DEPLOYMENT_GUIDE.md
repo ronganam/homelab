@@ -9,7 +9,7 @@ This homelab uses **Argo CD** for GitOps-driven deployments on a Kubernetes clus
     *   **Internal:** NGINX Ingress LoadBalancer (provided by MetalLB) + cert-manager (wildcard certs via DNS-01 on Cloudflare).
     *   **Public:** Cloudflare Tunnels (no open ports).
 *   **DNS Automation:** Managed by a custom **Service Controller** (`infra/cloudflare-tunnel`). It observes Services for labels and automatically configures Cloudflare DNS and Tunnels.
-*   **Storage:** **Longhorn** is the default StorageClass (`longhorn`).
+*   **Storage:** **Local-Path-Provisioner** is the default StorageClass (`local-path`). It provides high-performance node-local storage suitable for single-node clusters.
 *   **Secret Management:** **Infisical** is used via an Infisical Operator (or static K8s secrets where required).
 
 ## 2. App Deployment Patterns
@@ -24,7 +24,7 @@ Uses the reusable `charts/app-blueprint` Helm chart. This requires only 2 files 
 *   **What you configure:** Image tag, ports, hostname exposure type, persistent volume specs, env variables, or Infisical references.
 
 ### B. Helm Wrapper
-Used to wrap public upstream helm charts (e.g., `monitoring`, `longhorn`).
+Used to wrap public upstream helm charts (e.g., `monitoring`, `argocd`).
 *   **Structure:** `apps/<name>/helm/` containing `Chart.yaml` (with dependency), `values.yaml`, and `namespace.yaml` / `kustomization.yaml`.
 
 ### C. Custom Manifests (Non-Helm)
@@ -55,8 +55,7 @@ To expose your service, attach the following labels to your Kubernetes `Service`
 *   **Backups:** Scheduled SQLite backup with `restic` to OCI Object Storage via CronJob. 
 *   **Setup Script:** Run `apps/bitwarden/setup-oci-restic-secret.sh` manually to configure the restic credentials.
 
-### Longhorn
-*   **Backups:** Targets S3-compatible OCI Object storage. A helper script `infra/longhorn/setup-oci-backup.sh` exists to build the proper secret (`longhorn-oci-s3-secret`).
+
 
 ### Cloudflare Tunnel & DDNS
 *   **DDNS:** The Service Controller has DDNS built-in, tracking the public IP and updating Cloudflare A records. Can be toggled via `DDNS_ENABLED`.

@@ -9,6 +9,9 @@ app-blueprint:
     hostname: store.gilartworks.com
     exposure: internal
 
+  ingress:
+    proxyBodySize: "500m"
+
   homepage:
     enabled: true
     name: "GilArtworks Store"
@@ -17,7 +20,7 @@ app-blueprint:
 
   volumes:
     - name: uploads
-      size: 1Gi
+      size: 2Gi
       mountPath: /app/public/uploads
     - name: database
       size: 128Mi
@@ -32,6 +35,7 @@ app-blueprint:
   env:
     NODE_ENV: "production"
     DATABASE_URL: "file:/app/db/dev.db"
+    BODY_SIZE_LIMIT: "500mb"
 
   extraEnv:
     - name: ADMIN_PASSWORD

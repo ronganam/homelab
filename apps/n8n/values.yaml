@@ -10,9 +10,10 @@ app-blueprint:
     exposure: public
 
   volumes:
-    - name: data
+    - name: data-local
       size: 2Gi
       mountPath: /home/node/.n8n
+      storageClass: local-path
 
   env:
     N8N_HOST: "0.0.0.0"

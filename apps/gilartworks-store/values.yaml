@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: registry.ganam.app/gilartworks-store
-    tag: "0.3.6"
+    tag: "0.4.0"
 
   containerPort: 3000
 

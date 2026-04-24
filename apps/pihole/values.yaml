@@ -57,7 +57,8 @@ pihole:
   persistentVolumeClaim:
     enabled: true
     size: 400Mi
-    storageClass: longhorn
+    storageClass: local-path
+    existingClaim: pihole-local
     accessModes:
       - ReadWriteOnce
 

@@ -32,7 +32,8 @@ stirling-pdf-chart:
     enabled: true
     size: 256Mi
     accessMode: ReadWriteOnce
-    storageClass: longhorn
+    storageClass: local-path
+    existingClaim: stirling-pdf-stirling-pdf-chart-local
     path: /configs
   envs:
     - name: UI_APP_NAME

@@ -62,7 +62,7 @@ spec:
       volumes:
         - name: etc-wireguard
           persistentVolumeClaim:
-            claimName: wireguard-data
+            claimName: wireguard-data-local
         - name: lib-modules
           hostPath:
             path: /lib/modules
@@ -76,7 +76,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: wireguard-data
+  name: wireguard-data-local
   namespace: wireguard
 spec:
   accessModes:
@@ -84,4 +84,4 @@ spec:
   resources:
     requests:
       storage: 100Mi
-  storageClassName: longhorn
+  storageClassName: local-path

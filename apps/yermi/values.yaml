@@ -15,9 +15,10 @@ app-blueprint:
     icon: default.png
 
   volumes:
-    - name: data
+    - name: data-local
       size: 128Mi
       mountPath: /app/data
+      storageClass: local-path
 
   securityContext:
     runAsUser: 1000

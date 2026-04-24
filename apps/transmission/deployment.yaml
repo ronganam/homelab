@@ -78,7 +78,7 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: transmission-config
+            claimName: transmission-config-local
         - name: media
           nfs:
             server: 192.168.1.201
@@ -89,7 +89,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: transmission-config
+  name: transmission-config-local
   namespace: transmission
 spec:
   accessModes:
@@ -97,4 +97,4 @@ spec:
   resources:
     requests:
       storage: 512Mi
-  storageClassName: longhorn
+  storageClassName: local-path

@@ -16,9 +16,10 @@ app-blueprint:
     icon: spoolman.png
 
   volumes:
-    - name: data
+    - name: data-local
       size: 128Mi
       mountPath: /home/app/.local/share/spoolman
+      storageClass: local-path
 
   env:
     TZ: "Asia/Jerusalem"

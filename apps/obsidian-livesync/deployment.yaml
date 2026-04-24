@@ -76,7 +76,7 @@ spec:
       volumes:
         - name: data
           persistentVolumeClaim:
-            claimName: obsidian-livesync-data
+            claimName: obsidian-livesync-data-local
         - name: config
           configMap:
             name: obsidian-livesync-config
@@ -84,7 +84,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: obsidian-livesync-data
+  name: obsidian-livesync-data-local
   namespace: obsidian-livesync
 spec:
   accessModes:
@@ -92,4 +92,4 @@ spec:
   resources:
     requests:
       storage: 1Gi
-  storageClassName: longhorn
+  storageClassName: local-path

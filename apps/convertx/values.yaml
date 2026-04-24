@@ -16,9 +16,10 @@ app-blueprint:
     weight: "50"
 
   volumes:
-    - name: data
+    - name: data-local
       size: 2Gi
       mountPath: /app/data
+      storageClass: local-path
 
   env:
     JWT_SECRET: "a77a7b7cb0a2e71228f674cae1dc2dd781917da6ecde280761b59fa94fcb5be3"

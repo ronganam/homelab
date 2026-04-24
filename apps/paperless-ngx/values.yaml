@@ -56,12 +56,14 @@ webserver:
     USERMAP_GID: "1000"
 
   volumes:
-    - name: data
+    - name: data-local
       size: 256Mi
       mountPath: /usr/src/paperless/data
-    - name: media
+      storageClass: local-path
+    - name: media-local
       size: 1Gi
       mountPath: /usr/src/paperless/media
+      storageClass: local-path
 
   resources:
     requests:
@@ -96,9 +98,10 @@ db:
     secretName: paperless-ngx-secret
 
   volumes:
-    - name: db-data
+    - name: db-data-local
       mountPath: /var/lib/postgresql/data
       size: 256Mi
+      storageClass: local-path
 
   resources:
     requests:
@@ -152,9 +155,10 @@ broker:
       type: tcpSocket
 
   volumes:
-    - name: redis-data
+    - name: redis-data-local
       mountPath: /data
       size: 128Mi
+      storageClass: local-path
 
   resources:
     requests:
@@ -207,18 +211,22 @@ ai:
     RAG_SERVICE_ENABLED: "true"
 
   volumes:
-    - name: ai-data
+    - name: ai-data-local
       mountPath: /app/data
       size: 128Mi
-    - name: ai-logs
+      storageClass: local-path
+    - name: ai-logs-local
       mountPath: /app/logs
       size: 64Mi
-    - name: ai-openapi
+      storageClass: local-path
+    - name: ai-openapi-local
       mountPath: /app/OPENAPI
       size: 64Mi
-    - name: ai-public
+      storageClass: local-path
+    - name: ai-public-local
       mountPath: /app/public/images
       size: 128Mi
+      storageClass: local-path
 
   resources:
     requests:

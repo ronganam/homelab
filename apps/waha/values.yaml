@@ -15,12 +15,14 @@ app-blueprint:
     icon: "whatsapp.png"
 
   volumes:
-    - name: sessions
+    - name: sessions-local
       size: 128Mi
       mountPath: /app/.sessions
-    - name: media
+      storageClass: local-path
+    - name: media-local
       size: 512Mi
       mountPath: /app/.media
+      storageClass: local-path
 
   infisical:
     enabled: true

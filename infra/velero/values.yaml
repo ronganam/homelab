@@ -92,6 +92,7 @@ velero:
         ttl: "336h"  # 14 days
         defaultVolumesToFsBackup: true
         storageLocation: default
-        # Exclude velero's own namespace to avoid circular dependencies
-        excludedNamespaces:
-          - velero
+        # Only back up these namespaces; add more here as needed
+        includedNamespaces:
+          - bitwarden
+          - homeassistant

@@ -10,7 +10,7 @@ app-blueprint:
     exposure: internal
 
   ingress:
-    proxyBodySize: "500m"
+    proxyBodySize: "200m"
 
   homepage:
     enabled: true
@@ -35,7 +35,7 @@ app-blueprint:
   env:
     NODE_ENV: "production"
     DATABASE_URL: "file:/app/db/dev.db"
-    BODY_SIZE_LIMIT: "500mb"
+    BODY_SIZE_LIMIT: "200mb"
 
   extraEnv:
     - name: ADMIN_PASSWORD

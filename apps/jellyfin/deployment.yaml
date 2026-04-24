@@ -82,10 +82,10 @@ spec:
       volumes:
         - name: config
           persistentVolumeClaim:
-            claimName: jellyfin-config
+            claimName: jellyfin-config-local
         - name: cache
           persistentVolumeClaim:
-            claimName: jellyfin-cache
+            claimName: jellyfin-cache-local
         - name: transcode
           emptyDir:
             medium: Memory
@@ -99,7 +99,7 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: jellyfin-config
+  name: jellyfin-config-local
   namespace: jellyfin
 spec:
   accessModes:
@@ -111,12 +111,12 @@ spec:
       # Note: PVC size != free space (filesystem overhead + Jellyfin writes). Give headroom.
       # Practical minimum to pass Jellyfin's 2Gi free-space check is usually ~3Gi.
       storage: 3Gi
-  storageClassName: longhorn
+  storageClassName: local-path
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: jellyfin-cache
+  name: jellyfin-cache-local
   namespace: jellyfin
 spec:
   accessModes:
@@ -124,4 +124,4 @@ spec:
   resources:
     requests:
       storage: 5Gi
-  storageClassName: longhorn
+  storageClassName: local-path

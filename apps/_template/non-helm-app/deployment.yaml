@@ -8,7 +8,7 @@ metadata:
 spec:
   replicas: 1
   strategy:
-    type: Recreate # Use Recreate for apps with persistent storage
+    type: RollingUpdate # Default for single-node cluster with local-path storage
   selector:
     matchLabels:
       app: CHANGEME # Replace with your app name
@@ -78,4 +78,4 @@ spec:
   resources:
     requests:
       storage: 1Gi # Adjust size as needed
-  storageClassName: longhorn # Use Longhorn storage
+  storageClassName: local-path # Use Local-Path storage

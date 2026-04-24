@@ -12,6 +12,6 @@ spec:
   resources:
     requests:
       storage: {{ .size }}
-  storageClassName: {{ .storageClass | default "longhorn" }}
+  storageClassName: {{ .storageClass | default "local-path" }}
 {{- end }}
 {{- end }}

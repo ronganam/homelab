@@ -8,7 +8,7 @@ image:
 replicas: 1
 containerPort: 80
 servicePort: 80
-strategy: Recreate
+strategy: RollingUpdate
 
 namespace:
   enabled: true
@@ -38,7 +38,7 @@ volumes: []
 #   - name: data
 #     size: 1Gi
 #     mountPath: /data
-#     storageClass: longhorn    (default)
+#     storageClass: local-path    (default)
 #     accessMode: ReadWriteOnce (default)
 #   - name: shared-nfs
 #     mountPath: /shared

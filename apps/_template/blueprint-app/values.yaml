@@ -22,7 +22,7 @@ app-blueprint:
     - name: data
       size: 1Gi
       mountPath: /data
-      # storageClass: longhorn  # Default
+      # storageClass: local-path  # Default
       # accessMode: ReadWriteOnce  # Default
 
   # Infisical secret management (remove if not needed)

@@ -101,7 +101,8 @@ velero:
       template:
         ttl: "48h"    # Keep 1 from today and 1 from yesterday
         defaultVolumesToFsBackup: true
-        resourcePolicyConfigMap: velero-resource-policy
+        resourcePolicy:
+          name: velero-resource-policy
         storageLocation: default
         # Only back up these namespaces; add more here as needed
         includedNamespaces:

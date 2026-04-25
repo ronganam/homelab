@@ -12,6 +12,9 @@ infisical:
   secretsPath: "/velero"
   resyncInterval: 60
 
+resourcePolicy:
+  enabled: true
+
 velero:
   # ── Credentials ─────────────────────────────────────────────────────────────
   # Secret is created manually by running: infra/velero/setup-velero-credentials.sh
@@ -25,9 +28,12 @@ velero:
     # Use Kopia (default) for file-system-level PV backup (no OCI snapshot plugin)
     uploaderType: kopia
 
-    # Back up only volumes that are explicitly annotated (opt-in).
-    # This prevents backing up large NFS mounts by default.
-    defaultVolumesToFsBackup: false
+    # Back up all PVs via file-system backup by default.
+    # The 'velero-resource-policy' ConfigMap (templates/resource-policy.yaml) 
+    # filters out NFS/hostPath/emptyDir so only PVCs are actually backed up.
+    defaultVolumesToFsBackup: true
+
+    resourcePoliciesConfigMap: velero-resource-policy
 
     backupStorageLocation:
       - name: default
@@ -94,7 +100,8 @@ velero:
       useOwnerReferencesInBackup: false
       template:
         ttl: "48h"    # Keep 1 from today and 1 from yesterday
-        defaultVolumesToFsBackup: false
+        defaultVolumesToFsBackup: true
+        resourcePolicyConfigMap: velero-resource-policy
         storageLocation: default
         # Only back up these namespaces; add more here as needed
         includedNamespaces:

@@ -26,24 +26,22 @@ velero backup create manual-backup-$(date +%Y%m%d) --from-schedule velero-daily-
 velero backup create my-app-backup --include-namespaces my-namespace
 ```
 
-## 💾 Persistent Volume Backups (Opt-in)
+## 💾 Persistent Volume Backups (Automated PVC-only)
 
-By default, Velero is configured to **NOT** back up any volumes (to avoid backing up large NFS mounts). 
+Velero is configured to automatically back up all **PersistentVolumeClaims (PVCs)**. 
 
-To back up a volume, you must annotate the pod in your deployment:
+### 🚫 Automatic Exclusions
+A global **Resource Policy** (`velero-resource-policy`) is active that automatically skips the following volume types to prevent large or ephemeral backups:
+- **NFS** (inline)
+- **hostPath**
+- **emptyDir**
 
-```yaml
-spec:
-  template:
-    metadata:
-      annotations:
-        backup.velero.io/backup-volumes: volume-name-1,volume-name-2
-```
-
-To see volume names for a pod:
+### 🎯 Manual Exclusions
+If you need to skip a specific PVC that is normally included, you can annotate the pod:
 ```bash
-kubectl get pod <POD_NAME> -o jsonpath='{.spec.volumes[*].name}'
+kubectl -n <namespace> annotate pod <pod-name> backup.velero.io/backup-volumes-excludes=volume-name
 ```
+
 
 ### Check backup details/errors
 ```bash

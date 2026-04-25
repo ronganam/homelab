@@ -1,0 +1,24 @@
+{{- if .Values.resourcePolicy.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: velero-resource-policy
+  namespace: {{ .Release.Namespace }}
+data:
+  policy.yaml: |
+    version: v1
+    volumePolicies:
+    - conditions:
+        volumeTypes:
+        - nfs
+        - hostPath
+        - emptyDir
+      action:
+        type: skip
+    - conditions:
+        # Default to backup for PVCs if uploader is used
+        volumeTypes:
+        - persistentVolumeClaim
+      action:
+        type: backup
+{{- end }}

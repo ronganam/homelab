@@ -76,8 +76,8 @@ velero:
   deployNodeAgent: true
 
   nodeAgent:
-    # Allow backing up hostPath volumes (required for local-path-provisioner)
-    allowHostPath: true
+    extraArgs:
+      - --allow-hostpath
     resources:
       requests:
         cpu: 100m

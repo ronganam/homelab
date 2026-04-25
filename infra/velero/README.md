@@ -26,6 +26,25 @@ velero backup create manual-backup-$(date +%Y%m%d) --from-schedule velero-daily-
 velero backup create my-app-backup --include-namespaces my-namespace
 ```
 
+## 💾 Persistent Volume Backups (Opt-in)
+
+By default, Velero is configured to **NOT** back up any volumes (to avoid backing up large NFS mounts). 
+
+To back up a volume, you must annotate the pod in your deployment:
+
+```yaml
+spec:
+  template:
+    metadata:
+      annotations:
+        backup.velero.io/backup-volumes: volume-name-1,volume-name-2
+```
+
+To see volume names for a pod:
+```bash
+kubectl get pod <POD_NAME> -o jsonpath='{.spec.volumes[*].name}'
+```
+
 ### Check backup details/errors
 ```bash
 velero backup describe <BACKUP_NAME>

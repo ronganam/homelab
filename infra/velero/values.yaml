@@ -25,9 +25,9 @@ velero:
     # Use Kopia (default) for file-system-level PV backup (no OCI snapshot plugin)
     uploaderType: kopia
 
-    # Back up all PVs via file-system backup by default (opt individual pods out
-    # with annotation backup.velero.io/backup-volumes-excludes if needed)
-    defaultVolumesToFsBackup: true
+    # Back up only volumes that are explicitly annotated (opt-in).
+    # This prevents backing up large NFS mounts by default.
+    defaultVolumesToFsBackup: false
 
     backupStorageLocation:
       - name: default
@@ -94,7 +94,7 @@ velero:
       useOwnerReferencesInBackup: false
       template:
         ttl: "48h"    # Keep 1 from today and 1 from yesterday
-        defaultVolumesToFsBackup: true
+        defaultVolumesToFsBackup: false
         storageLocation: default
         # Only back up these namespaces; add more here as needed
         includedNamespaces:

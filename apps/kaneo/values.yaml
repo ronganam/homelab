@@ -40,7 +40,7 @@ postgresql:
 api:
   image:
     repository: ghcr.io/usekaneo/api
-    tag: "2.6.8"
+    tag: "2.6.9"
     pullPolicy: IfNotPresent
   securityContext: {}
   service:
@@ -76,7 +76,7 @@ api:
 web:
   image:
     repository: ghcr.io/usekaneo/web
-    tag: "2.6.8"
+    tag: "2.6.9"
     pullPolicy: IfNotPresent
   securityContext: {}
   service:

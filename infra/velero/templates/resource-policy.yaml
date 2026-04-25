@@ -11,7 +11,11 @@ data:
     - conditions:
         volumeTypes:
         - nfs
-        - emptyDir
       action:
         type: skip
+    - conditions:
+        volumeTypes:
+        - persistentVolumeClaim
+      action:
+        type: fs-backup
 {{- end }}

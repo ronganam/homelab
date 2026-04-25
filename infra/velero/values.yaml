@@ -16,10 +16,6 @@ resourcePolicy:
   enabled: true
 
 velero:
-  # ── Server Arguments ────────────────────────────────────────────────────────
-  extraArgs:
-    - --allow-hostpath
-
   # ── Credentials ─────────────────────────────────────────────────────────────
   # Secret is created manually by running: infra/velero/setup-velero-credentials.sh
   credentials:
@@ -31,6 +27,10 @@ velero:
   configuration:
     # Use Kopia (default) for file-system-level PV backup (no OCI snapshot plugin)
     uploaderType: kopia
+
+    # additional command-line arguments that will be passed to the `velero server`
+    extraArgs:
+      - --allow-hostpath
 
     # Back up all PVs via file-system backup by default.
     # The 'velero-resource-policy' ConfigMap (templates/resource-policy.yaml) 

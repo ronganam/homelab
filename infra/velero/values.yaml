@@ -51,6 +51,8 @@ velero:
           # OCI S3-compatible endpoint  (namespace: axpf1b4npys0)
           s3Url: https://axpf1b4npys0.compat.objectstorage.il-jerusalem-1.oraclecloud.com
           s3ForcePathStyle: "true"
+          # Required for OCI S3-compatible API to avoid "AWS chunked encoding not supported"
+          checksumAlgorithm: ""
 
     # Volume snapshot location is declared but not actively used (no OCI snapshot plugin).
     # Kopia file-system backup via nodeAgent handles PV data instead.

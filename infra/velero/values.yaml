@@ -16,6 +16,10 @@ resourcePolicy:
   enabled: true
 
 velero:
+  # ── Server Arguments ────────────────────────────────────────────────────────
+  extraArgs:
+    - --allow-hostpath
+
   # ── Credentials ─────────────────────────────────────────────────────────────
   # Secret is created manually by running: infra/velero/setup-velero-credentials.sh
   credentials:

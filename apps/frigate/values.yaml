@@ -30,9 +30,10 @@ frigate:
       gethomepage.dev/weight: "20"
       gethomepage.dev/pod-selector: "app.kubernetes.io/name=frigate,app.kubernetes.io/instance=frigate"
     hosts:
-      - name: frigate.ganam.app
-        path: /
-        tls: false
+      - host: frigate.ganam.app
+        paths:
+          - path: /
+            portName: http
 
   # GPU configuration (NVIDIA)
   gpu:

@@ -4,7 +4,7 @@ frigate:
   replicaCount: 1
 
   image:
-    tag: "0.18.0"
+    tag: "0.17.1-tensorrt"
     pullPolicy: IfNotPresent
 
   service:
@@ -34,6 +34,11 @@ frigate:
         paths:
           - path: /
             portName: http
+
+  gpu:
+    nvidia:
+      enabled: true
+      runtimeClassName: nvidia
 
   # Persistent storage (uses default StorageClass)
   persistence:
@@ -68,6 +73,7 @@ frigate:
     limits:
       cpu: "2"
       memory: 4Gi
+      nvidia.com/gpu: 1
 
   probes:
     liveness:

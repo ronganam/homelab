@@ -20,7 +20,6 @@ spec:
     spec:
       # If `/media` only exists on specific nodes, keep this aligned with Jellyfin.
       nodeSelector:
-        nvidia.com/gpu.present: "true"
       securityContext:
         # linuxserver images commonly use s6-overlay and expect to start as root, then drop to PUID/PGID.
         runAsUser: 0

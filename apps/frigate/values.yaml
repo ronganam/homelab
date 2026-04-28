@@ -77,11 +77,12 @@ frigate:
     go2rtc:
       streams:
         dog_cam:
-          - http://192.168.1.193:8080/video
+          - "ffmpeg:http://192.168.1.193:8080/video#video=h264#hardware=cuda"
           - http://192.168.1.193:8080/audio.aac
     cameras:
       dog_cam:
         ffmpeg:
+          hwaccel_args: preset-nvidia-h264
           inputs:
             - path: rtsp://127.0.0.1:8554/dog_cam
               roles:

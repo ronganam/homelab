@@ -61,9 +61,8 @@ frigate:
       user: "frigate"
       password: "change-me"
     detectors:
-      tensorrt:
-        type: tensorrt
-        device: 0
+      onnx:
+        type: onnx
     cameras: {}
 
   resources:

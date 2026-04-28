@@ -71,7 +71,32 @@ frigate:
       path: /config/model_cache/tensorrt_models/yolov9-s-320.onnx
       width: 320
       height: 320
-    cameras: {}
+    go2rtc:
+      streams:
+        dog_cam:
+          - http://192.168.1.193:8080/video
+          - http://192.168.1.193:8080/audio.aac
+    cameras:
+      dog_cam:
+        ffmpeg:
+          inputs:
+            - path: rtsp://127.0.0.1:8554/dog_cam
+              roles:
+                - detect
+                - record
+        detect:
+          enabled: true
+        objects:
+          track:
+            - dog
+            - person
+        snapshots:
+          enabled: true
+        record:
+          enabled: true
+          retain:
+            days: 3
+            mode: all
 
   resources:
     requests:

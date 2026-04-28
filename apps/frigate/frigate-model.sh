@@ -83,7 +83,8 @@ RUN uv pip install --system \
     "protobuf<5" \
     "onnx==1.16.0" \
     "onnxruntime==1.19.2" \
-    "onnxsim==0.4.36"
+    "onnxsim==0.4.36" \
+    "onnxscript"
 
 ARG MODEL_SIZE
 ARG IMG_SIZE

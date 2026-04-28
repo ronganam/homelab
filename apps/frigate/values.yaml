@@ -8,7 +8,7 @@ frigate:
     pullPolicy: IfNotPresent
 
   environment:
-    YOLO_MODELS: "yolo_generic"
+    YOLO_MODELS: "yolov7-320"
 
   service:
     type: ClusterIP
@@ -64,8 +64,9 @@ frigate:
       user: "frigate"
       password: "change-me"
     detectors:
-      onnx:
-        type: onnx
+      tensorrt:
+        type: tensorrt
+        device: 0
     cameras: {}
 
   resources:

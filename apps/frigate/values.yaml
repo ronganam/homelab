@@ -64,9 +64,13 @@ frigate:
       user: "frigate"
       password: "change-me"
     detectors:
-      tensorrt:
-        type: tensorrt
+      onnx:
+        type: onnx
         device: 0
+    model:
+      path: /config/model_cache/tensorrt_models/yolov9-s-320.onnx
+      width: 320
+      height: 320
     cameras: {}
 
   resources:

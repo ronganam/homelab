@@ -13,7 +13,7 @@ infisical:
   resyncInterval: 60
 
 resourcePolicy:
-  enabled: true
+  enabled: false
 
 velero:
   # ── Credentials ─────────────────────────────────────────────────────────────
@@ -28,12 +28,10 @@ velero:
     # Use Kopia (default) for file-system-level PV backup (no OCI snapshot plugin)
     uploaderType: kopia
 
-    # Back up all PVs via file-system backup by default.
-    # The 'velero-resource-policy' ConfigMap (templates/resource-policy.yaml) 
-    # filters out NFS/hostPath/emptyDir so only PVCs are actually backed up.
+    # Filters out NFS volumes via pod annotations (e.g. backup.velero.io/backup-volumes-excludes)
     defaultVolumesToFsBackup: true
 
-    resourcePoliciesConfigMap: velero-resource-policy
+    # resourcePoliciesConfigMap: velero-resource-policy
 
     backupStorageLocation:
       - name: default

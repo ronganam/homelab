@@ -68,6 +68,7 @@ frigate:
         type: onnx
         device: "0"
     model:
+      model_type: yolo-generic
       path: /config/model_cache/tensorrt_models/yolov9-s-320.onnx
       width: 320
       height: 320

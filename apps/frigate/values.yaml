@@ -67,11 +67,11 @@ frigate:
       onnx:
         type: onnx
     model:
-      model_type: yolo_generic
+      model_type: yolo-generic
       width: 320
       height: 320
       input_tensor: nchw
-      input_dtype: float32
+      input_dtype: float
     cameras: {}
 
   resources:

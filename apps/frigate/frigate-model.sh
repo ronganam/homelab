@@ -77,6 +77,7 @@ COPY --from=ghcr.io/astral-sh/uv:0.8.0 /uv /bin/
 WORKDIR /yolov9
 ADD https://github.com/WongKinYiu/yolov9.git .
 RUN uv pip install --system -r requirements.txt
+RUN uv pip install --system "torch==2.3.1" "torchvision==0.18.1"
 
 RUN uv pip install --system \
     "numpy<2" \

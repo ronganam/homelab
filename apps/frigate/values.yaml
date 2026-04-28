@@ -74,6 +74,10 @@ frigate:
       height: 320
       input_tensor: nchw
       input_dtype: float
+      label_map:
+        0: person
+        16: dog
+        15: cat
     go2rtc:
       streams:
         dog_cam:
@@ -94,6 +98,11 @@ frigate:
           track:
             - dog
             - person
+          filters:
+            dog:
+              threshold: 0.5
+            person:
+              threshold: 0.7
         snapshots:
           enabled: true
         record:

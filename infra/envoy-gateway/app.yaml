@@ -1,0 +1,4 @@
+name: envoy-gateway
+namespace: envoy-gateway-system
+path: infra/envoy-gateway
+wave: "1"

@@ -1,0 +1,4 @@
+name: gateway
+namespace: gateway-system
+path: infra/gateway
+wave: "2"

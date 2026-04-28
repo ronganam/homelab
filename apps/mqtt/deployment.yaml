@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mqtt
+  namespace: mqtt
+  labels:
+    app: mqtt
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: mqtt
+  template:
+    metadata:
+      labels:
+        app: mqtt
+    spec:
+      containers:
+        - name: mosquitto
+          image: eclipse-mosquitto:2.0.20
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 1883
+              name: mqtt
+          volumeMounts:
+            - name: config
+              mountPath: /mosquitto/config/mosquitto.conf
+              subPath: mosquitto.conf
+            - name: data
+              mountPath: /mosquitto/data
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+      volumes:
+        - name: config
+          configMap:
+            name: mosquitto-config
+        - name: data
+          persistentVolumeClaim:
+            claimName: mqtt-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mqtt-data
+  namespace: mqtt
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-path

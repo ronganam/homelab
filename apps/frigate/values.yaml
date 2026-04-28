@@ -59,10 +59,10 @@ frigate:
   # Example Frigate configuration (adjust to your environment)
   config: |
     mqtt:
-      host: "mqtt.buildin.group"
+      host: "mqtt.mqtt.svc.cluster.local"
       port: 1883
-      user: "frigate"
-      password: "change-me"
+      # user: "frigate"
+      # password: "change-me"
     detectors:
       onnx:
         type: onnx
@@ -97,7 +97,7 @@ frigate:
             - person
           filters:
             dog:
-              threshold: 0.5
+              threshold: 0.4
             person:
               threshold: 0.7
         snapshots:
@@ -132,5 +132,3 @@ frigate:
       timeoutSeconds: 5
       successThreshold: 1
       failureThreshold: 12
-
-

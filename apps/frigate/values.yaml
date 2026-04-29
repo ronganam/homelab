@@ -90,7 +90,7 @@ frigate:
     go2rtc:
       streams:
         dog_cam:
-          - "ffmpeg:http://192.168.1.193:8080/video#video=h264#hardware=cuda"
+          - "ffmpeg:http://192.168.1.193:8080/video#input=-fflags nobuffer+genpts -flags low_delay -use_wallclock_as_timestamps 1 -i {input}#video=h264#hardware=cuda"
           - http://192.168.1.193:8080/audio.aac
       webrtc:
         candidates:
@@ -122,6 +122,9 @@ frigate:
           retain:
             days: 3
             mode: all
+        live:
+          streams:
+            Main: dog_cam
 
   resources:
     requests:

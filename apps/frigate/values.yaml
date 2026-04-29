@@ -117,11 +117,11 @@ frigate:
               threshold: 0.7
         snapshots:
           enabled: true
-        record:
-          enabled: true
-          retain:
-            days: 3
-            mode: all
+      record:
+        enabled: true
+        retain:
+          days: 3
+          mode: all
     live:
       streams:
         Main: dog_cam

@@ -8,7 +8,7 @@ frigate:
     pullPolicy: IfNotPresent
 
   environment:
-    YOLO_MODELS: "yolov7-320"
+    YOLO_MODELS: "yolov9-s-320"
 
   service:
     type: ClusterIP
@@ -95,7 +95,7 @@ frigate:
       webrtc:
         candidates:
           - "10.11.11.10:8555"
-    cameras:
+cameras:
       dog_cam:
         ffmpeg:
           hwaccel_args: preset-nvidia-h264
@@ -117,14 +117,14 @@ frigate:
               threshold: 0.7
         snapshots:
           enabled: true
-      record:
-        enabled: true
-        retain:
-          days: 3
-          mode: all
-    live:
-      streams:
-        Main: dog_cam
+        record:
+          enabled: true
+          retain:
+            days: 3
+            mode: all
+        live:
+          streams:
+            Main: dog_cam
     version: 0.17-0
     semantic_search:
       enabled: true

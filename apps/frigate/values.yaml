@@ -57,14 +57,14 @@ frigate:
 
   # Persistent storage (uses default StorageClass)
   persistence:
-    data:
+    media:
       enabled: true
       size: 15Gi
       accessMode: ReadWriteOnce
-      mountPath: /media/frigate
+      mountPath: /media
     config:
       enabled: true
-      size: 500Mi
+      size: 100Mi
       accessMode: ReadWriteOnce
       mountPath: /config
 

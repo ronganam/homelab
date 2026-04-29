@@ -59,17 +59,18 @@ frigate:
   persistence:
     data:
       enabled: true
-      size: 100Gi
+      size: 1Gi
       accessMode: ReadWriteOnce
       mountPath: /media/frigate
     config:
       enabled: true
-      size: 1Gi
+      size: 100Mi
       accessMode: ReadWriteOnce
       mountPath: /config
 
   # Example Frigate configuration (adjust to your environment)
   config: |
+    data_dir: /media/frigate
     mqtt:
       host: "mqtt.mqtt.svc.cluster.local"
       port: 1883

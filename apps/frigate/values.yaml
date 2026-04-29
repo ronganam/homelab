@@ -59,12 +59,12 @@ frigate:
   persistence:
     data:
       enabled: true
-      size: 1Gi
+      size: 100Gi
       accessMode: ReadWriteOnce
       mountPath: /media/frigate
     config:
       enabled: true
-      size: 100Mi
+      size: 1Gi
       accessMode: ReadWriteOnce
       mountPath: /config
 

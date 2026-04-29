@@ -95,7 +95,7 @@ frigate:
       webrtc:
         candidates:
           - "10.11.11.10:8555"
-cameras:
+    cameras:
       dog_cam:
         ffmpeg:
           hwaccel_args: preset-nvidia-h264

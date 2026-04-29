@@ -122,17 +122,32 @@ frigate:
           retain:
             days: 3
             mode: all
-        live:
-          streams:
-            Main: dog_cam
+    live:
+      streams:
+        Main: dog_cam
+    version: 0.17-0
+    semantic_search:
+      enabled: true
+      model: jinav1
+      model_size: large
+      device: "0"
+      reindex: false
+    face_recognition:
+      enabled: false
+      model_size: small
+    lpr:
+      enabled: false
+    classification:
+      bird:
+        enabled: false
 
   resources:
     requests:
       cpu: 500m
-      memory: 512Mi
-    limits:
-      cpu: "2"
       memory: 4Gi
+    limits:
+      cpu: "4"
+      memory: 16Gi
       nvidia.com/gpu: 1
 
   probes:

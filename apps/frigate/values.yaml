@@ -13,6 +13,18 @@ frigate:
   service:
     type: ClusterIP
     externalPort: 5000
+    ports:
+      - name: http
+        port: 5000
+        targetPort: 5000
+      - name: webrtc-tcp
+        port: 8555
+        targetPort: 8555
+        protocol: TCP
+      - name: webrtc-udp
+        port: 8555
+        targetPort: 8555
+        protocol: UDP
     annotations: {}
     labels:
       dns.service-controller.io/enabled: "true"
@@ -80,6 +92,9 @@ frigate:
         dog_cam:
           - "ffmpeg:http://192.168.1.193:8080/video#video=h264#hardware=cuda"
           - http://192.168.1.193:8080/audio.aac
+      webrtc:
+        candidates:
+          - "10.11.11.10:8555"
     cameras:
       dog_cam:
         ffmpeg:

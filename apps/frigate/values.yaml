@@ -119,9 +119,10 @@ frigate:
           enabled: true
         record:
           enabled: true
-          retain:
+          continuous:
             days: 3
-            mode: all
+          motion:
+            days: 0
         live:
           streams:
             Main: dog_cam

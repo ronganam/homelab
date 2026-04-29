@@ -70,7 +70,6 @@ frigate:
 
   # Example Frigate configuration (adjust to your environment)
   config: |
-    data_dir: /media/frigate
     mqtt:
       host: "mqtt.mqtt.svc.cluster.local"
       port: 1883

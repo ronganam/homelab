@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: n8nio/n8n
-    tag: "2.18.3"
+    tag: "2.19.1"
 
   containerPort: 5678
 

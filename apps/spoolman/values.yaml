@@ -32,11 +32,10 @@ app-blueprint:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 256Mi
+      cpu: "10m"
+      memory: "148Mi"
     limits:
-      cpu: 150m
-      memory: 400Mi
+      memory: "175Mi"
 
   probes:
     liveness:

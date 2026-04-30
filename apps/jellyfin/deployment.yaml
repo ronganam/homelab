@@ -58,11 +58,10 @@ spec:
               readOnly: true
           resources:
             requests:
-              cpu: 2000m
-              memory: 2Gi
+              cpu: "22m"
+              memory: "327Mi"
             limits:
-              cpu: 8000m
-              memory: 6Gi
+              memory: "386Mi"
           livenessProbe:
             tcpSocket:
               port: 8096

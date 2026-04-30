@@ -62,12 +62,11 @@ spec:
             - mountPath: /app/config/logs
               name: logs
           resources:
-            limits:
-              memory: 320Mi
-              cpu: 300m
             requests:
-              memory: 128Mi
-              cpu: 50m
+              cpu: "10m"
+              memory: "115Mi"
+            limits:
+              memory: "135Mi"
           livenessProbe:
             httpGet:
               path: /

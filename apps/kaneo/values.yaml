@@ -35,7 +35,12 @@ postgresql:
   service:
     type: ClusterIP
     port: 5432
-  resources: {}
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "28Mi"
+    limits:
+      memory: "34Mi"
 
 api:
   image:
@@ -47,7 +52,12 @@ api:
     type: ClusterIP
     port: 1337
     targetPort: 1337
-  resources: {}
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "125Mi"
+    limits:
+      memory: "147Mi"
   env:
     KANEO_API_URL: "https://kaneo.ganam.app/api"
     KANEO_CLIENT_URL: "https://kaneo.ganam.app"
@@ -87,7 +97,12 @@ web:
       dns.service-controller.io/enabled: "true"
       dns.service-controller.io/hostname: "kaneo.ganam.app"
       exposure.service-controller.io/type: "internal"
-  resources: {}
+  resources:
+    requests:
+      cpu: "10m"
+      memory: "16Mi"
+    limits:
+      memory: "16Mi"
   env:
     apiUrl: "https://kaneo.ganam.app"
 

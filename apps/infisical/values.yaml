@@ -5,6 +5,12 @@ infisical-standalone:
     kubeSecretRef: "infisical-secrets"
     service:
       type: ClusterIP
+    resources:
+      requests:
+        cpu: "64m"
+        memory: "874Mi"
+      limits:
+        memory: "1033Mi"
     
   ingress:
     enabled: true
@@ -49,6 +55,12 @@ postgresql:
     persistence:
       size: 1Gi
       storageClass: local-path
+    resources:
+      requests:
+        cpu: "36m"
+        memory: "77Mi"
+      limits:
+        memory: "91Mi"
 
 # Configure top-level Redis dependency
 redis:
@@ -60,4 +72,10 @@ redis:
     persistence:
       size: 1Gi
       storageClass: local-path
+    resources:
+      requests:
+        cpu: "18m"
+        memory: "63Mi"
+      limits:
+        memory: "75Mi"
   architecture: standalone

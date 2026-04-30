@@ -64,12 +64,11 @@ spec:
               mountPath: /tls
               readOnly: true
           resources:
-            limits:
-              cpu: 30m
-              memory: 200Mi
             requests:
-              cpu: 10m
-              memory: 128Mi
+              cpu: "10m"
+              memory: "43Mi"
+            limits:
+              memory: "51Mi"
           livenessProbe:
             httpGet:
               scheme: HTTPS

@@ -68,11 +68,10 @@ pihole:
 
   resources:
     requests:
-      cpu: 10m
-      memory: 32Mi
+      cpu: "10m"
+      memory: "29Mi"
     limits:
-      cpu: 30m
-      memory: 256Mi
+      memory: "34Mi"
 
   probes:
     liveness:

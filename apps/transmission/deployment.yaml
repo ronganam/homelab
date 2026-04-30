@@ -69,11 +69,10 @@ spec:
               mountPath: /watch
           resources:
             requests:
-              cpu: 100m
-              memory: 1Gi
+              cpu: "10m"
+              memory: "17Mi"
             limits:
-              cpu: 300m
-              memory: 2Gi
+              memory: "20Mi"
       volumes:
         - name: config
           persistentVolumeClaim:

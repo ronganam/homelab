@@ -70,7 +70,7 @@ spec:
             httpGet:
               scheme: HTTP
               path: /
-              port: http
+              port: 8080
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
@@ -79,7 +79,7 @@ spec:
             httpGet:
               scheme: HTTP
               path: /
-              port: http
+              port: 8080
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3

@@ -1,0 +1,107 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: plex
+  namespace: plex
+  labels:
+    app: plex
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: plex
+  template:
+    metadata:
+      labels:
+        app: plex
+        app.kubernetes.io/name: plex
+    spec:
+      nodeSelector:
+        kubernetes.io/arch: amd64
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        fsGroupChangePolicy: OnRootMismatch
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      containers:
+        - name: plex
+          image: plexinc/pms-docker:1.43.1.10611-1e34174b1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          ports:
+            - containerPort: 32400
+              name: http
+          env:
+            - name: TZ
+              value: Asia/Jerusalem
+            - name: PLEX_UID
+              value: "1000"
+            - name: PLEX_GID
+              value: "1000"
+            - name: PLEX_CLAIM
+              valueFrom:
+                secretKeyRef:
+                  name: plex-claim
+                  key: PLEX_CLAIM
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: transcode
+              mountPath: /transcode
+            - name: media
+              mountPath: /media
+              readOnly: true
+          resources:
+            requests:
+              cpu: 1000m
+              memory: 2Gi
+            limits:
+              memory: 6Gi
+          livenessProbe:
+            tcpSocket:
+              port: 32400
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 2
+            failureThreshold: 6
+          readinessProbe:
+            tcpSocket:
+              port: 32400
+            initialDelaySeconds: 20
+            periodSeconds: 5
+            timeoutSeconds: 2
+            failureThreshold: 6
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: plex-config-local
+        - name: transcode
+          emptyDir:
+            medium: Memory
+            sizeLimit: 4Gi
+        - name: media
+          nfs:
+            server: 192.168.1.201
+            path: /shared-data/nas-storage/media
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: plex-config-local
+  namespace: plex
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 500Mi
+  storageClassName: local-path

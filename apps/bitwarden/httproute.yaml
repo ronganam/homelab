@@ -23,4 +23,4 @@ spec:
             value: /
       backendRefs:
         - name: bitwarden
-          port: 443
+          port: 80

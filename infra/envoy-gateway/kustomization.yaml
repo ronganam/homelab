@@ -5,5 +5,3 @@ namespace: envoy-gateway-system
 
 resources:
   - https://github.com/envoyproxy/gateway/releases/download/v1.7.2/install.yaml
-
-# We might want to patch some things here if needed.

@@ -131,4 +131,24 @@ ingress:
   tls: []
 
 gateway:
-  enabled: false
+  enabled: true
+  parentRefs:
+    - name: homelab-gateway
+      namespace: gateway-system
+  hostnames:
+    - kaneo.ganam.app
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /api
+      backendRefs:
+        - service: api
+          port: 1337
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - service: web
+          port: 80

@@ -30,8 +30,8 @@ spec:
           image: vaultwarden/server:1.35.8
           imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8443
-              name: https
+            - containerPort: 8080
+              name: http
               protocol: TCP
             - containerPort: 3012
               name: websocket
@@ -60,9 +60,6 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
-            - name: tls-certs
-              mountPath: /tls
-              readOnly: true
           resources:
             requests:
               cpu: "10m"
@@ -71,26 +68,23 @@ spec:
               memory: "51Mi"
           livenessProbe:
             httpGet:
-              scheme: HTTPS
+              scheme: HTTP
               path: /
-              port: https
+              port: http
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
             failureThreshold: 3
           readinessProbe:
             httpGet:
-              scheme: HTTPS
+              scheme: HTTP
               path: /
-              port: https
+              port: http
             initialDelaySeconds: 10
             periodSeconds: 5
             timeoutSeconds: 3
             failureThreshold: 3
-      volumes:
-        - name: tls-certs
-          secret:
-            secretName: vaultwarden-tls
+      volumes: []
   volumeClaimTemplates:
     - apiVersion: v1
       kind: PersistentVolumeClaim

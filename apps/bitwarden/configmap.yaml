@@ -5,11 +5,10 @@ metadata:
   namespace: bitwarden
 data:
   # Non-secret Vaultwarden settings
-  ROCKET_PORT: "8443"
+  ROCKET_PORT: "8080"
   ROCKET_WORKERS: "2"
   DOMAIN: "https://bitwarden.ganam.app"
   ROCKET_ADDRESS: "0.0.0.0"
-  ROCKET_TLS: "{certs=\"/tls/tls.crt\",key=\"/tls/tls.key\"}"
   SIGNUPS_ALLOWED: "false"
   WEBSOCKET_ENABLED: "true"
   WEBSOCKET_ADDRESS: "0.0.0.0"

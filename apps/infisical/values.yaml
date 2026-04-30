@@ -11,7 +11,6 @@ infisical-standalone:
         memory: "874Mi"
       limits:
         memory: "1033Mi"
-    
   ingress:
     enabled: true
     ingressClassName: nginx
@@ -26,7 +25,7 @@ infisical-standalone:
       gethomepage.dev/icon: "infisical.png"
       gethomepage.dev/group: "Security"
       gethomepage.dev/weight: "10"
-    
+
   # Disable bundled charts
   postgresql:
     enabled: false

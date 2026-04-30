@@ -21,8 +21,7 @@ spec:
       nodeSelector:
         kubernetes.io/arch: amd64
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
+        runAsNonRoot: false
         runAsGroup: 1000
         fsGroup: 1000
         fsGroupChangePolicy: OnRootMismatch
@@ -36,7 +35,14 @@ spec:
           securityContext:
             allowPrivilegeEscalation: false
             capabilities:
-              drop: ["ALL"]
+              drop:
+                - ALL
+              add:
+                - CHOWN
+                - FOWNER
+                - SETUID
+                - SETGID
+                - DAC_OVERRIDE
           ports:
             - containerPort: 32400
               name: http
@@ -60,6 +66,8 @@ spec:
             - name: media
               mountPath: /media
               readOnly: true
+            - name: run
+              mountPath: /run
           resources:
             requests:
               cpu: 1000m
@@ -92,6 +100,8 @@ spec:
           nfs:
             server: 192.168.1.201
             path: /shared-data/nas-storage/media
+        - name: run
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

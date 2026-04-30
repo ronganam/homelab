@@ -55,11 +55,10 @@ spec:
               mountPath: /app/prisma
           resources:
             requests:
-              cpu: 50m
-              memory: 128Mi
+              cpu: 10m
+              memory: 95Mi
             limits:
-              cpu: 150m
-              memory: 256Mi
+              memory: 112Mi
           livenessProbe:
             tcpSocket:
               port: http
@@ -110,10 +109,9 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 32Mi
+              memory: 16Mi
             limits:
-              cpu: 30m
-              memory: 32Mi
+              memory: 16Mi
           livenessProbe:
             httpGet:
               path: /

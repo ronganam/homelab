@@ -39,10 +39,9 @@ spec:
               readOnly: true
           resources:
             limits:
-              memory: 32Mi
-              cpu: 30m
+              memory: 16Mi
             requests:
-              memory: 32Mi
+              memory: 16Mi
               cpu: 10m
       volumes:
         - name: site

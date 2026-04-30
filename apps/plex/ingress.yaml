@@ -16,7 +16,7 @@ metadata:
     gethomepage.dev/weight: "20"
 spec:
   rules:
-    - host: plex.buildin.group
+    - host: plex.ganam.app
       http:
         paths:
           - path: /

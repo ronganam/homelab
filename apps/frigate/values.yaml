@@ -152,8 +152,12 @@ frigate:
           enabled: true
         record:
           enabled: true
-          events:
-            days: 10
+          alerts:
+            retain:
+              days: 10
+          detections:
+            retain:
+              days: 10
         live:
           streams:
             Main: front_cam

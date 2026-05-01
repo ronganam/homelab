@@ -105,10 +105,13 @@ frigate:
           - "ffmpeg:http://192.168.1.193:8080/video#async=1#video=h264#hardware=cuda"
           - http://192.168.1.193:8080/audio.aac
         front_cam:
-          - "{FRIGATE_FRONT_CAM_URL}"
+          - "{FRIGATE_FRONT_CAM_URL}#input=rtsp/tcp"
       webrtc:
         candidates:
           - "10.11.11.10:8555"
+      log:
+        level: info
+        rtsp: trace
     cameras:
       dog_cam:
         ffmpeg:

@@ -6,7 +6,6 @@ resources:
   - service.yaml
   - configmap.yaml
   - httproute.yaml
-  - httproute.yaml
   - backup-configmap.yaml
   - backup-cronjob.yaml
 namespace: bitwarden

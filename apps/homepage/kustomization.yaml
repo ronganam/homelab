@@ -6,5 +6,4 @@ resources:
   - service.yaml
   - configmap.yaml
   - httproute.yaml
-  - httproute.yaml
 namespace: homepage

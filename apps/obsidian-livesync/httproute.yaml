@@ -22,4 +22,4 @@ spec:
                 value: "100m"
       backendRefs:
         - name: obsidian-livesync
-          port: 5984
+          port: 80

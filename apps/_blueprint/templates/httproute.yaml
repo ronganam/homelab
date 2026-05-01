@@ -34,4 +34,5 @@ spec:
           kind: Service
           name: {{ include "app.name" . }}
           port: {{ .Values.servicePort }}
+          weight: 1
 {{- end }}

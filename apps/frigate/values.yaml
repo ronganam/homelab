@@ -153,9 +153,7 @@ frigate:
         record:
           enabled: true
           events:
-            retain:
-              default: 10
-              mode: active_objects
+            days: 10
         live:
           streams:
             Main: front_cam

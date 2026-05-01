@@ -27,3 +27,4 @@ spec:
           kind: Service
           name: obsidian-livesync
           port: 80
+          weight: 1

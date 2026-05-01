@@ -28,6 +28,7 @@ spec:
           kind: Service
           name: monitoring-grafana
           port: 80
+          weight: 1
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -59,6 +60,7 @@ spec:
           kind: Service
           name: monitoring-kube-prometheus-prometheus
           port: 80
+          weight: 1
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -90,3 +92,4 @@ spec:
           kind: Service
           name: monitoring-kube-prometheus-alertmanager
           port: 80
+          weight: 1

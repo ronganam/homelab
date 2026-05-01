@@ -29,3 +29,4 @@ spec:
           kind: Service
           name: wireguard
           port: 80
+          weight: 1

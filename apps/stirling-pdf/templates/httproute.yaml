@@ -29,3 +29,4 @@ spec:
           kind: Service
           name: stirling-pdf-stirling-pdf-chart
           port: 8080
+          weight: 1

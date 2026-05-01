@@ -29,3 +29,4 @@ spec:
           kind: Service
           name: pihole-web
           port: 80
+          weight: 1

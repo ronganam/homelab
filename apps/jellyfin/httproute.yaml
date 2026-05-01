@@ -28,3 +28,4 @@ spec:
           kind: Service
           name: jellyfin
           port: 80
+          weight: 1

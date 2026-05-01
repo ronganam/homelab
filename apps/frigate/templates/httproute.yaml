@@ -28,3 +28,4 @@ spec:
           kind: Service
           name: frigate
           port: 5000
+          weight: 1

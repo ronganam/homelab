@@ -29,3 +29,4 @@ spec:
           kind: Service
           name: homeassistant
           port: 80
+          weight: 1

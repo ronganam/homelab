@@ -318,6 +318,33 @@ data:
                 return None
             except Exception as e:
                 logger.warning("Error getting external IP for ingress %s.%s: %s", self.ingress_service_name, self.ingress_namespace, e)
+                return self.discover_ingress_external_ip()
+
+        def discover_ingress_external_ip(self):
+            """Find the Envoy Gateway LoadBalancer service when its generated name changes."""
+            try:
+                services = self.v1.list_namespaced_service(self.ingress_namespace).items
+                for service in services:
+                    annotations = service.metadata.annotations or {}
+                    service_name = service.metadata.name or ""
+                    is_gateway_service = (
+                        service.spec.type == "LoadBalancer"
+                        and (
+                            service_name.startswith("envoy-gateway-system-homelab-gateway-")
+                            or annotations.get("metallb.universe.tf/loadBalancerIPs") == "192.168.1.178"
+                        )
+                    )
+                    if not is_gateway_service:
+                        continue
+                    if service.status.load_balancer and service.status.load_balancer.ingress:
+                        ip = service.status.load_balancer.ingress[0].ip
+                        if ip:
+                            logger.info("Discovered ingress service %s.%s with IP %s", service_name, self.ingress_namespace, ip)
+                            return ip
+                logger.warning("Could not discover an Envoy Gateway LoadBalancer service in namespace %s", self.ingress_namespace)
+                return None
+            except Exception as e:
+                logger.warning("Error discovering ingress external IP in namespace %s: %s", self.ingress_namespace, e)
                 return None
 
         def create_cloudflare_dns_route(self, hostname):

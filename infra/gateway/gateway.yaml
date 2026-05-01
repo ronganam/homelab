@@ -20,6 +20,7 @@ spec:
     type: Kubernetes
     kubernetes:
       envoyService:
+        externalTrafficPolicy: Local
         annotations:
           metallb.universe.tf/loadBalancerIPs: 192.168.1.178
 ---

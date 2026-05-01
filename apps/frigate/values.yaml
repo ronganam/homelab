@@ -80,6 +80,8 @@ frigate:
 
   # Example Frigate configuration (adjust to your environment)
   config: |
+    environment_vars:
+      FRIGATE_FRONT_CAM_URL: "{FRIGATE_FRONT_CAM_URL}"
     mqtt:
       host: "mqtt.mqtt.svc.cluster.local"
       port: 1883

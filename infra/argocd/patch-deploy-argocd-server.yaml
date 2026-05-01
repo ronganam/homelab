@@ -9,6 +9,10 @@ spec:
     spec:
       containers:
         - name: argocd-server
+          command:
+            - argocd-server
+            - --insecure
+
           resources:
             requests:
               cpu: 100m

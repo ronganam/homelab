@@ -40,9 +40,9 @@ spec:
                   name: cloudflare-api-token
                   key: token
             - name: INGRESS_NAMESPACE
-              value: ingress-nginx
+              value: envoy-gateway-system
             - name: INGRESS_SERVICE_NAME
-              value: ingress-nginx-controller
+              value: envoy-gateway-system-homelab-gateway-f6c867d2
             - name: DDNS_HOSTNAME
               value: homelab.buildin.group
             - name: DDNS_ENABLED

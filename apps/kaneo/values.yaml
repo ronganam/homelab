@@ -107,7 +107,7 @@ web:
     apiUrl: "https://kaneo.ganam.app"
 
 ingress:
-  enabled: true
+  enabled: false
   className: nginx
   annotations:
     nginx.ingress.kubernetes.io/proxy-body-size: "100m"
@@ -132,6 +132,13 @@ ingress:
 
 gateway:
   enabled: true
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "Kaneo"
+    gethomepage.dev/description: "Kanban board"
+    gethomepage.dev/icon: "si-kanban"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "10"
   parentRefs:
     - name: homelab-gateway
       namespace: gateway-system

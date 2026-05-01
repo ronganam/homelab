@@ -5,7 +5,7 @@ namespace: argocd
 resources:
   - namespace.yaml
   - https://raw.githubusercontent.com/argoproj/argo-cd/v3.3.6/manifests/install.yaml
-  - ingress.yaml
+  - httproute.yaml
 patches:
   - path: patch-service-argocd-server-labels.yaml
     target:

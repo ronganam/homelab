@@ -20,7 +20,7 @@ kube-prometheus-stack:
     serviceLabels:
       app.kubernetes.io/name: grafana
     ingress:
-      enabled: true
+      enabled: false
       ingressClassName: nginx
       annotations:
         # Homepage automatic service discovery annotations
@@ -55,7 +55,7 @@ kube-prometheus-stack:
     enabled: true
     # Add proper labels for homepage discovery (keep defaults; use pod-selector annotation instead)
     ingress:
-      enabled: true
+      enabled: false
       ingressClassName: nginx
       annotations:
         # Homepage automatic service discovery annotations
@@ -110,7 +110,7 @@ kube-prometheus-stack:
     enabled: true
     # Add proper labels for homepage discovery
     ingress:
-      enabled: true
+      enabled: false
       ingressClassName: nginx
       annotations:
         gethomepage.dev/enabled: "true"

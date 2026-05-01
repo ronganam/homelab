@@ -12,7 +12,7 @@ infisical-standalone:
       limits:
         memory: "1033Mi"
   ingress:
-    enabled: true
+    enabled: false
     ingressClassName: nginx
     nginx:
       enabled: false

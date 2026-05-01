@@ -32,7 +32,7 @@ frigate:
       exposure.service-controller.io/type: internal
 
   ingress:
-    enabled: true
+    enabled: false
     ingressClassName: nginx
     annotations:
       nginx.ingress.kubernetes.io/proxy-body-size: "100m"

@@ -11,3 +11,7 @@ data:
   resource.customizations.ignoreDifferences.argoproj.io_Application: |
     jsonPointers:
     - /spec/syncPolicy
+  resource.customizations.ignoreDifferences.apps_Deployment: |
+    jsonPointers:
+    - /metadata/annotations/updatedAt
+    - /spec/template/metadata/annotations/updatedAt

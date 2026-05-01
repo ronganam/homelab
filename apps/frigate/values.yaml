@@ -144,6 +144,14 @@ frigate:
         live:
           streams:
             Main: dog_cam
+        zones:
+          dog-space:
+            coordinates: 0.394,0.632,0.739,0.627,0.743,1,0.22,1
+            loitering_time: 0
+            inertia: 3
+          food-zone:
+            coordinates: 0.392,0.634,0.132,0.627,0,0.684,0,1,0.219,1
+            loitering_time: 0
       front_cam:
         ffmpeg:
           hwaccel_args: preset-nvidia-h264
@@ -182,6 +190,13 @@ frigate:
     classification:
       bird:
         enabled: false
+    camera_groups:
+      Main:
+        order: 1
+        icon: LuAperture
+        cameras:
+          - dog_cam
+          - front_cam
 
   resources:
     requests:

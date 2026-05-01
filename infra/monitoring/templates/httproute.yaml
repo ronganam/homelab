@@ -50,7 +50,7 @@ spec:
             value: /
       backendRefs:
         - name: monitoring-kube-prometheus-prometheus
-          port: 9090
+          port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
@@ -77,4 +77,4 @@ spec:
             value: /
       backendRefs:
         - name: monitoring-kube-prometheus-alertmanager
-          port: 9093
+          port: 80

@@ -14,6 +14,8 @@ spec:
   parentRefs:
     - name: homelab-gateway
       namespace: gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - "grafana.ganam.app"
   rules:
@@ -41,6 +43,8 @@ spec:
   parentRefs:
     - name: homelab-gateway
       namespace: gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - "prometheus.ganam.app"
   rules:
@@ -68,6 +72,8 @@ spec:
   parentRefs:
     - name: homelab-gateway
       namespace: gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - "alertmanager.ganam.app"
   rules:

@@ -14,6 +14,8 @@ spec:
   parentRefs:
     - name: homelab-gateway
       namespace: gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
   hostnames:
     - "transmission.ganam.app"
   rules:

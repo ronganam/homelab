@@ -46,7 +46,9 @@ spec:
       tls:
         mode: Terminate
         certificateRefs:
-          - name: wildcard-internal-tls
+          - group: ""
+            kind: Secret
+            name: wildcard-internal-tls
             namespace: ingress-nginx
       allowedRoutes:
         namespaces:

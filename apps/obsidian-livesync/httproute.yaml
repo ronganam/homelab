@@ -20,7 +20,7 @@ spec:
         - type: RequestHeaderModifier
           requestHeaderModifier:
             set:
-                - name: client-max-body-size
+              - name: client-max-body-size
                 value: "100m"
       backendRefs:
         - group: ""

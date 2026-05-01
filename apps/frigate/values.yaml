@@ -1,4 +1,11 @@
 # Values to override the upstream Frigate chart
+infisical:
+  enabled: true
+  identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+  secretsPath: "/frigate"
+  secretName: "frigate-secret"
+  projectSlug: "homelab-k8s"
+  envSlug: "prod"
 
 frigate:
   replicaCount: 1
@@ -9,6 +16,9 @@ frigate:
 
   environment:
     YOLO_MODELS: "yolov9-s-320"
+
+  envFromSecrets:
+    - "frigate-secret"
 
   service:
     type: ClusterIP
@@ -92,6 +102,8 @@ frigate:
         dog_cam:
           - "ffmpeg:http://192.168.1.193:8080/video#async=1#video=h264#hardware=cuda"
           - http://192.168.1.193:8080/audio.aac
+        front_cam:
+          - "{FRIGATE_FRONT_CAM_URL}"
       webrtc:
         candidates:
           - "10.11.11.10:8555"
@@ -126,6 +138,27 @@ frigate:
         live:
           streams:
             Main: dog_cam
+      front_cam:
+        ffmpeg:
+          hwaccel_args: preset-nvidia-h264
+          inputs:
+            - path: rtsp://127.0.0.1:8554/front_cam
+              roles:
+                - detect
+                - record
+        detect:
+          enabled: true
+        snapshots:
+          enabled: true
+        record:
+          enabled: true
+          events:
+            retain:
+              default: 10
+              mode: active_objects
+        live:
+          streams:
+            Main: front_cam
     version: 0.17-0
     semantic_search:
       enabled: true

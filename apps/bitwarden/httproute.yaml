@@ -17,12 +17,16 @@ spec:
             type: PathPrefix
             value: /notifications/hub
       backendRefs:
-        - name: bitwarden
+        - group: ""
+          kind: Service
+          name: bitwarden
           port: 3012
     - matches:
         - path:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: bitwarden
+        - group: ""
+          kind: Service
+          name: bitwarden
           port: 80

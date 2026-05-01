@@ -25,5 +25,7 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: wireguard
+        - group: ""
+          kind: Service
+          name: wireguard
           port: 80

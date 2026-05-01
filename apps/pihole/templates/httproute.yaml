@@ -25,5 +25,7 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: pihole-web
+        - group: ""
+          kind: Service
+          name: pihole-web
           port: 80

@@ -24,7 +24,9 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: monitoring-grafana
+        - group: ""
+          kind: Service
+          name: monitoring-grafana
           port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -53,7 +55,9 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: monitoring-kube-prometheus-prometheus
+        - group: ""
+          kind: Service
+          name: monitoring-kube-prometheus-prometheus
           port: 80
 ---
 apiVersion: gateway.networking.k8s.io/v1
@@ -82,5 +86,7 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: monitoring-kube-prometheus-alertmanager
+        - group: ""
+          kind: Service
+          name: monitoring-kube-prometheus-alertmanager
           port: 80

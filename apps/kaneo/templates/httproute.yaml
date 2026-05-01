@@ -36,7 +36,7 @@ spec:
       {{- end }}
       backendRefs:
         {{- range .backendRefs }}
-        - name: {{ printf "%s-%s" $fullName .service }}
+          - name: {{ printf "%s-%s" $fullName .service }}
           port: {{ .port }}
         {{- end }}
     {{- end }}

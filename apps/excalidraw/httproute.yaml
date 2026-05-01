@@ -24,5 +24,7 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: excalidraw-frontend
+        - group: ""
+          kind: Service
+          name: excalidraw-frontend
           port: 80

@@ -30,6 +30,8 @@ spec:
             type: PathPrefix
             value: {{ .Values.ingress.path | quote }}
       backendRefs:
-        - name: {{ include "app.name" . }}
+        - group: ""
+          kind: Service
+          name: {{ include "app.name" . }}
           port: {{ .Values.servicePort }}
 {{- end }}

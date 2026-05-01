@@ -17,5 +17,7 @@ spec:
             type: PathPrefix
             value: /
       backendRefs:
-        - name: homepage
+        - group: ""
+          kind: Service
+          name: homepage
           port: 3000

@@ -26,17 +26,15 @@ spec:
   {{- end }}
   rules:
     {{- range .Values.gateway.rules }}
-    - {{- with .matches }}
-      matches:
-        {{- toYaml . | nindent 8 }}
-      {{- end }}
+    - matches:
+        {{- toYaml .matches | nindent 8 }}
       {{- with .filters }}
       filters:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       backendRefs:
         {{- range .backendRefs }}
-          - name: {{ printf "%s-%s" $fullName .service }}
+        - name: {{ printf "%s-%s" $fullName .service }}
           port: {{ .port }}
         {{- end }}
     {{- end }}

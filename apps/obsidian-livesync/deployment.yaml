@@ -48,10 +48,10 @@ spec:
               subPath: livesync.ini
           resources:
             limits:
-              memory: 142Mi
+              memory: 146Mi
             requests:
-              memory: 120Mi
-              cpu: 15m
+              memory: 124Mi
+              cpu: 19m
           livenessProbe:
             exec:
               command:

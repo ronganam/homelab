@@ -68,7 +68,7 @@ pihole:
 
   resources:
     requests:
-      cpu: "10m"
+      cpu: "16m"
       memory: "29Mi"
     limits:
       memory: "34Mi"

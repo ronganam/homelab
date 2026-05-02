@@ -37,10 +37,10 @@ postgresql:
     port: 5432
   resources:
     requests:
-      cpu: "10m"
-      memory: "28Mi"
+      cpu: "50m"
+      memory: "128Mi"
     limits:
-      memory: "34Mi"
+      memory: "256Mi"
 
 api:
   image:
@@ -54,10 +54,10 @@ api:
     targetPort: 1337
   resources:
     requests:
-      cpu: "10m"
-      memory: "125Mi"
+      cpu: "100m"
+      memory: "256Mi"
     limits:
-      memory: "147Mi"
+      memory: "512Mi"
   env:
     KANEO_API_URL: "https://kaneo.ganam.app/api"
     KANEO_CLIENT_URL: "https://kaneo.ganam.app"
@@ -99,10 +99,10 @@ web:
       exposure.service-controller.io/type: "internal"
   resources:
     requests:
-      cpu: "10m"
-      memory: "16Mi"
+      cpu: "77m"
+      memory: "32Mi"
     limits:
-      memory: "16Mi"
+      memory: "64Mi"
   env:
     apiUrl: "https://kaneo.ganam.app"
 

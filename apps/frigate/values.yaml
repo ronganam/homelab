@@ -200,10 +200,10 @@ frigate:
 
   resources:
     requests:
-      cpu: "382m"
-      memory: "4036Mi"
+      cpu: "2808m"
+      memory: "4599Mi"
     limits:
-      memory: "4769Mi"
+      memory: "5435Mi"
       nvidia.com/gpu: 1
 
   probes:

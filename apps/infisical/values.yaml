@@ -56,10 +56,10 @@ postgresql:
       storageClass: local-path
     resources:
       requests:
-        cpu: "36m"
-        memory: "77Mi"
-      limits:
+        cpu: "37m"
         memory: "91Mi"
+      limits:
+        memory: "108Mi"
 
 # Configure top-level Redis dependency
 redis:
@@ -73,8 +73,8 @@ redis:
       storageClass: local-path
     resources:
       requests:
-        cpu: "18m"
-        memory: "63Mi"
+        cpu: "20m"
+        memory: "69Mi"
       limits:
-        memory: "75Mi"
+        memory: "82Mi"
   architecture: standalone

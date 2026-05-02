@@ -63,10 +63,10 @@ spec:
               name: logs
           resources:
             requests:
-              cpu: "10m"
-              memory: "115Mi"
+              cpu: "13m"
+              memory: "126Mi"
             limits:
-              memory: "135Mi"
+              memory: "149Mi"
           livenessProbe:
             httpGet:
               path: /

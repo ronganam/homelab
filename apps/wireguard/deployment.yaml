@@ -50,9 +50,9 @@ spec:
           resources:
             requests:
               cpu: 10m
-              memory: 87Mi
+              memory: 76Mi
             limits:
-              memory: 103Mi
+              memory: 90Mi
           securityContext:
             capabilities:
               add:

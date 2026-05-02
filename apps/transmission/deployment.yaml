@@ -70,9 +70,9 @@ spec:
           resources:
             requests:
               cpu: "10m"
-              memory: "17Mi"
+              memory: "16Mi"
             limits:
-              memory: "20Mi"
+              memory: "19Mi"
       volumes:
         - name: config
           persistentVolumeClaim:

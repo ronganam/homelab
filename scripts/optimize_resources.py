@@ -41,9 +41,9 @@ def get_metrics(url, token, lookback_hrs):
         return resp.json()['data']['result']
 
     # CPU query
-    cpu_q = f'max_over_time(rate(container_cpu_usage_seconds_total{{container!="", pod!="", namespace!~"kube-system|monitoring|argocd"}}[5m])[{lookback}:1h])'
+    cpu_q = f'max_over_time(rate(container_cpu_usage_seconds_total{{container!="", pod!="", namespace!~"kube-system|monitoring|argocd"}}[5m])[{lookback}:5m])'
     # Mem query
-    mem_q = f'max_over_time(container_memory_working_set_bytes{{container!="", pod!="", namespace!~"kube-system|monitoring|argocd"}}[{lookback}:1h])'
+    mem_q = f'max_over_time(container_memory_working_set_bytes{{container!="", pod!="", namespace!~"kube-system|monitoring|argocd"}}[{lookback}:5m])'
     
     cpu_results = query_prom(cpu_q)
     mem_results = query_prom(mem_q)
@@ -52,12 +52,18 @@ def get_metrics(url, token, lookback_hrs):
     for item in cpu_results:
         ns = item['metric']['namespace']
         cont = item['metric']['container']
-        usage.setdefault((ns, cont), {})['cpu'] = float(item['value'][1])
+        val = float(item['value'][1])
+        key = (ns, cont)
+        if key not in usage or val > usage[key].get('cpu', 0):
+            usage.setdefault(key, {})['cpu'] = val
         
     for item in mem_results:
         ns = item['metric']['namespace']
         cont = item['metric']['container']
-        usage.setdefault((ns, cont), {})['mem'] = float(item['value'][1])
+        val = float(item['value'][1])
+        key = (ns, cont)
+        if key not in usage or val > usage[key].get('mem', 0):
+            usage.setdefault(key, {})['mem'] = val
         
     return usage
 

@@ -145,12 +145,13 @@ frigate:
           streams:
             Main: dog_cam
         zones:
-          dog-space:
-            coordinates: 0.394,0.632,0.739,0.627,0.743,1,0.22,1
+          food-zone:
+            coordinates: 0.749,0.322,0.401,0.406,0.611,0.646,0.959,0.53
             loitering_time: 0
             inertia: 3
-          food-zone:
-            coordinates: 0.392,0.634,0.132,0.627,0,0.684,0,1,0.219,1
+          dog-pad:
+            coordinates: 0.076,0.461,0.407,0.413,0.609,0.644,0.194,0.835
+            inertia: 3
             loitering_time: 0
       front_cam:
         ffmpeg:

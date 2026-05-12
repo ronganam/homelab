@@ -1,16 +1,23 @@
+infisical:
+  enabled: true
+  identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+  projectSlug: "homelab-k8s"
+  envSlug: "prod"
+  secretsPath: "/matomo"
+  resyncInterval: 60
+
 matomo:
   matomoUsername: "admin"
-  matomoPassword: "changeme"
+  existingSecret: "matomo-secrets"
   matomoEmail: "admin@ganam.app"
 
   mariadb:
     enabled: true
     architecture: standalone
     auth:
-      rootPassword: "changeme"
+      existingSecret: "matomo-secrets"
       database: "bitnami_matomo"
       username: "bn_matomo"
-      password: "changeme"
     primary:
       persistence:
         enabled: true

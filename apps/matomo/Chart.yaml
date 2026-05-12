@@ -1,0 +1,10 @@
+apiVersion: v2
+name: matomo
+description: Helm wrapper chart to deploy matomo via upstream dependency
+type: application
+version: 0.1.0
+appVersion: "5.3.2"
+dependencies:
+  - name: matomo
+    version: "11.0.0"
+    repository: https://charts.bitnami.com/bitnami

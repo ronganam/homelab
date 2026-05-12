@@ -1,0 +1,43 @@
+matomo:
+  matomoUsername: "admin"
+  matomoPassword: "changeme"
+  matomoEmail: "admin@ganam.app"
+
+  mariadb:
+    enabled: true
+    architecture: standalone
+    auth:
+      rootPassword: "changeme"
+      database: "bitnami_matomo"
+      username: "bn_matomo"
+      password: "changeme"
+    primary:
+      persistence:
+        enabled: true
+        storageClass: "local-path"
+        size: 1Gi
+
+  persistence:
+    enabled: true
+    storageClass: "local-path"
+    size: 1Gi
+
+  service:
+    type: ClusterIP
+    labels:
+      dns.service-controller.io/enabled: "true"
+      dns.service-controller.io/hostname: "matomo.ganam.app"
+      exposure.service-controller.io/type: "internal"
+
+  ingress:
+    enabled: true
+    ingressClassName: nginx
+    hostname: matomo.ganam.app
+    path: /
+    annotations:
+      gethomepage.dev/enabled: "true"
+      gethomepage.dev/name: "Matomo"
+      gethomepage.dev/description: "Web Analytics"
+      gethomepage.dev/icon: "matomo.png"
+      gethomepage.dev/group: "Monitoring"
+      gethomepage.dev/weight: "10"

@@ -8,14 +8,18 @@ infisical:
 
 matomo:
   matomoUsername: "admin"
-  existingSecret: "matomo-secrets"
+  existingSecret: "matomo-mariadb"
   matomoEmail: "admin@ganam.app"
 
   mariadb:
     enabled: true
     architecture: standalone
+    image:
+      registry: docker.io
+      repository: bitnami/mariadb
+      tag: latest
     auth:
-      existingSecret: "matomo-secrets"
+      existingSecret: "matomo-mariadb"
       database: "bitnami_matomo"
       username: "bn_matomo"
     primary:

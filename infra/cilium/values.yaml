@@ -15,6 +15,11 @@ cilium:
       enabled: true
     ui:
       enabled: true
+      service:
+        labels:
+          dns.service-controller.io/enabled: "true"
+          dns.service-controller.io/hostname: hubble.ganam.app
+          exposure.service-controller.io/type: internal
     metrics:
       enabled:
         - dns

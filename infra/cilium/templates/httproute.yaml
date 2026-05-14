@@ -26,6 +26,6 @@ spec:
       backendRefs:
         - group: ""
           kind: Service
-          name: hubble-ui
+          name: hubble-ui-external
           port: 80
           weight: 1

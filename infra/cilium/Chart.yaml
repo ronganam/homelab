@@ -1,0 +1,9 @@
+apiVersion: v2
+name: cilium-infra
+description: Cilium CNI and Hubble Observability
+type: application
+version: 1.0.0
+dependencies:
+  - name: cilium
+    version: 1.16.1
+    repository: https://helm.cilium.io/

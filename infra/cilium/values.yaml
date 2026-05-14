@@ -1,0 +1,33 @@
+cilium:
+  cluster:
+    name: homelab
+    id: 1
+  
+  # Core CNI Settings
+  ipam:
+    mode: kubernetes
+  kubeProxyReplacement: true
+  
+  # L7 Visibility + Hubble
+  hubble:
+    enabled: true
+    relay:
+      enabled: true
+    ui:
+      enabled: true
+    metrics:
+      enabled:
+        - dns
+        - drop
+        - tcp
+        - flow
+        - icmp
+        - http
+  
+  # Infrastructure Integration
+  operator:
+    replicas: 1
+  prometheus:
+    enabled: true
+    serviceMonitor:
+      enabled: true

@@ -1,38 +1,32 @@
-cilium:
-  cluster:
-    name: homelab
-    id: 1
-  
-  # Core CNI Settings
-  ipam:
-    mode: kubernetes
-  kubeProxyReplacement: true
-  
-  # L7 Visibility + Hubble
-  hubble:
+cluster:
+  name: homelab
+  id: 1
+
+# Core CNI Settings
+ipam:
+  mode: kubernetes
+kubeProxyReplacement: true
+
+# L7 Visibility + Hubble
+hubble:
+  enabled: true
+  relay:
     enabled: true
-    relay:
-      enabled: true
-    ui:
-      enabled: true
-      service:
-        labels:
-          dns.service-controller.io/enabled: "true"
-          dns.service-controller.io/hostname: hubble.ganam.app
-          exposure.service-controller.io/type: internal
-    metrics:
-      enabled:
-        - dns
-        - drop
-        - tcp
-        - flow
-        - icmp
-        - http
-  
-  # Infrastructure Integration
-  operator:
-    replicas: 1
-  prometheus:
+  ui:
     enabled: true
-    serviceMonitor:
-      enabled: true
+  metrics:
+    enabled:
+      - dns
+      - drop
+      - tcp
+      - flow
+      - icmp
+      - http
+
+# Infrastructure Integration
+operator:
+  replicas: 1
+prometheus:
+  enabled: true
+  serviceMonitor:
+    enabled: true

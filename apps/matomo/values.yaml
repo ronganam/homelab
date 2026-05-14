@@ -7,6 +7,10 @@ infisical:
   resyncInterval: 60
 
 matomo:
+  image:
+    registry: public.ecr.aws
+    repository: bitnami/matomo
+    tag: 5.10.0-debian-12-r2
   matomoUsername: "admin"
   existingSecret: "matomo-mariadb"
   matomoEmail: "admin@ganam.app"
@@ -15,9 +19,9 @@ matomo:
     enabled: true
     architecture: standalone
     image:
-      registry: docker.io
+      registry: public.ecr.aws
       repository: bitnami/mariadb
-      tag: latest
+      tag: 12.2.2-debian-12-r6
     auth:
       existingSecret: "matomo-mariadb"
       database: "bitnami_matomo"

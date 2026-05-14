@@ -41,12 +41,13 @@ matomo:
     storageClass: "local-path"
     size: 1Gi
 
+  commonLabels:
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "matomo.ganam.app"
+    exposure.service-controller.io/type: "internal"
+
   service:
     type: ClusterIP
-    labels:
-      dns.service-controller.io/enabled: "true"
-      dns.service-controller.io/hostname: "matomo.ganam.app"
-      exposure.service-controller.io/type: "internal"
 
   ingress:
     enabled: false

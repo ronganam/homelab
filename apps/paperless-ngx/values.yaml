@@ -104,10 +104,10 @@ db:
 
   resources:
     requests:
-      cpu: "10m"
-      memory: "46Mi"
+      cpu: "50m"
+      memory: "128Mi"
     limits:
-      memory: "55Mi"
+      memory: "256Mi"
 
   env:
     POSTGRES_USER: "paperless"

@@ -49,14 +49,4 @@ matomo:
       exposure.service-controller.io/type: "internal"
 
   ingress:
-    enabled: true
-    ingressClassName: nginx
-    hostname: matomo.ganam.app
-    path: /
-    annotations:
-      gethomepage.dev/enabled: "true"
-      gethomepage.dev/name: "Matomo"
-      gethomepage.dev/description: "Web Analytics"
-      gethomepage.dev/icon: "matomo.png"
-      gethomepage.dev/group: "Monitoring"
-      gethomepage.dev/weight: "10"
+    enabled: false

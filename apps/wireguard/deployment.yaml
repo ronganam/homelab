@@ -25,7 +25,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: wg-easy
-          image: ghcr.io/wg-easy/wg-easy:15
+          image: ghcr.io/wg-easy/wg-easy:15.2.2
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 51821

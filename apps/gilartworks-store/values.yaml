@@ -6,8 +6,8 @@ app-blueprint:
   containerPort: 3000
 
   dns:
-    hostname: store.gilartworks.com
-    exposure: internal
+    hostname: gilartworks.com
+    exposure: public
 
   ingress:
     proxyBodySize: "200m"

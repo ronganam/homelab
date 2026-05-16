@@ -4,8 +4,8 @@ app-blueprint:
     tag: v1
 
   dns:
-    hostname: gilartworks.com
-    exposure: public
+    hostname: soon.gilartworks.com
+    exposure: internal
 
   homepage:
     enabled: false

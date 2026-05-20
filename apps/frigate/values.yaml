@@ -22,7 +22,8 @@ frigate:
     - "frigate-secret"
 
   service:
-    type: ClusterIP
+    type: LoadBalancer
+    loadBalancerIP: 192.168.1.170
     externalPort: 5000
     ports:
       - name: http
@@ -104,14 +105,12 @@ frigate:
       streams:
         dog_cam:
           - ffmpeg:http://192.168.1.193:8080/video#async=1#video=h264#hardware=cuda
-          - http://192.168.1.193:8080/audio.aac
+          # - http://192.168.1.193:8080/audio.aac
         front_cam:
-          - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error 
-            -rtsp_transport udp -i "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 
-            -'#video=h264
+          - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error -fflags nobuffer -flags low_delay -rtsp_transport udp -i "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 -'#video=h264
       webrtc:
         candidates:
-          - 10.11.11.10:8555
+          - 192.168.1.170:8555
       log:
         level: info
         rtsp: trace

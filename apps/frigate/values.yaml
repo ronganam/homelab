@@ -106,7 +106,7 @@ frigate:
           - ffmpeg:http://192.168.1.193:8080/video#async=1#video=h264#hardware=cuda
           # - http://192.168.1.193:8080/audio.aac
         front_cam:
-          - "{FRIGATE_FRONT_CAM_URL}#input=rtsp/udp"
+          - "ffmpeg:{FRIGATE_FRONT_CAM_URL}#video=copy#input=-rtsp_transport udp"
       webrtc:
         candidates:
           - 192.168.1.178:8555

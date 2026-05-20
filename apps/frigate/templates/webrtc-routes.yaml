@@ -5,7 +5,9 @@ metadata:
   namespace: frigate
 spec:
   parentRefs:
-    - name: homelab-gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: homelab-gateway
       namespace: gateway-system
       sectionName: webrtc-tcp
   rules:
@@ -14,6 +16,7 @@ spec:
           kind: Service
           name: frigate
           port: 8555
+          weight: 1
 ---
 apiVersion: gateway.networking.k8s.io/v1alpha2
 kind: UDPRoute
@@ -22,7 +25,9 @@ metadata:
   namespace: frigate
 spec:
   parentRefs:
-    - name: homelab-gateway
+    - group: gateway.networking.k8s.io
+      kind: Gateway
+      name: homelab-gateway
       namespace: gateway-system
       sectionName: webrtc-udp
   rules:
@@ -31,3 +36,4 @@ spec:
           kind: Service
           name: frigate
           port: 8555
+          weight: 1

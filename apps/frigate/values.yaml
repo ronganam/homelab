@@ -179,7 +179,7 @@ frigate:
           streams:
             Main: front_cam
         motion:
-          mask: 0,0.528,1,0.531,1,0,0,0
+          mask: 0,0.528,0.226,0.565,0.415,0.613,0.499,0.544,1,0.531,1,0,0,0
     version: 0.17-0
     semantic_search:
       enabled: true

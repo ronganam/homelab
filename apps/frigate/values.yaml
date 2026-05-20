@@ -22,8 +22,7 @@ frigate:
     - "frigate-secret"
 
   service:
-    type: LoadBalancer
-    loadBalancerIP: 192.168.1.170
+    type: ClusterIP
     externalPort: 5000
     ports:
       - name: http
@@ -110,7 +109,7 @@ frigate:
           - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error -fflags nobuffer -flags low_delay -rtsp_transport udp -i "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 -'#video=h264
       webrtc:
         candidates:
-          - 192.168.1.170:8555
+          - frigate.ganam.app:8555
       log:
         level: info
         rtsp: trace

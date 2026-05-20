@@ -54,6 +54,22 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # Frigate WebRTC listeners on port 8555
+    # Required for real-time WebRTC UDP/TCP media streaming to avoid MSE buffering latency.
+    # Exposing these via Gateway allows using the domain name (frigate.ganam.app:8555)
+    # as a WebRTC candidate, preventing HTTPS private network access blocks in modern browsers.
+    - name: webrtc-tcp
+      port: 8555
+      protocol: TCP
+      allowedRoutes:
+        namespaces:
+          from: All
+    - name: webrtc-udp
+      port: 8555
+      protocol: UDP
+      allowedRoutes:
+        namespaces:
+          from: All
 ---
 apiVersion: gateway.networking.k8s.io/v1beta1
 kind: ReferenceGrant

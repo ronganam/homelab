@@ -1,0 +1,33 @@
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: TCPRoute
+metadata:
+  name: frigate-webrtc-tcp
+  namespace: frigate
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: gateway-system
+      sectionName: webrtc-tcp
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: frigate
+          port: 8555
+---
+apiVersion: gateway.networking.k8s.io/v1alpha2
+kind: UDPRoute
+metadata:
+  name: frigate-webrtc-udp
+  namespace: frigate
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: gateway-system
+      sectionName: webrtc-udp
+  rules:
+    - backendRefs:
+        - group: ""
+          kind: Service
+          name: frigate
+          port: 8555

@@ -14,13 +14,13 @@ data:
         type: skip
     - conditions:
         volumeTypes:
+        - persistentVolumeClaim
+      action:
+        type: fs-backup
+    - conditions:
+        volumeTypes:
         - emptyDir
         - hostPath
       action:
         type: skip
-    - conditions:
-        volumeTypes:
-        - persistentVolumeClaim
-      action:
-        type: fs-backup
 {{- end }}

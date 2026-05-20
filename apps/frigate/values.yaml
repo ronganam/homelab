@@ -82,16 +82,16 @@ frigate:
   # Example Frigate configuration (adjust to your environment)
   config: |
     environment_vars:
-      FRIGATE_FRONT_CAM_URL: "{FRIGATE_FRONT_CAM_URL}"
+      FRIGATE_FRONT_CAM_URL: '{FRIGATE_FRONT_CAM_URL}'
     mqtt:
-      host: "mqtt.mqtt.svc.cluster.local"
+      host: mqtt.mqtt.svc.cluster.local
       port: 1883
       # user: "frigate"
       # password: "change-me"
     detectors:
       onnx:
         type: onnx
-        device: "0"
+        device: '0'
     model:
       model_type: yolo-generic
       path: /config/model_cache/tensorrt_models/yolov9-s-320.onnx
@@ -103,13 +103,15 @@ frigate:
     go2rtc:
       streams:
         dog_cam:
-          - "ffmpeg:http://192.168.1.193:8080/video#async=1#video=h264#hardware=cuda"
+          - ffmpeg:http://192.168.1.193:8080/video#async=1#video=h264#hardware=cuda
           - http://192.168.1.193:8080/audio.aac
         front_cam:
-          - "exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error -rtsp_transport udp -i \"$FRIGATE_FRONT_CAM_URL\" -c:v copy -an -f h264 -'#video=h264"
+          - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error 
+            -rtsp_transport udp -i "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 
+            -'#video=h264
       webrtc:
         candidates:
-          - "10.11.11.10:8555"
+          - 10.11.11.10:8555
       log:
         level: info
         rtsp: trace
@@ -146,11 +148,11 @@ frigate:
             Main: dog_cam
         zones:
           food-zone:
-            coordinates: 0.749,0.322,0.401,0.406,0.611,0.646,0.959,0.53
-            loitering_time: 0
+            coordinates: 0.598,0.391,0.392,0.45,0.565,0.664,0.78,0.601
             inertia: 3
-          dog-pad:
-            coordinates: 0.076,0.461,0.407,0.413,0.609,0.644,0.194,0.835
+            loitering_time: 0
+          pad-zone:
+            coordinates: 0.119,0.515,0.384,0.452,0.557,0.666,0.135,0.799
             inertia: 3
             loitering_time: 0
       front_cam:
@@ -176,12 +178,14 @@ frigate:
         live:
           streams:
             Main: front_cam
+        motion:
+          mask: 0,0.528,1,0.531,1,0,0,0
     version: 0.17-0
     semantic_search:
       enabled: true
       model: jinav1
       model_size: large
-      device: "0"
+      device: '0'
       reindex: false
     face_recognition:
       enabled: false

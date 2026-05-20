@@ -13,7 +13,7 @@ infisical:
   resyncInterval: 60
 
 resourcePolicy:
-  enabled: false
+  enabled: true
 
 velero:
   # ── Credentials ─────────────────────────────────────────────────────────────
@@ -31,7 +31,7 @@ velero:
     # Filters out NFS volumes via pod annotations (e.g. backup.velero.io/backup-volumes-excludes)
     defaultVolumesToFsBackup: true
 
-    # resourcePoliciesConfigMap: velero-resource-policy
+    resourcePoliciesConfigMap: velero-resource-policy
 
     backupStorageLocation:
       - name: default

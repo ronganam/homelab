@@ -9,8 +9,13 @@ data:
     version: v1
     volumePolicies:
     - conditions:
+        nfs: {}
+      action:
+        type: skip
+    - conditions:
         volumeTypes:
-        - nfs
+        - emptyDir
+        - hostPath
       action:
         type: skip
     - conditions:

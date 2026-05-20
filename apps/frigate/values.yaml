@@ -104,9 +104,9 @@ frigate:
       streams:
         dog_cam:
           - ffmpeg:http://192.168.1.193:8080/video#async=1#video=h264#hardware=cuda
-          # - http://192.168.1.193:8080/audio.aac
+          - http://192.168.1.193:8080/audio.aac
         front_cam:
-          - "ffmpeg:{FRIGATE_FRONT_CAM_URL}#video=copy#input=-rtsp_transport udp"
+          - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error -fflags nobuffer -flags low_delay -rtsp_transport udp -i "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 -'#video=h264
       webrtc:
         candidates:
           - 192.168.1.178:8555

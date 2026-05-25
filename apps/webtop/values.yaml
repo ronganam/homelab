@@ -15,6 +15,9 @@ app-blueprint:
     description: LinuxServer.io Webtop (Debian XFCE)
     icon: webtop
 
+  podAnnotations:
+    backup.velero.io/backup-volumes-excludes: media
+
   volumes:
     - name: config-local
       size: 1Gi

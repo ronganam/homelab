@@ -133,3 +133,45 @@ kubectl -n velero get backupstoragelocation
 ```bash
 kubectl -n velero logs deployment/velero
 ```
+
+## 🔥 Bare-Metal Disaster Recovery
+
+If the entire cluster goes down, the node is completely wiped, or you are moving to a brand new hardware setup, follow this guide to recover all your stateful applications from the Velero backups stored in OCI.
+
+### 1. Rebuild the Infrastructure
+First, bring the base infrastructure back online:
+1. Re-install your OS and configure your base networking.
+2. Install **K3s** (ensure Traefik and ServiceLB are disabled if you are using Cilium/Envoy).
+3. Clone your `homelab` Git repository.
+4. Install **ArgoCD** and apply your `app-of-apps` to bootstrap the cluster. Wait for core namespaces to be created.
+5. Deploy **Infisical** or inject your `velero-credentials` and `cloud` secrets into the `velero` namespace.
+
+### 2. Install Velero & Connect to Object Storage
+ArgoCD will attempt to deploy the Velero Helm chart, but you must ensure it successfully connects to the OCI bucket:
+1. Verify the `velero` pod is running without errors.
+2. Ensure the `BackupStorageLocation` is available:
+   ```bash
+   velero backup-location get
+   ```
+   *(It should list `default` with the status `Available`.)*
+
+### 3. Identify the Latest Backup
+Once Velero is connected to OCI, it will automatically sync the backup metadata down to the cluster. List the available backups to find the most recent successful run:
+```bash
+velero backup get
+```
+Identify the latest `velero-daily-full-<timestamp>` that has the status `Completed`.
+
+### 4. Execute the Global Restore
+Trigger a full restore of all namespaces from the backup you identified. Since `local-path` PVs are dynamically provisioned, Velero will perfectly recreate the PVCs, force the provisioner to create new empty local folders, and then securely inject your data back into them using Kopia.
+
+```bash
+velero restore create disaster-recovery --from-backup <BACKUP_NAME> --wait
+```
+
+### 5. Validate Restoration
+Once the restore says `Completed`, check that the Kopia data injection succeeded:
+```bash
+velero restore describe disaster-recovery --details
+```
+Check your stateful pods (e.g., `webtop`, `bitwarden`, `homeassistant`). They should all transition to `Running` with their historic configurations and data perfectly intact!

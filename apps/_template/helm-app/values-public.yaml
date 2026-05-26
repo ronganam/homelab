@@ -30,7 +30,6 @@ CHANGEME-chart: # Replace with upstream chart name
       cpu: 100m
       memory: 256Mi
     limits:
-      cpu: 500m
       memory: 1Gi
   probes:
     liveness:

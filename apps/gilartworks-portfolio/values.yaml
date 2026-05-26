@@ -49,4 +49,5 @@ app-blueprint:
       cpu: 100m
       memory: 256Mi
     limits:
+      cpu: null
       memory: 1Gi

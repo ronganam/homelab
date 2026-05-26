@@ -64,6 +64,7 @@ spec:
               # Note: Envoy logs use :authority for the hostname
               
               kubectl logs -n envoy-gateway-system -l app.kubernetes.io/name=envoy -c envoy -f --tail=0 | \
+              jq -rc 'select(.":authority" != null and ."x-envoy-origin-path" != null) | "\"\(.":authority")\" \"\(.downstream_remote_address | sub(":[0-9]+$"; ""))\" \"\(.method)\" \"\(."x-envoy-origin-path")\" \"\(.protocol // "-")\" \(.response_code // 200) \(.bytes_sent // 0) \"\(.start_time)\" \"\(."user-agent" // "-")\"' | \
               python3 import_logs.py \
                 --url=http://matomo.matomo.svc.cluster.local \
                 --token-auth="${MATOMO_TOKEN}" \
@@ -73,7 +74,8 @@ spec:
                 --enable-bots \
                 --enable-http-errors \
                 --enable-http-redirects \
-                --log-format-regex='.*":authority":"(?P<host>[^"]+)".*"downstream_remote_address":"(?P<ip>[^"]+)".*"method":"(?P<method>[^"]+)".*"x-envoy-origin-path":"(?P<path>[^"]+)".*"protocol":"(?P<protocol>[^"]+)".*"response_code":(?P<status>\d+).*"bytes_sent":(?P<length>\d+).*"user-agent":"(?P<user_agent>[^"]+)".*' \
+                --log-date-format='%Y-%m-%dT%H:%M:%S.%fZ' \
+                --log-format-regex='^"(?P<host>[^"]+)" "(?P<ip>[^"]+)" "(?P<method>[^"]+)" "(?P<path>[^"]+)" "(?P<protocol>[^"]+)" (?P<status>\d+) (?P<length>\d+) "(?P<date>[^"]+)" "(?P<user_agent>[^"]+)"$' \
                 -
           env:
             - name: MATOMO_TOKEN

@@ -44,7 +44,7 @@ spec:
       serviceAccountName: matomo-log-importer
       containers:
         - name: importer
-          image: python:2.7-slim
+          image: python:3.11-slim
           command:
             - /bin/bash
             - -c
@@ -57,14 +57,14 @@ spec:
               mv kubectl /usr/local/bin/
 
               echo "📥 Downloading Matomo log-analytics script..."
-              curl -s -o import_logs.py https://raw.githubusercontent.com/matomo-org/matomo-log-analytics/master/import_logs.py
+              curl -s -o import_logs.py https://raw.githubusercontent.com/matomo-org/matomo-log-analytics/5.x-dev/import_logs.py
 
               echo "🚀 Starting Log Import Loop..."
               # We use a regex to parse the Envoy Gateway JSON logs
               # Note: Envoy logs use :authority for the hostname
               
               kubectl logs -n envoy-gateway-system -l app.kubernetes.io/name=envoy -c envoy -f --tail=0 | \
-              python import_logs.py \
+              python3 import_logs.py \
                 --url=http://matomo.matomo.svc.cluster.local \
                 --token-auth="${MATOMO_TOKEN}" \
                 --idsite=1 \

@@ -52,7 +52,6 @@ spec:
                   cpu: 20m
                   memory: 128Mi
                 limits:
-                  cpu: 200m
                   memory: 512Mi
           volumes:
             - name: data

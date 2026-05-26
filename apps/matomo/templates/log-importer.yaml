@@ -50,7 +50,7 @@ spec:
             - -c
             - |
               set -e
-              apt-get update && apt-get install -y curl jq
+              apt-get update && apt-get install -y curl jq ca-certificates
               K8S_VERSION=$(curl -L -s https://dl.k8s.io/release/stable.txt)
               curl -LO "https://dl.k8s.io/release/${K8S_VERSION}/bin/linux/amd64/kubectl"
               chmod +x kubectl
@@ -64,7 +64,7 @@ spec:
               # Note: Envoy logs use :authority for the hostname
               
               kubectl logs -n envoy-gateway-system -l app.kubernetes.io/name=envoy -c envoy -f --tail=0 | \
-              python3 import_logs.py \
+              python import_logs.py \
                 --url=http://matomo.matomo.svc.cluster.local \
                 --token-auth="${MATOMO_TOKEN}" \
                 --idsite=1 \
@@ -84,7 +84,6 @@ spec:
           resources:
             limits:
               memory: 256Mi
-              cpu: 200m
             requests:
               memory: 128Mi
               cpu: 50m

@@ -1,758 +1,889 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: service-controller
-  namespace: cloudflare-tunnel
-  labels:
-    app: service-controller
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: service-controller
-  template:
-    metadata:
-      labels:
+    name: service-controller
+    namespace: cloudflare-tunnel
+    labels:
         app: service-controller
-    spec:
-      serviceAccountName: service-controller
-      containers:
-        - name: service-controller
-          image: python:3.14-alpine
-          command:
-            - /bin/sh
-            - -c
-            - |
-              set -e
-              echo "🔍 Installing dependencies..."
-              apk add --no-cache curl
-              curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
-              chmod +x kubectl
-              mv kubectl /usr/local/bin/
-              pip install kubernetes pyyaml cloudflare requests --quiet
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: service-controller
+    template:
+        metadata:
+            labels:
+                app: service-controller
+        spec:
+            serviceAccountName: service-controller
+            containers:
+                - name: service-controller
+                  image: python:3.14-alpine
+                  command:
+                      - /bin/sh
+                      - -c
+                      - |
+                          set -e
+                          echo "🔍 Installing dependencies..."
+                          apk add --no-cache curl
+                          curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+                          chmod +x kubectl
+                          mv kubectl /usr/local/bin/
+                          pip install kubernetes pyyaml cloudflare requests --quiet
 
-              echo "🔍 Starting Service Controller..."
-              python -u /app/controller.py
-          env:
-            - name: CLOUDFLARE_API_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  name: cloudflare-api-token
-                  key: token
-            - name: INGRESS_NAMESPACE
-              value: envoy-gateway-system
-            - name: INGRESS_SERVICE_NAME
-              value: envoy-gateway-system-homelab-gateway-f6c867d2
-            - name: DDNS_HOSTNAME
-              value: homelab.buildin.group
-            - name: DDNS_ENABLED
-              value: "true"
-            - name: TUNNEL_ID
-              valueFrom:
-                configMapKeyRef:
-                  name: cloudflare-tunnel-info
-                  key: tunnel-id
-                  optional: true
-          volumeMounts:
-            - name: controller-script
-              mountPath: /app
-          resources:
-            limits:
-              memory: 512Mi
-              cpu: 500m
-            requests:
-              memory: 128Mi
-              cpu: 100m
-      volumes:
-        - name: controller-script
-          configMap:
-            name: service-controller-script
+                          echo "🔍 Starting Service Controller..."
+                          python -u /app/controller.py
+                  env:
+                      - name: CLOUDFLARE_API_TOKEN
+                        valueFrom:
+                            secretKeyRef:
+                                name: cloudflare-api-token
+                                key: token
+                      - name: INGRESS_NAMESPACE
+                        value: envoy-gateway-system
+                      - name: INGRESS_SERVICE_NAME
+                        value: envoy-gateway-system-homelab-gateway-f6c867d2
+                      - name: DDNS_HOSTNAME
+                        value: homelab.buildin.group
+                      - name: DDNS_ENABLED
+                        value: "true"
+                      - name: TUNNEL_ID
+                        valueFrom:
+                            configMapKeyRef:
+                                name: cloudflare-tunnel-info
+                                key: tunnel-id
+                                optional: true
+                  volumeMounts:
+                      - name: controller-script
+                        mountPath: /app
+                  resources:
+                      limits:
+                          memory: 512Mi
+                      requests:
+                          memory: 128Mi
+                          cpu: 100m
+            volumes:
+                - name: controller-script
+                  configMap:
+                      name: service-controller-script
 ---
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: service-controller-script
-  namespace: cloudflare-tunnel
+    name: service-controller-script
+    namespace: cloudflare-tunnel
 data:
-  controller.py: |
-    #!/usr/bin/env python3
+    controller.py: |
+        #!/usr/bin/env python3
 
-    import os
-    import time
-    import yaml
-    import subprocess
-    import hashlib
-    import logging
-    import re
-    import requests
-    from kubernetes import client, config, watch
-    import threading
-    from cloudflare import Cloudflare
+        import os
+        import time
+        import yaml
+        import subprocess
+        import hashlib
+        import logging
+        import re
+        import requests
+        from kubernetes import client, config, watch
+        import threading
+        from cloudflare import Cloudflare
 
-    LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
-    logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s %(message)s")
-    logger = logging.getLogger("service-controller")
-    RECONCILE_INTERVAL_SEC = int(os.environ.get('RECONCILE_INTERVAL_SEC', '300'))
+        LOG_LEVEL = os.environ.get('LOG_LEVEL', 'INFO').upper()
+        logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s %(name)s %(message)s")
+        logger = logging.getLogger("service-controller")
+        RECONCILE_INTERVAL_SEC = int(os.environ.get('RECONCILE_INTERVAL_SEC', '300'))
 
-    # Label constants
-    DNS_ENABLED_LABEL = "dns.service-controller.io/enabled"
-    DNS_HOSTNAME_LABEL = "dns.service-controller.io/hostname"
-    EXPOSURE_TYPE_LABEL = "exposure.service-controller.io/type"  # "public" or "internal"
+        # Label constants
+        DNS_ENABLED_LABEL = "dns.service-controller.io/enabled"
+        DNS_HOSTNAME_LABEL = "dns.service-controller.io/hostname"
+        EXPOSURE_TYPE_LABEL = "exposure.service-controller.io/type"  # "public" or "internal"
 
-    # Exposure types
-    EXPOSURE_PUBLIC = "public"
-    EXPOSURE_INTERNAL = "internal"
+        # Exposure types
+        EXPOSURE_PUBLIC = "public"
+        EXPOSURE_INTERNAL = "internal"
 
-    # Tunnel name (must match the tunnel configured in cloudflared-config)
-    TUNNEL_NAME = "homelab-tunnel"
+        # Tunnel name (must match the tunnel configured in cloudflared-config)
+        TUNNEL_NAME = "homelab-tunnel"
 
-    # DDNS configuration
-    DDNS_ENABLED = os.environ.get('DDNS_ENABLED', 'false').lower() == 'true'
-    DDNS_HOSTNAME = os.environ.get('DDNS_HOSTNAME', '')
+        # DDNS configuration
+        DDNS_ENABLED = os.environ.get('DDNS_ENABLED', 'false').lower() == 'true'
+        DDNS_HOSTNAME = os.environ.get('DDNS_HOSTNAME', '')
 
-    # Public IP detection services (with fallbacks for reliability)
-    PUBLIC_IP_SERVICES = [
-        'https://api.ipify.org',
-        'https://ifconfig.me/ip',
-        'https://icanhazip.com',
-        'https://checkip.amazonaws.com',
-        'https://api.my-ip.io/v2/ip.txt',
-    ]
+        # Public IP detection services (with fallbacks for reliability)
+        PUBLIC_IP_SERVICES = [
+            'https://api.ipify.org',
+            'https://ifconfig.me/ip',
+            'https://icanhazip.com',
+            'https://checkip.amazonaws.com',
+            'https://api.my-ip.io/v2/ip.txt',
+        ]
 
-    class ServiceController:
-        def __init__(self):
-            self.v1 = None
-            self.apps_v1 = None
-            self.tunnel_config_hash = None
-            self.last_config_update = 0
-            # Ingress settings for internal services
-            self.ingress_namespace = os.environ.get('INGRESS_NAMESPACE', 'ingress-nginx')
-            self.ingress_service_name = os.environ.get('INGRESS_SERVICE_NAME', 'ingress-nginx-controller')
-            # Cloudflare client cache
-            self.cf = None
-            # Cached tunnel CNAME target (e.g. <uuid>.cfargotunnel.com)
-            self._tunnel_cname_target = None
-            # DDNS state tracking
-            self.last_known_public_ip = None
-            # Zone ID cache: domain -> zone_id
-            self.zone_id_cache = {}
+        class ServiceController:
+            def __init__(self):
+                self.v1 = None
+                self.apps_v1 = None
+                self.tunnel_config_hash = None
+                self.last_config_update = 0
+                # Ingress settings for internal services
+                self.ingress_namespace = os.environ.get('INGRESS_NAMESPACE', 'ingress-nginx')
+                self.ingress_service_name = os.environ.get('INGRESS_SERVICE_NAME', 'ingress-nginx-controller')
+                # Cloudflare client cache
+                self.cf = None
+                # Cached tunnel CNAME target (e.g. <uuid>.cfargotunnel.com)
+                self._tunnel_cname_target = None
+                # DDNS state tracking
+                self.last_known_public_ip = None
+                # Zone ID cache: domain -> zone_id
+                self.zone_id_cache = {}
 
-        def ensure_cf_client(self):
-            """Initialize Cloudflare client if not already created."""
-            if self.cf is not None:
-                return self.cf
-            api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
-            if not api_token:
-                logger.error("CLOUDFLARE_API_TOKEN is not set")
-                return None
-            try:
-                self.cf = Cloudflare(api_token=api_token)
-                return self.cf
-            except Exception as e:
-                logger.error("Failed to initialize Cloudflare client: %s", e)
-                return None
-
-        def get_tunnel_cname_target(self):
-            """Discover the CNAME target (<uuid>.cfargotunnel.com) for the named tunnel."""
-            if self._tunnel_cname_target:
-                return self._tunnel_cname_target
-
-            # 1) Explicit env var — most reliable
-            tunnel_id = os.environ.get('TUNNEL_ID', '').strip()
-            if tunnel_id:
-                self._tunnel_cname_target = tunnel_id if tunnel_id.endswith('.cfargotunnel.com') else f"{tunnel_id}.cfargotunnel.com"
-                logger.info("Tunnel CNAME target (from TUNNEL_ID env): %s", self._tunnel_cname_target)
-                return self._tunnel_cname_target
-
-            # 2) Auto-discover from an existing CNAME record created by cloudflared
-            try:
-                api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
-                if api_token:
-                    desired = self.build_desired_public_rules()
-                    for rule in desired:
-                        hostname = rule['hostname']
-                        domain = '.'.join(hostname.split('.')[-2:])
-                        zone_id = self.get_cloudflare_zone_id(domain, api_token)
-                        if not zone_id:
-                            continue
-                        existing = self.find_dns_record_by_name_and_type(zone_id, hostname, 'CNAME', api_token)
-                        if existing:
-                            content = (existing.get('content') or '').lower().strip()
-                            if content.endswith('.cfargotunnel.com'):
-                                self._tunnel_cname_target = content
-                                logger.info("Discovered tunnel CNAME target from existing record (%s): %s", hostname, self._tunnel_cname_target)
-                                return self._tunnel_cname_target
-            except Exception as e:
-                logger.debug("Could not discover tunnel CNAME from existing records: %s", e)
-
-            # 3) Read tunnel UUID from cloudflared credentials via kubectl exec
-            try:
-                cmd = [
-                    'kubectl', 'exec', '-n', 'cloudflare-tunnel',
-                    'deployment/cloudflared', '--',
-                    'cat', '/etc/cloudflared/credentials/credentials.json'
-                ]
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-                if result.returncode == 0 and result.stdout.strip():
-                    creds = yaml.safe_load(result.stdout)
-                    tid = creds.get('TunnelID', '') if isinstance(creds, dict) else ''
-                    if tid:
-                        self._tunnel_cname_target = f"{tid}.cfargotunnel.com"
-                        logger.info("Discovered tunnel CNAME target from cloudflared credentials: %s", self._tunnel_cname_target)
-                        return self._tunnel_cname_target
-            except Exception as e:
-                logger.debug("Could not read tunnel credentials from cloudflared pod: %s", e)
-
-            logger.error("Cannot determine tunnel CNAME target. Set TUNNEL_ID env var with your Cloudflare tunnel UUID.")
-            return None
-
-        # ========== DDNS Functions ==========
-
-        def get_public_ip(self):
-            """Get current public IP using multiple fallback services for reliability."""
-            for service_url in PUBLIC_IP_SERVICES:
-                try:
-                    response = requests.get(service_url, timeout=5)
-                    if response.status_code == 200:
-                        ip = response.text.strip()
-                        # Validate IP format (basic check)
-                        parts = ip.split('.')
-                        if len(parts) == 4 and all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
-                            logger.debug("Got public IP %s from %s", ip, service_url)
-                            return ip
-                except Exception as e:
-                    logger.debug("Failed to get IP from %s: %s", service_url, e)
-                    continue
-            logger.error("Failed to get public IP from all services")
-            return None
-
-        def reconcile_ddns(self):
-            """Reconcile DDNS record - update only if IP has changed."""
-            if not DDNS_ENABLED or not DDNS_HOSTNAME:
-                logger.debug("DDNS disabled or no hostname configured")
-                return True
-
-            try:
-                # Get current public IP
-                current_ip = self.get_public_ip()
-                if not current_ip:
-                    logger.warning("DDNS: Could not determine public IP, skipping update")
-                    return False
-
+            def ensure_cf_client(self):
+                """Initialize Cloudflare client if not already created."""
+                if self.cf is not None:
+                    return self.cf
                 api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
                 if not api_token:
-                    logger.warning("DDNS: CLOUDFLARE_API_TOKEN not set")
-                    return False
+                    logger.error("CLOUDFLARE_API_TOKEN is not set")
+                    return None
+                try:
+                    self.cf = Cloudflare(api_token=api_token)
+                    return self.cf
+                except Exception as e:
+                    logger.error("Failed to initialize Cloudflare client: %s", e)
+                    return None
 
-                # Extract domain from hostname
-                hostname = DDNS_HOSTNAME.lower().strip().rstrip('.')
-                domain_parts = hostname.split('.')
-                if len(domain_parts) < 2:
-                    logger.error("DDNS: Invalid hostname format: %s", DDNS_HOSTNAME)
-                    return False
+            def get_tunnel_cname_target(self):
+                """Discover the CNAME target (<uuid>.cfargotunnel.com) for the named tunnel."""
+                if self._tunnel_cname_target:
+                    return self._tunnel_cname_target
 
-                domain = '.'.join(domain_parts[-2:])
-                subdomain = '.'.join(domain_parts[:-2]) if len(domain_parts) > 2 else '@'
+                # 1) Explicit env var — most reliable
+                tunnel_id = os.environ.get('TUNNEL_ID', '').strip()
+                if tunnel_id:
+                    self._tunnel_cname_target = tunnel_id if tunnel_id.endswith('.cfargotunnel.com') else f"{tunnel_id}.cfargotunnel.com"
+                    logger.info("Tunnel CNAME target (from TUNNEL_ID env): %s", self._tunnel_cname_target)
+                    return self._tunnel_cname_target
 
-                # Get zone ID
-                zone_id = self.get_cloudflare_zone_id(domain, api_token)
-                if not zone_id:
-                    logger.error("DDNS: Could not find zone ID for domain: %s", domain)
-                    return False
+                # 2) Auto-discover from an existing CNAME record created by cloudflared
+                try:
+                    api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+                    if api_token:
+                        desired = self.build_desired_public_rules()
+                        for rule in desired:
+                            hostname = rule['hostname']
+                            domain = '.'.join(hostname.split('.')[-2:])
+                            zone_id = self.get_cloudflare_zone_id(domain, api_token)
+                            if not zone_id:
+                                continue
+                            existing = self.find_dns_record_by_name_and_type(zone_id, hostname, 'CNAME', api_token)
+                            if existing:
+                                content = (existing.get('content') or '').lower().strip()
+                                if content.endswith('.cfargotunnel.com'):
+                                    self._tunnel_cname_target = content
+                                    logger.info("Discovered tunnel CNAME target from existing record (%s): %s", hostname, self._tunnel_cname_target)
+                                    return self._tunnel_cname_target
+                except Exception as e:
+                    logger.debug("Could not discover tunnel CNAME from existing records: %s", e)
 
-                # Get current DNS record
-                existing_record = self.get_existing_dns_record(zone_id, subdomain, domain, api_token)
+                # 3) Read tunnel UUID from cloudflared credentials via kubectl exec
+                try:
+                    cmd = [
+                        'kubectl', 'exec', '-n', 'cloudflare-tunnel',
+                        'deployment/cloudflared', '--',
+                        'cat', '/etc/cloudflared/credentials/credentials.json'
+                    ]
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+                    if result.returncode == 0 and result.stdout.strip():
+                        creds = yaml.safe_load(result.stdout)
+                        tid = creds.get('TunnelID', '') if isinstance(creds, dict) else ''
+                        if tid:
+                            self._tunnel_cname_target = f"{tid}.cfargotunnel.com"
+                            logger.info("Discovered tunnel CNAME target from cloudflared credentials: %s", self._tunnel_cname_target)
+                            return self._tunnel_cname_target
+                except Exception as e:
+                    logger.debug("Could not read tunnel credentials from cloudflared pod: %s", e)
 
-                if existing_record:
-                    current_dns_ip = existing_record.get('content')
-                    if current_dns_ip == current_ip:
-                        # IP hasn't changed, no update needed
-                        if self.last_known_public_ip != current_ip:
-                            logger.info("DDNS: %s already points to %s (no change needed)", hostname, current_ip)
-                            self.last_known_public_ip = current_ip
+                logger.error("Cannot determine tunnel CNAME target. Set TUNNEL_ID env var with your Cloudflare tunnel UUID.")
+                return None
+
+            # ========== DDNS Functions ==========
+
+            def get_public_ip(self):
+                """Get current public IP using multiple fallback services for reliability."""
+                for service_url in PUBLIC_IP_SERVICES:
+                    try:
+                        response = requests.get(service_url, timeout=5)
+                        if response.status_code == 200:
+                            ip = response.text.strip()
+                            # Validate IP format (basic check)
+                            parts = ip.split('.')
+                            if len(parts) == 4 and all(p.isdigit() and 0 <= int(p) <= 255 for p in parts):
+                                logger.debug("Got public IP %s from %s", ip, service_url)
+                                return ip
+                    except Exception as e:
+                        logger.debug("Failed to get IP from %s: %s", service_url, e)
+                        continue
+                logger.error("Failed to get public IP from all services")
+                return None
+
+            def reconcile_ddns(self):
+                """Reconcile DDNS record - update only if IP has changed."""
+                if not DDNS_ENABLED or not DDNS_HOSTNAME:
+                    logger.debug("DDNS disabled or no hostname configured")
+                    return True
+
+                try:
+                    # Get current public IP
+                    current_ip = self.get_public_ip()
+                    if not current_ip:
+                        logger.warning("DDNS: Could not determine public IP, skipping update")
+                        return False
+
+                    api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+                    if not api_token:
+                        logger.warning("DDNS: CLOUDFLARE_API_TOKEN not set")
+                        return False
+
+                    # Extract domain from hostname
+                    hostname = DDNS_HOSTNAME.lower().strip().rstrip('.')
+                    domain_parts = hostname.split('.')
+                    if len(domain_parts) < 2:
+                        logger.error("DDNS: Invalid hostname format: %s", DDNS_HOSTNAME)
+                        return False
+
+                    domain = '.'.join(domain_parts[-2:])
+                    subdomain = '.'.join(domain_parts[:-2]) if len(domain_parts) > 2 else '@'
+
+                    # Get zone ID
+                    zone_id = self.get_cloudflare_zone_id(domain, api_token)
+                    if not zone_id:
+                        logger.error("DDNS: Could not find zone ID for domain: %s", domain)
+                        return False
+
+                    # Get current DNS record
+                    existing_record = self.get_existing_dns_record(zone_id, subdomain, domain, api_token)
+
+                    if existing_record:
+                        current_dns_ip = existing_record.get('content')
+                        if current_dns_ip == current_ip:
+                            # IP hasn't changed, no update needed
+                            if self.last_known_public_ip != current_ip:
+                                logger.info("DDNS: %s already points to %s (no change needed)", hostname, current_ip)
+                                self.last_known_public_ip = current_ip
+                            else:
+                                logger.debug("DDNS: %s -> %s (unchanged)", hostname, current_ip)
+                            return True
                         else:
-                            logger.debug("DDNS: %s -> %s (unchanged)", hostname, current_ip)
-                        return True
+                            # IP changed, update the record
+                            logger.info("DDNS: IP changed from %s to %s, updating %s", current_dns_ip, current_ip, hostname)
+                            success = self.update_dns_record(zone_id, existing_record['id'], subdomain, current_ip, api_token)
+                            if success:
+                                self.last_known_public_ip = current_ip
+                                logger.info("DDNS: Successfully updated %s -> %s", hostname, current_ip)
+                            return success
                     else:
-                        # IP changed, update the record
-                        logger.info("DDNS: IP changed from %s to %s, updating %s", current_dns_ip, current_ip, hostname)
-                        success = self.update_dns_record(zone_id, existing_record['id'], subdomain, current_ip, api_token)
+                        # Record doesn't exist, create it
+                        logger.info("DDNS: Creating new record %s -> %s", hostname, current_ip)
+                        success = self.create_dns_record(zone_id, subdomain, current_ip, api_token, domain)
                         if success:
                             self.last_known_public_ip = current_ip
-                            logger.info("DDNS: Successfully updated %s -> %s", hostname, current_ip)
+                            logger.info("DDNS: Successfully created %s -> %s", hostname, current_ip)
                         return success
-                else:
-                    # Record doesn't exist, create it
-                    logger.info("DDNS: Creating new record %s -> %s", hostname, current_ip)
-                    success = self.create_dns_record(zone_id, subdomain, current_ip, api_token, domain)
-                    if success:
-                        self.last_known_public_ip = current_ip
-                        logger.info("DDNS: Successfully created %s -> %s", hostname, current_ip)
-                    return success
 
-            except Exception as e:
-                logger.exception("DDNS: Error during reconciliation: %s", e)
-                return False
+                except Exception as e:
+                    logger.exception("DDNS: Error during reconciliation: %s", e)
+                    return False
 
-        # ========== End DDNS Functions ==========
+            # ========== End DDNS Functions ==========
 
-        def get_service_port(self, service_name, namespace):
-            """Get the port of a service"""
-            try:
-                service = self.v1.read_namespaced_service(service_name, namespace)
-                if service.spec.ports:
-                    return service.spec.ports[0].port
-                return 80
-            except Exception as e:
-                logger.warning("Error getting port for %s.%s: %s", service_name, namespace, e)
-                return 80
+            def get_service_port(self, service_name, namespace):
+                """Get the port of a service"""
+                try:
+                    service = self.v1.read_namespaced_service(service_name, namespace)
+                    if service.spec.ports:
+                        return service.spec.ports[0].port
+                    return 80
+                except Exception as e:
+                    logger.warning("Error getting port for %s.%s: %s", service_name, namespace, e)
+                    return 80
 
-        def get_ingress_external_ip(self):
-            """Get the external IP of the ingress controller service for internal HTTPS"""
-            try:
-                service = self.v1.read_namespaced_service(self.ingress_service_name, self.ingress_namespace)
-                if service.status.load_balancer and service.status.load_balancer.ingress:
-                    ip = service.status.load_balancer.ingress[0].ip
-                    if ip:
-                        return ip
-                return None
-            except Exception as e:
-                logger.warning("Error getting external IP for ingress %s.%s: %s", self.ingress_service_name, self.ingress_namespace, e)
-                return self.discover_ingress_external_ip()
-
-        def discover_ingress_external_ip(self):
-            """Find the Envoy Gateway LoadBalancer service when its generated name changes."""
-            try:
-                services = self.v1.list_namespaced_service(self.ingress_namespace).items
-                for service in services:
-                    annotations = service.metadata.annotations or {}
-                    service_name = service.metadata.name or ""
-                    is_gateway_service = (
-                        service.spec.type == "LoadBalancer"
-                        and (
-                            service_name.startswith("envoy-gateway-system-homelab-gateway-")
-                            or annotations.get("metallb.universe.tf/loadBalancerIPs") == "192.168.1.178"
-                        )
-                    )
-                    if not is_gateway_service:
-                        continue
+            def get_ingress_external_ip(self):
+                """Get the external IP of the ingress controller service for internal HTTPS"""
+                try:
+                    service = self.v1.read_namespaced_service(self.ingress_service_name, self.ingress_namespace)
                     if service.status.load_balancer and service.status.load_balancer.ingress:
                         ip = service.status.load_balancer.ingress[0].ip
                         if ip:
-                            logger.info("Discovered ingress service %s.%s with IP %s", service_name, self.ingress_namespace, ip)
                             return ip
-                logger.warning("Could not discover an Envoy Gateway LoadBalancer service in namespace %s", self.ingress_namespace)
-                return None
-            except Exception as e:
-                logger.warning("Error discovering ingress external IP in namespace %s: %s", self.ingress_namespace, e)
-                return None
+                    return None
+                except Exception as e:
+                    logger.warning("Error getting external IP for ingress %s.%s: %s", self.ingress_service_name, self.ingress_namespace, e)
+                    return self.discover_ingress_external_ip()
 
-        def create_cloudflare_dns_route(self, hostname):
-            """Create DNS route using cloudflared for public services"""
-            try:
-                # Skip creating if route already exists
-                if self.public_route_exists(hostname):
-                    logger.debug("Cloudflare DNS route already exists for %s", hostname)
-                    return True
+            def discover_ingress_external_ip(self):
+                """Find the Envoy Gateway LoadBalancer service when its generated name changes."""
+                try:
+                    services = self.v1.list_namespaced_service(self.ingress_namespace).items
+                    for service in services:
+                        annotations = service.metadata.annotations or {}
+                        service_name = service.metadata.name or ""
+                        is_gateway_service = (
+                            service.spec.type == "LoadBalancer"
+                            and (
+                                service_name.startswith("envoy-gateway-system-homelab-gateway-")
+                                or annotations.get("metallb.universe.tf/loadBalancerIPs") == "192.168.1.178"
+                            )
+                        )
+                        if not is_gateway_service:
+                            continue
+                        if service.status.load_balancer and service.status.load_balancer.ingress:
+                            ip = service.status.load_balancer.ingress[0].ip
+                            if ip:
+                                logger.info("Discovered ingress service %s.%s with IP %s", service_name, self.ingress_namespace, ip)
+                                return ip
+                    logger.warning("Could not discover an Envoy Gateway LoadBalancer service in namespace %s", self.ingress_namespace)
+                    return None
+                except Exception as e:
+                    logger.warning("Error discovering ingress external IP in namespace %s: %s", self.ingress_namespace, e)
+                    return None
 
-                logger.debug("Ensuring Cloudflare DNS route for %s", hostname)
+            def create_cloudflare_dns_route(self, hostname):
+                """Create DNS route using cloudflared for public services"""
+                try:
+                    # Skip creating if route already exists
+                    if self.public_route_exists(hostname):
+                        logger.debug("Cloudflare DNS route already exists for %s", hostname)
+                        return True
 
-                hostname_norm = str(hostname).strip().lower().rstrip(".")
-                domain_parts = hostname_norm.split(".")
-                if len(domain_parts) < 2:
-                    logger.warning("Invalid hostname for public DNS route: %s", hostname)
-                    return False
-                zone = ".".join(domain_parts[-2:])
+                    logger.debug("Ensuring Cloudflare DNS route for %s", hostname)
 
-                cmd = [
-                    'kubectl', 'exec', '-n', 'cloudflare-tunnel',
-                    'deployment/cloudflared', '--', 'cloudflared',
-                    'tunnel', 'route', 'dns', '--overwrite-dns', '--zone', zone,
-                    'homelab-tunnel', hostname
-                ]
-                result = subprocess.run(cmd, capture_output=True, text=True)
-                out = (result.stdout or "") + "\n" + (result.stderr or "")
-                logger.debug("DNS route cmd rc=%s out='%s'", result.returncode, out.strip())
-                if result.returncode == 0:
-                    if re.search(r"exist|already", out, re.IGNORECASE):
-                        logger.debug("Cloudflare DNS route already existed for %s", hostname)
-                    else:
-                        logger.debug("Ensured Cloudflare DNS route for %s", hostname)
-                    return True
-                else:
-                    logger.warning("Cloudflare DNS route creation failed for %s: %s", hostname, result.stderr.strip())
-                    cmd_fallback = [
+                    hostname_norm = str(hostname).strip().lower().rstrip(".")
+                    domain_parts = hostname_norm.split(".")
+                    if len(domain_parts) < 2:
+                        logger.warning("Invalid hostname for public DNS route: %s", hostname)
+                        return False
+                    zone = ".".join(domain_parts[-2:])
+
+                    cmd = [
                         'kubectl', 'exec', '-n', 'cloudflare-tunnel',
                         'deployment/cloudflared', '--', 'cloudflared',
-                        'tunnel', 'route', 'dns', '--zone', zone,
+                        'tunnel', 'route', 'dns', '--overwrite-dns', '--zone', zone,
                         'homelab-tunnel', hostname
                     ]
-                    result_fallback = subprocess.run(cmd_fallback, capture_output=True, text=True)
-                    fb_out = (result_fallback.stdout or "") + "\n" + (result_fallback.stderr or "")
-                    logger.debug("Fallback DNS route rc=%s out='%s'", result_fallback.returncode, fb_out.strip())
-                    if result_fallback.returncode == 0:
-                        if re.search(r"exist|already", fb_out, re.IGNORECASE):
-                            logger.debug("Cloudflare DNS route already existed for %s (fallback)", hostname)
+                    result = subprocess.run(cmd, capture_output=True, text=True)
+                    out = (result.stdout or "") + "\n" + (result.stderr or "")
+                    logger.debug("DNS route cmd rc=%s out='%s'", result.returncode, out.strip())
+                    if result.returncode == 0:
+                        if re.search(r"exist|already", out, re.IGNORECASE):
+                            logger.debug("Cloudflare DNS route already existed for %s", hostname)
                         else:
-                            logger.debug("Ensured Cloudflare DNS route for %s (fallback)", hostname)
+                            logger.debug("Ensured Cloudflare DNS route for %s", hostname)
                         return True
                     else:
-                        logger.error("Failed to create Cloudflare DNS route for %s: %s", hostname, result_fallback.stderr.strip())
+                        logger.warning("Cloudflare DNS route creation failed for %s: %s", hostname, result.stderr.strip())
+                        cmd_fallback = [
+                            'kubectl', 'exec', '-n', 'cloudflare-tunnel',
+                            'deployment/cloudflared', '--', 'cloudflared',
+                            'tunnel', 'route', 'dns', '--zone', zone,
+                            'homelab-tunnel', hostname
+                        ]
+                        result_fallback = subprocess.run(cmd_fallback, capture_output=True, text=True)
+                        fb_out = (result_fallback.stdout or "") + "\n" + (result_fallback.stderr or "")
+                        logger.debug("Fallback DNS route rc=%s out='%s'", result_fallback.returncode, fb_out.strip())
+                        if result_fallback.returncode == 0:
+                            if re.search(r"exist|already", fb_out, re.IGNORECASE):
+                                logger.debug("Cloudflare DNS route already existed for %s (fallback)", hostname)
+                            else:
+                                logger.debug("Ensured Cloudflare DNS route for %s (fallback)", hostname)
+                            return True
+                        else:
+                            logger.error("Failed to create Cloudflare DNS route for %s: %s", hostname, result_fallback.stderr.strip())
+                            return False
+                except subprocess.TimeoutExpired:
+                    logger.warning("DNS route command timed out for %s", hostname)
+                    return False
+                except Exception as e:
+                    logger.exception("Error creating Cloudflare DNS route for %s: %s", hostname, e)
+                    return False
+
+            def public_route_exists(self, hostname):
+                """Check if a Cloudflare DNS route already exists for the hostname"""
+                try:
+                    cmd = [
+                        'kubectl', 'exec', '-n', 'cloudflare-tunnel',
+                        'deployment/cloudflared', '--', 'cloudflared',
+                        'tunnel', 'route', 'dns', 'homelab-tunnel', 'list'
+                    ]
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+                    if result.returncode != 0:
+                        logger.debug("route list failed rc=%s stderr='%s'", result.returncode, result.stderr.strip())
                         return False
-            except subprocess.TimeoutExpired:
-                logger.warning("DNS route command timed out for %s", hostname)
-                return False
-            except Exception as e:
-                logger.exception("Error creating Cloudflare DNS route for %s: %s", hostname, e)
-                return False
-
-        def public_route_exists(self, hostname):
-            """Check if a Cloudflare DNS route already exists for the hostname"""
-            try:
-                cmd = [
-                    'kubectl', 'exec', '-n', 'cloudflare-tunnel',
-                    'deployment/cloudflared', '--', 'cloudflared',
-                    'tunnel', 'route', 'dns', 'homelab-tunnel', 'list'
-                ]
-                result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-                if result.returncode != 0:
-                    logger.debug("route list failed rc=%s stderr='%s'", result.returncode, result.stderr.strip())
+                    out = result.stdout or ""
+                    exists = hostname in out
+                    logger.debug("route exists for %s: %s", hostname, exists)
+                    return exists
+                except subprocess.TimeoutExpired:
+                    logger.warning("Timeout checking route existence for %s", hostname)
                     return False
-                out = result.stdout or ""
-                exists = hostname in out
-                logger.debug("route exists for %s: %s", hostname, exists)
-                return exists
-            except subprocess.TimeoutExpired:
-                logger.warning("Timeout checking route existence for %s", hostname)
-                return False
-            except Exception as e:
-                logger.debug("Error checking route existence for %s: %s", hostname, e)
-                return False
-
-        def create_internal_dns_entry(self, hostname, ip_address):
-            """Ensure internal DNS entry using MetalLB IP via Cloudflare API"""
-            try:
-                logger.debug("Ensuring internal DNS entry for %s -> %s", hostname, ip_address)
-
-                api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
-                if not api_token:
-                    logger.warning("CLOUDFLARE_API_TOKEN not found in environment variables")
+                except Exception as e:
+                    logger.debug("Error checking route existence for %s: %s", hostname, e)
                     return False
 
-                domain_parts = hostname.split('.')
-                if len(domain_parts) < 2:
-                    logger.warning("Invalid hostname format: %s", hostname)
-                    return False
+            def create_internal_dns_entry(self, hostname, ip_address):
+                """Ensure internal DNS entry using MetalLB IP via Cloudflare API"""
+                try:
+                    logger.debug("Ensuring internal DNS entry for %s -> %s", hostname, ip_address)
 
-                domain = '.'.join(domain_parts[-2:])
-                subdomain = '.'.join(domain_parts[:-2]) if len(domain_parts) > 2 else '@'
+                    api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+                    if not api_token:
+                        logger.warning("CLOUDFLARE_API_TOKEN not found in environment variables")
+                        return False
 
-                logger.debug("Domain: %s, Subdomain: %s", domain, subdomain)
+                    domain_parts = hostname.split('.')
+                    if len(domain_parts) < 2:
+                        logger.warning("Invalid hostname format: %s", hostname)
+                        return False
 
-                zone_id = self.get_cloudflare_zone_id(domain, api_token)
-                if not zone_id:
-                    logger.error("Could not find zone ID for domain: %s", domain)
-                    return False
+                    domain = '.'.join(domain_parts[-2:])
+                    subdomain = '.'.join(domain_parts[:-2]) if len(domain_parts) > 2 else '@'
 
-                existing_record = self.get_existing_dns_record(zone_id, subdomain, domain, api_token)
+                    logger.debug("Domain: %s, Subdomain: %s", domain, subdomain)
 
-                if existing_record:
-                    if existing_record.get('content') != ip_address:
-                        logger.info("Updating internal DNS record for %s -> %s", hostname, ip_address)
-                        success = self.update_dns_record(zone_id, existing_record['id'], subdomain, ip_address, api_token)
-                        return success
+                    zone_id = self.get_cloudflare_zone_id(domain, api_token)
+                    if not zone_id:
+                        logger.error("Could not find zone ID for domain: %s", domain)
+                        return False
+
+                    existing_record = self.get_existing_dns_record(zone_id, subdomain, domain, api_token)
+
+                    if existing_record:
+                        if existing_record.get('content') != ip_address:
+                            logger.info("Updating internal DNS record for %s -> %s", hostname, ip_address)
+                            success = self.update_dns_record(zone_id, existing_record['id'], subdomain, ip_address, api_token)
+                            return success
+                        else:
+                            logger.debug("Internal DNS record for %s already correct", hostname)
+                            return True
                     else:
-                        logger.debug("Internal DNS record for %s already correct", hostname)
-                        return True
-                else:
-                    logger.info("Creating internal DNS record for %s -> %s", hostname, ip_address)
-                    success = self.create_dns_record(zone_id, subdomain, ip_address, api_token, domain)
-                    return success
+                        logger.info("Creating internal DNS record for %s -> %s", hostname, ip_address)
+                        success = self.create_dns_record(zone_id, subdomain, ip_address, api_token, domain)
+                        return success
 
-            except Exception as e:
-                logger.exception("Error creating internal DNS entry for %s: %s", hostname, e)
-                return False
-
-        def get_cloudflare_zone_id(self, domain, api_token):
-            """Get Cloudflare zone ID for a domain using SDK with caching"""
-            if domain in self.zone_id_cache:
-                return self.zone_id_cache[domain]
-
-            try:
-                cf = self.ensure_cf_client()
-                if not cf:
-                    return None
-                
-                logger.debug("Fetching zone ID for domain: %s", domain)
-                zones = cf.zones.list(name=domain)
-                first_zone = None
-                for z in zones:
-                    first_zone = z
-                    break
-                
-                zone_id = None
-                if first_zone is not None:
-                    zone_id = getattr(first_zone, 'id', None)
-                    if zone_id is None and isinstance(first_zone, dict):
-                        zone_id = first_zone.get('id')
-                
-                if zone_id:
-                    logger.debug("Found zone ID for %s: %s", domain, zone_id)
-                    self.zone_id_cache[domain] = zone_id
-                    return zone_id
-                
-                logger.error("No zone found for domain: %s", domain)
-                return None
-            except Exception as e:
-                if '429' in str(e):
-                    logger.warning("Cloudflare Rate Limit (429) hit while fetching zone ID for %s", domain)
-                else:
-                    logger.exception("Error getting zone ID via SDK: %s", e)
-                return None
-
-        def get_existing_dns_record(self, zone_id, subdomain, domain, api_token):
-            """Get existing DNS A record if it exists using SDK"""
-            try:
-                cf = self.ensure_cf_client()
-                record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
-                records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='A')
-                first_rec = None
-                for r in records:
-                    first_rec = r
-                    break
-                if first_rec is not None:
-                    rec_id = getattr(first_rec, 'id', None)
-                    rec_content = getattr(first_rec, 'content', None)
-                    rec_name = getattr(first_rec, 'name', None)
-                    if isinstance(first_rec, dict):
-                        rec_id = rec_id or first_rec.get('id')
-                        rec_content = rec_content or first_rec.get('content')
-                        rec_name = rec_name or first_rec.get('name')
-                    return {'id': rec_id, 'content': rec_content, 'name': rec_name}
-                return None
-            except Exception as e:
-                logger.exception("Error checking existing DNS record via SDK: %s", e)
-                return None
-
-        def get_cloudflare_records_by_names(self, zone_id, api_token, names):
-            """Fetch A records for provided FQDN names using SDK. Return map name->{ip,id}."""
-            results = {}
-            try:
-                cf = self.ensure_cf_client()
-                if not cf:
-                    return results
-                
-                # Fetch ALL 'A' records once per zone to avoid multiple API calls
-                # For many records this might be paged, the SDK iterator handles it
-                all_recs = cf.dns.records.list(zone_id=zone_id, type='A')
-                names_lower = {n.lower().rstrip('.') for n in names}
-                
-                for r in all_recs:
-                    name_val = (getattr(r, 'name', None) or '').lower().rstrip('.')
-                    if name_val in names_lower:
-                        content_val = getattr(r, 'content', None)
-                        id_val = getattr(r, 'id', None)
-                        if isinstance(r, dict):
-                            content_val = content_val or r.get('content')
-                            id_val = id_val or r.get('id')
-                        results[name_val] = {'ip': content_val, 'id': id_val}
-            except Exception as e:
-                if '429' in str(e):
-                    logger.warning("Cloudflare Rate Limit (429) hit while fetching DNS records for zone %s", zone_id)
-                else:
-                    logger.exception("Error fetching DNS records by names via SDK: %s", e)
-            return results
-
-        def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):
-            """Create a new DNS A record using SDK. Proactively replace conflicting CNAME."""
-            try:
-                record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
-                cf = self.ensure_cf_client()
-
-                # Proactively delete conflicting CNAME if present
-                cname_records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='CNAME')
-                first_cname = None
-                for r in cname_records:
-                    first_cname = r
-                    break
-                if first_cname is not None:
-                    rec_id = getattr(first_cname, 'id', None)
-                    if rec_id is None and isinstance(first_cname, dict):
-                        rec_id = first_cname.get('id')
-                    if rec_id:
-                        cf.dns.records.delete(zone_id=zone_id, dns_record_id=rec_id)
-                        logger.info("Deleted conflicting CNAME for %s", record_name)
-
-                cf.dns.records.create(
-                    zone_id=zone_id,
-                    type='A',
-                    name=record_name,
-                    content=ip_address,
-                    ttl=300,
-                    proxied=False
-                )
-                return True
-            except Exception as e:
-                msg = str(e).lower()
-                # 81058 = "An identical record already exists" — nothing to do
-                if '81058' in msg:
-                    logger.debug("DNS A record for %s already exists (identical), treating as success", record_name)
-                    return True
-                # 81054 = CNAME conflict — delete CNAME then retry
-                if ('81054' in msg or 'cname' in msg) and 'cf' in locals():
-                    try:
-                        cname_records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='CNAME')
-                        first_cname = None
-                        for r in cname_records:
-                            first_cname = r
-                            break
-                        if first_cname is not None:
-                            rec_id = getattr(first_cname, 'id', None)
-                            if rec_id is None and isinstance(first_cname, dict):
-                                rec_id = first_cname.get('id')
-                            if rec_id:
-                                cf.dns.records.delete(zone_id=zone_id, dns_record_id=rec_id)
-                                cf.dns.records.create(
-                                    zone_id=zone_id,
-                                    type='A',
-                                    name=record_name,
-                                    content=ip_address,
-                                    ttl=300,
-                                    proxied=False
-                                )
-                                return True
-                    except Exception as e2:
-                        logger.exception("Retry after CNAME deletion failed: %s", e2)
-                logger.exception("Error creating DNS record via SDK: %s", e)
-                return False
-
-        def update_dns_record(self, zone_id, record_id, subdomain, ip_address, api_token):
-            """Update an existing DNS A record using SDK"""
-            try:
-                cf = self.ensure_cf_client()
-                name_value = subdomain if subdomain != '@' else None
-                update_payload = {
-                    'type': 'A',
-                    'content': ip_address,
-                    'ttl': 300,
-                    'proxied': False
-                }
-                if name_value:
-                    update_payload['name'] = name_value
-                cf.dns.records.update(zone_id=zone_id, dns_record_id=record_id, **update_payload)
-                return True
-            except Exception as e:
-                logger.exception("Error updating DNS record via SDK: %s", e)
-                return False
-
-        def find_dns_record_by_name_and_type(self, zone_id, record_name, record_type, api_token):
-            """Find a DNS record by exact name and type using SDK. Returns dict or None."""
-            try:
-                cf = self.ensure_cf_client()
-                recs = cf.dns.records.list(zone_id=zone_id, name=record_name, type=record_type)
-                first = None
-                for r in recs:
-                    first = r
-                    break
-                if first is not None:
-                    rec_id = getattr(first, 'id', None)
-                    rec_name = getattr(first, 'name', None)
-                    rec_type = getattr(first, 'type', None)
-                    rec_content = getattr(first, 'content', None)
-                    if isinstance(first, dict):
-                        rec_id = rec_id or first.get('id')
-                        rec_name = rec_name or first.get('name')
-                        rec_type = rec_type or first.get('type')
-                        rec_content = rec_content or first.get('content')
-                    return {'id': rec_id, 'name': rec_name, 'type': rec_type, 'content': rec_content}
-                return None
-            except Exception as e:
-                logger.exception("Error finding DNS record by name/type via SDK: %s", e)
-                return None
-
-        def delete_dns_record(self, zone_id, record_id, api_token):
-            """Delete a DNS record by id using SDK. Returns True on success."""
-            try:
-                cf = self.ensure_cf_client()
-                if not cf:
+                except Exception as e:
+                    logger.exception("Error creating internal DNS entry for %s: %s", hostname, e)
                     return False
-                cf.dns.records.delete(zone_id=zone_id, dns_record_id=record_id)
-                logger.info("Deleted DNS record id=%s", record_id)
-                return True
-            except Exception as e:
-                if '429' in str(e):
-                    logger.warning("Cloudflare Rate Limit (429) hit while deleting DNS record %s", record_id)
-                else:
-                    logger.exception("Error deleting DNS record via SDK id=%s: %s", record_id, e)
-                return False
 
-        def calculate_config_hash(self, config_data):
-            """Calculate hash of tunnel configuration to detect changes"""
-            config_str = yaml.dump(config_data, default_flow_style=False, sort_keys=True)
-            return hashlib.md5(config_str.encode()).hexdigest()
+            def get_cloudflare_zone_id(self, domain, api_token):
+                """Get Cloudflare zone ID for a domain using SDK with caching"""
+                if domain in self.zone_id_cache:
+                    return self.zone_id_cache[domain]
 
-        def update_tunnel_config(self, service_name, hostname, namespace, port):
-            """Update the tunnel configuration for public services"""
-            try:
-                logger.info("Adding tunnel ingress rule for %s", hostname)
+                try:
+                    cf = self.ensure_cf_client()
+                    if not cf:
+                        return None
+                    
+                    logger.debug("Fetching zone ID for domain: %s", domain)
+                    zones = cf.zones.list(name=domain)
+                    first_zone = None
+                    for z in zones:
+                        first_zone = z
+                        break
+                    
+                    zone_id = None
+                    if first_zone is not None:
+                        zone_id = getattr(first_zone, 'id', None)
+                        if zone_id is None and isinstance(first_zone, dict):
+                            zone_id = first_zone.get('id')
+                    
+                    if zone_id:
+                        logger.debug("Found zone ID for %s: %s", domain, zone_id)
+                        self.zone_id_cache[domain] = zone_id
+                        return zone_id
+                    
+                    logger.error("No zone found for domain: %s", domain)
+                    return None
+                except Exception as e:
+                    if '429' in str(e):
+                        logger.warning("Cloudflare Rate Limit (429) hit while fetching zone ID for %s", domain)
+                    else:
+                        logger.exception("Error getting zone ID via SDK: %s", e)
+                    return None
 
-                configmap = self.v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
-                current_config = configmap.data["config.yaml"]
-                config_data = yaml.safe_load(current_config)
+            def get_existing_dns_record(self, zone_id, subdomain, domain, api_token):
+                """Get existing DNS A record if it exists using SDK"""
+                try:
+                    cf = self.ensure_cf_client()
+                    record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
+                    records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='A')
+                    first_rec = None
+                    for r in records:
+                        first_rec = r
+                        break
+                    if first_rec is not None:
+                        rec_id = getattr(first_rec, 'id', None)
+                        rec_content = getattr(first_rec, 'content', None)
+                        rec_name = getattr(first_rec, 'name', None)
+                        if isinstance(first_rec, dict):
+                            rec_id = rec_id or first_rec.get('id')
+                            rec_content = rec_content or first_rec.get('content')
+                            rec_name = rec_name or first_rec.get('name')
+                        return {'id': rec_id, 'content': rec_content, 'name': rec_name}
+                    return None
+                except Exception as e:
+                    logger.exception("Error checking existing DNS record via SDK: %s", e)
+                    return None
 
-                desired_service = f"http://{service_name}.{namespace}.svc.cluster.local:{port}"
-                logger.debug("Desired service for %s: %s", hostname, desired_service)
+            def get_cloudflare_records_by_names(self, zone_id, api_token, names):
+                """Fetch A records for provided FQDN names using SDK. Return map name->{ip,id}."""
+                results = {}
+                try:
+                    cf = self.ensure_cf_client()
+                    if not cf:
+                        return results
+                    
+                    # Fetch ALL 'A' records once per zone to avoid multiple API calls
+                    # For many records this might be paged, the SDK iterator handles it
+                    all_recs = cf.dns.records.list(zone_id=zone_id, type='A')
+                    names_lower = {n.lower().rstrip('.') for n in names}
+                    
+                    for r in all_recs:
+                        name_val = (getattr(r, 'name', None) or '').lower().rstrip('.')
+                        if name_val in names_lower:
+                            content_val = getattr(r, 'content', None)
+                            id_val = getattr(r, 'id', None)
+                            if isinstance(r, dict):
+                                content_val = content_val or r.get('content')
+                                id_val = id_val or r.get('id')
+                            results[name_val] = {'ip': content_val, 'id': id_val}
+                except Exception as e:
+                    if '429' in str(e):
+                        logger.warning("Cloudflare Rate Limit (429) hit while fetching DNS records for zone %s", zone_id)
+                    else:
+                        logger.exception("Error fetching DNS records by names via SDK: %s", e)
+                return results
 
-                normalized_hostname = str(hostname).strip().lower().rstrip(".")
-                logger.debug("Normalized hostname: '%s'", normalized_hostname)
-                ingress_rules = config_data.get("ingress", [])
-                existing_index = None
-                config_changed = False
-                for i, rule in enumerate(ingress_rules):
+            def create_dns_record(self, zone_id, subdomain, ip_address, api_token, domain):
+                """Create a new DNS A record using SDK. Proactively replace conflicting CNAME."""
+                try:
+                    record_name = f"{subdomain}.{domain}" if subdomain != '@' else domain
+                    cf = self.ensure_cf_client()
+
+                    # Proactively delete conflicting CNAME if present
+                    cname_records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='CNAME')
+                    first_cname = None
+                    for r in cname_records:
+                        first_cname = r
+                        break
+                    if first_cname is not None:
+                        rec_id = getattr(first_cname, 'id', None)
+                        if rec_id is None and isinstance(first_cname, dict):
+                            rec_id = first_cname.get('id')
+                        if rec_id:
+                            cf.dns.records.delete(zone_id=zone_id, dns_record_id=rec_id)
+                            logger.info("Deleted conflicting CNAME for %s", record_name)
+
+                    cf.dns.records.create(
+                        zone_id=zone_id,
+                        type='A',
+                        name=record_name,
+                        content=ip_address,
+                        ttl=300,
+                        proxied=False
+                    )
+                    return True
+                except Exception as e:
+                    msg = str(e).lower()
+                    # 81058 = "An identical record already exists" — nothing to do
+                    if '81058' in msg:
+                        logger.debug("DNS A record for %s already exists (identical), treating as success", record_name)
+                        return True
+                    # 81054 = CNAME conflict — delete CNAME then retry
+                    if ('81054' in msg or 'cname' in msg) and 'cf' in locals():
+                        try:
+                            cname_records = cf.dns.records.list(zone_id=zone_id, name=record_name, type='CNAME')
+                            first_cname = None
+                            for r in cname_records:
+                                first_cname = r
+                                break
+                            if first_cname is not None:
+                                rec_id = getattr(first_cname, 'id', None)
+                                if rec_id is None and isinstance(first_cname, dict):
+                                    rec_id = first_cname.get('id')
+                                if rec_id:
+                                    cf.dns.records.delete(zone_id=zone_id, dns_record_id=rec_id)
+                                    cf.dns.records.create(
+                                        zone_id=zone_id,
+                                        type='A',
+                                        name=record_name,
+                                        content=ip_address,
+                                        ttl=300,
+                                        proxied=False
+                                    )
+                                    return True
+                        except Exception as e2:
+                            logger.exception("Retry after CNAME deletion failed: %s", e2)
+                    logger.exception("Error creating DNS record via SDK: %s", e)
+                    return False
+
+            def update_dns_record(self, zone_id, record_id, subdomain, ip_address, api_token):
+                """Update an existing DNS A record using SDK"""
+                try:
+                    cf = self.ensure_cf_client()
+                    name_value = subdomain if subdomain != '@' else None
+                    update_payload = {
+                        'type': 'A',
+                        'content': ip_address,
+                        'ttl': 300,
+                        'proxied': False
+                    }
+                    if name_value:
+                        update_payload['name'] = name_value
+                    cf.dns.records.update(zone_id=zone_id, dns_record_id=record_id, **update_payload)
+                    return True
+                except Exception as e:
+                    logger.exception("Error updating DNS record via SDK: %s", e)
+                    return False
+
+            def find_dns_record_by_name_and_type(self, zone_id, record_name, record_type, api_token):
+                """Find a DNS record by exact name and type using SDK. Returns dict or None."""
+                try:
+                    cf = self.ensure_cf_client()
+                    recs = cf.dns.records.list(zone_id=zone_id, name=record_name, type=record_type)
+                    first = None
+                    for r in recs:
+                        first = r
+                        break
+                    if first is not None:
+                        rec_id = getattr(first, 'id', None)
+                        rec_name = getattr(first, 'name', None)
+                        rec_type = getattr(first, 'type', None)
+                        rec_content = getattr(first, 'content', None)
+                        if isinstance(first, dict):
+                            rec_id = rec_id or first.get('id')
+                            rec_name = rec_name or first.get('name')
+                            rec_type = rec_type or first.get('type')
+                            rec_content = rec_content or first.get('content')
+                        return {'id': rec_id, 'name': rec_name, 'type': rec_type, 'content': rec_content}
+                    return None
+                except Exception as e:
+                    logger.exception("Error finding DNS record by name/type via SDK: %s", e)
+                    return None
+
+            def delete_dns_record(self, zone_id, record_id, api_token):
+                """Delete a DNS record by id using SDK. Returns True on success."""
+                try:
+                    cf = self.ensure_cf_client()
+                    if not cf:
+                        return False
+                    cf.dns.records.delete(zone_id=zone_id, dns_record_id=record_id)
+                    logger.info("Deleted DNS record id=%s", record_id)
+                    return True
+                except Exception as e:
+                    if '429' in str(e):
+                        logger.warning("Cloudflare Rate Limit (429) hit while deleting DNS record %s", record_id)
+                    else:
+                        logger.exception("Error deleting DNS record via SDK id=%s: %s", record_id, e)
+                    return False
+
+            def calculate_config_hash(self, config_data):
+                """Calculate hash of tunnel configuration to detect changes"""
+                config_str = yaml.dump(config_data, default_flow_style=False, sort_keys=True)
+                return hashlib.md5(config_str.encode()).hexdigest()
+
+            def update_tunnel_config(self, service_name, hostname, namespace, port):
+                """Update the tunnel configuration for public services"""
+                try:
+                    logger.info("Adding tunnel ingress rule for %s", hostname)
+
+                    configmap = self.v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
+                    current_config = configmap.data["config.yaml"]
+                    config_data = yaml.safe_load(current_config)
+
+                    desired_service = f"http://{service_name}.{namespace}.svc.cluster.local:{port}"
+                    logger.debug("Desired service for %s: %s", hostname, desired_service)
+
+                    normalized_hostname = str(hostname).strip().lower().rstrip(".")
+                    logger.debug("Normalized hostname: '%s'", normalized_hostname)
+                    ingress_rules = config_data.get("ingress", [])
+                    existing_index = None
+                    config_changed = False
+                    for i, rule in enumerate(ingress_rules):
+                        if not isinstance(rule, dict):
+                            continue
+                        current_hostname = str(rule.get("hostname", "")).strip().lower().rstrip(".")
+                        logger.debug("Checking rule %s: current_hostname='%s' rule=%s", i, current_hostname, rule)
+                        if current_hostname == normalized_hostname:
+                            existing_index = i
+                            current_service = rule.get("service")
+                            logger.debug("Found existing rule at index %s, current service: '%s', desired: '%s'", i, current_service, desired_service)
+                            if current_service != desired_service:
+                                logger.info("Updating tunnel ingress rule for %s -> %s", hostname, desired_service)
+                                rule["service"] = desired_service
+                                ingress_rules[i] = rule
+                                config_changed = True
+                            else:
+                                logger.info("Tunnel ingress rule for %s already exists", hostname)
+                                return True
+                            break
+
+                    if existing_index is None:
+                        logger.debug("No existing rule found for %s, adding new", normalized_hostname)
+                        new_rule = {
+                            "hostname": hostname,
+                            "service": desired_service
+                        }
+                        for i, rule in enumerate(ingress_rules):
+                            if isinstance(rule, dict) and rule.get("service") == "http_status:404":
+                                logger.debug("Inserting before catch-all at index %s", i)
+                                ingress_rules.insert(i, new_rule)
+                                config_changed = True
+                                break
+                        else:
+                            logger.debug("Appending to end (no catch-all found)")
+                            ingress_rules.append(new_rule)
+                            config_changed = True
+
+                    config_data["ingress"] = ingress_rules
+                    new_hash = self.calculate_config_hash(config_data)
+                    logger.debug("New config hash: %s, previous: %s", new_hash, self.tunnel_config_hash)
+
+                    if new_hash != self.tunnel_config_hash or config_changed:
+                        updated_config = yaml.dump(config_data, default_flow_style=False)
+                        configmap.data["config.yaml"] = updated_config
+                        self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
+                        logger.info("Updated ConfigMap with new ingress rules")
+
+                        try:
+                            patch_body = {
+                                "spec": {
+                                    "template": {
+                                        "metadata": {
+                                            "annotations": {
+                                                "service-controller.io/config-hash": new_hash
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                            self.apps_v1.patch_namespaced_deployment(
+                                name="cloudflared",
+                                namespace="cloudflare-tunnel",
+                                body=patch_body
+                            )
+                            logger.info("Triggered cloudflared rollout due to config change")
+                        except Exception as rollout_e:
+                            logger.warning("Failed to trigger cloudflared rollout: %s", rollout_e)
+
+                        self.tunnel_config_hash = new_hash
+                        self.last_config_update = time.time()
+                        logger.info("Updated tunnel config for %s", hostname)
+                    else:
+                        logger.info("Tunnel config unchanged for %s, skipping update", hostname)
+
+                    return True
+
+                except Exception as e:
+                    logger.exception("Error updating tunnel config: %s", e)
+                    return False
+
+            def build_desired_public_rules(self):
+                """Build desired ingress rules from all public, DNS-enabled services"""
+                desired = []
+                services = self.get_services_with_dns_label()
+                for service in services:
+                    try:
+                        labels = (service.metadata and service.metadata.labels) or {}
+                        if labels.get(DNS_ENABLED_LABEL) != "true":
+                            continue
+                        exposure = labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC)
+                        if exposure != EXPOSURE_PUBLIC:
+                            continue
+                        hostname = labels.get(DNS_HOSTNAME_LABEL)
+                        if not hostname:
+                            continue
+                        port = self.get_service_port(service.metadata.name, service.metadata.namespace)
+                        desired_service = f"http://{service.metadata.name}.{service.metadata.namespace}.svc.cluster.local:{port}"
+                        desired.append({
+                            "hostname": str(hostname).strip().lower().rstrip('.'),
+                            "service": desired_service,
+                        })
+                    except Exception as e:
+                        logger.debug("Error building desired rule from %s.%s: %s", service.metadata.name, service.metadata.namespace, e)
+                return desired
+
+            def get_current_public_rules(self, config_data):
+                """Extract current public ingress rules from config (excluding catch-all)"""
+                rules = []
+                for rule in config_data.get("ingress", []) or []:
                     if not isinstance(rule, dict):
                         continue
-                    current_hostname = str(rule.get("hostname", "")).strip().lower().rstrip(".")
-                    logger.debug("Checking rule %s: current_hostname='%s' rule=%s", i, current_hostname, rule)
-                    if current_hostname == normalized_hostname:
-                        existing_index = i
-                        current_service = rule.get("service")
-                        logger.debug("Found existing rule at index %s, current service: '%s', desired: '%s'", i, current_service, desired_service)
-                        if current_service != desired_service:
-                            logger.info("Updating tunnel ingress rule for %s -> %s", hostname, desired_service)
-                            rule["service"] = desired_service
-                            ingress_rules[i] = rule
-                            config_changed = True
-                        else:
-                            logger.info("Tunnel ingress rule for %s already exists", hostname)
-                            return True
-                        break
+                    if rule.get("service") == "http_status:404":
+                        continue
+                    hostname = str(rule.get("hostname", "")).strip().lower().rstrip('.')
+                    service_target = rule.get("service")
+                    if hostname and service_target:
+                        rules.append({"hostname": hostname, "service": service_target})
+                return rules
 
-                if existing_index is None:
-                    logger.debug("No existing rule found for %s, adding new", normalized_hostname)
-                    new_rule = {
-                        "hostname": hostname,
-                        "service": desired_service
-                    }
-                    for i, rule in enumerate(ingress_rules):
+            def reconcile_tunnel_config(self):
+                """Reconcile entire set of public ingress rules. Only patch if changed."""
+                try:
+                    configmap = self.v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
+                    current_config = configmap.data["config.yaml"]
+                    config_data = yaml.safe_load(current_config) or {}
+                    existing_hash = self.calculate_config_hash(config_data)
+
+                    desired_rules = self.build_desired_public_rules()
+                    current_rules = self.get_current_public_rules(config_data)
+
+                    def sort_key(r):
+                        return (r.get("hostname", ""), r.get("service", ""))
+
+                    desired_sorted = sorted(desired_rules, key=sort_key)
+                    current_sorted = sorted(current_rules, key=sort_key)
+
+                    desired_fmt = [f"{r['hostname']} -> {r['service']}" for r in desired_sorted]
+                    current_fmt = [f"{r['hostname']} -> {r['service']}" for r in current_sorted]
+                    logger.info("Desired rules: %s", desired_fmt)
+                    logger.info("Current rules: %s", current_fmt)
+
+                    if desired_sorted == current_sorted:
+                        logger.info("Diff: none (no changes needed)")
+                        return True
+
+                    desired_map = {r["hostname"]: r["service"] for r in desired_sorted}
+                    current_map = {r["hostname"]: r["service"] for r in current_sorted}
+                    desired_set = {(h, s) for h, s in desired_map.items()}
+                    current_set = {(h, s) for h, s in current_map.items()}
+                    additions = sorted(list(desired_set - current_set))
+                    removals = sorted(list(current_set - desired_set))
+                    intersect_hosts = set(desired_map.keys()) & set(current_map.keys())
+                    changes = sorted([h for h in intersect_hosts if desired_map[h] != current_map[h]])
+                    logger.info("Diff: additions=%s removals=%s changes=%s", additions, removals, changes)
+
+                    logger.info("Updating rules to match desired state")
+                    new_ingress = []
+                    for r in desired_sorted:
+                        new_ingress.append({"hostname": r["hostname"], "service": r["service"]})
+                    catch_all = None
+                    for rule in config_data.get("ingress", []) or []:
                         if isinstance(rule, dict) and rule.get("service") == "http_status:404":
-                            logger.debug("Inserting before catch-all at index %s", i)
-                            ingress_rules.insert(i, new_rule)
-                            config_changed = True
+                            catch_all = rule
                             break
-                    else:
-                        logger.debug("Appending to end (no catch-all found)")
-                        ingress_rules.append(new_rule)
-                        config_changed = True
+                    if catch_all is None:
+                        catch_all = {"service": "http_status:404"}
+                    new_ingress.append(catch_all)
 
-                config_data["ingress"] = ingress_rules
-                new_hash = self.calculate_config_hash(config_data)
-                logger.debug("New config hash: %s, previous: %s", new_hash, self.tunnel_config_hash)
+                    config_data["ingress"] = new_ingress
+                    new_hash = self.calculate_config_hash(config_data)
+                    if new_hash == existing_hash:
+                        logger.info("Reconciled config equals current ConfigMap; skipping patch")
+                        return True
 
-                if new_hash != self.tunnel_config_hash or config_changed:
                     updated_config = yaml.dump(config_data, default_flow_style=False)
                     configmap.data["config.yaml"] = updated_config
                     self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
-                    logger.info("Updated ConfigMap with new ingress rules")
+                    logger.info("Updated ConfigMap with reconciled ingress rules")
 
                     try:
                         patch_body = {
@@ -771,483 +902,351 @@ data:
                             namespace="cloudflare-tunnel",
                             body=patch_body
                         )
-                        logger.info("Triggered cloudflared rollout due to config change")
+                        logger.info("Triggered cloudflared rollout due to reconciled config change")
                     except Exception as rollout_e:
                         logger.warning("Failed to trigger cloudflared rollout: %s", rollout_e)
 
                     self.tunnel_config_hash = new_hash
                     self.last_config_update = time.time()
-                    logger.info("Updated tunnel config for %s", hostname)
-                else:
-                    logger.info("Tunnel config unchanged for %s, skipping update", hostname)
-
-                return True
-
-            except Exception as e:
-                logger.exception("Error updating tunnel config: %s", e)
-                return False
-
-        def build_desired_public_rules(self):
-            """Build desired ingress rules from all public, DNS-enabled services"""
-            desired = []
-            services = self.get_services_with_dns_label()
-            for service in services:
-                try:
-                    labels = (service.metadata and service.metadata.labels) or {}
-                    if labels.get(DNS_ENABLED_LABEL) != "true":
-                        continue
-                    exposure = labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC)
-                    if exposure != EXPOSURE_PUBLIC:
-                        continue
-                    hostname = labels.get(DNS_HOSTNAME_LABEL)
-                    if not hostname:
-                        continue
-                    port = self.get_service_port(service.metadata.name, service.metadata.namespace)
-                    desired_service = f"http://{service.metadata.name}.{service.metadata.namespace}.svc.cluster.local:{port}"
-                    desired.append({
-                        "hostname": str(hostname).strip().lower().rstrip('.'),
-                        "service": desired_service,
-                    })
+                    logger.info("Reconciled tunnel config applied")
+                    return True
                 except Exception as e:
-                    logger.debug("Error building desired rule from %s.%s: %s", service.metadata.name, service.metadata.namespace, e)
-            return desired
+                    logger.exception("Error reconciling tunnel config: %s", e)
+                    return False
 
-        def get_current_public_rules(self, config_data):
-            """Extract current public ingress rules from config (excluding catch-all)"""
-            rules = []
-            for rule in config_data.get("ingress", []) or []:
-                if not isinstance(rule, dict):
-                    continue
-                if rule.get("service") == "http_status:404":
-                    continue
-                hostname = str(rule.get("hostname", "")).strip().lower().rstrip('.')
-                service_target = rule.get("service")
-                if hostname and service_target:
-                    rules.append({"hostname": hostname, "service": service_target})
-            return rules
-
-        def reconcile_tunnel_config(self):
-            """Reconcile entire set of public ingress rules. Only patch if changed."""
-            try:
-                configmap = self.v1.read_namespaced_config_map("cloudflared-config", "cloudflare-tunnel")
-                current_config = configmap.data["config.yaml"]
-                config_data = yaml.safe_load(current_config) or {}
-                existing_hash = self.calculate_config_hash(config_data)
-
-                desired_rules = self.build_desired_public_rules()
-                current_rules = self.get_current_public_rules(config_data)
-
-                def sort_key(r):
-                    return (r.get("hostname", ""), r.get("service", ""))
-
-                desired_sorted = sorted(desired_rules, key=sort_key)
-                current_sorted = sorted(current_rules, key=sort_key)
-
-                desired_fmt = [f"{r['hostname']} -> {r['service']}" for r in desired_sorted]
-                current_fmt = [f"{r['hostname']} -> {r['service']}" for r in current_sorted]
-                logger.info("Desired rules: %s", desired_fmt)
-                logger.info("Current rules: %s", current_fmt)
-
-                if desired_sorted == current_sorted:
-                    logger.info("Diff: none (no changes needed)")
-                    return True
-
-                desired_map = {r["hostname"]: r["service"] for r in desired_sorted}
-                current_map = {r["hostname"]: r["service"] for r in current_sorted}
-                desired_set = {(h, s) for h, s in desired_map.items()}
-                current_set = {(h, s) for h, s in current_map.items()}
-                additions = sorted(list(desired_set - current_set))
-                removals = sorted(list(current_set - desired_set))
-                intersect_hosts = set(desired_map.keys()) & set(current_map.keys())
-                changes = sorted([h for h in intersect_hosts if desired_map[h] != current_map[h]])
-                logger.info("Diff: additions=%s removals=%s changes=%s", additions, removals, changes)
-
-                logger.info("Updating rules to match desired state")
-                new_ingress = []
-                for r in desired_sorted:
-                    new_ingress.append({"hostname": r["hostname"], "service": r["service"]})
-                catch_all = None
-                for rule in config_data.get("ingress", []) or []:
-                    if isinstance(rule, dict) and rule.get("service") == "http_status:404":
-                        catch_all = rule
-                        break
-                if catch_all is None:
-                    catch_all = {"service": "http_status:404"}
-                new_ingress.append(catch_all)
-
-                config_data["ingress"] = new_ingress
-                new_hash = self.calculate_config_hash(config_data)
-                if new_hash == existing_hash:
-                    logger.info("Reconciled config equals current ConfigMap; skipping patch")
-                    return True
-
-                updated_config = yaml.dump(config_data, default_flow_style=False)
-                configmap.data["config.yaml"] = updated_config
-                self.v1.patch_namespaced_config_map("cloudflared-config", "cloudflare-tunnel", configmap)
-                logger.info("Updated ConfigMap with reconciled ingress rules")
-
+            def reconcile_public_dns(self):
+                """Ensure CNAME records exist for all public, DNS-enabled services."""
                 try:
-                    patch_body = {
-                        "spec": {
-                            "template": {
-                                "metadata": {
-                                    "annotations": {
-                                        "service-controller.io/config-hash": new_hash
-                                    }
-                                }
-                            }
-                        }
-                    }
-                    self.apps_v1.patch_namespaced_deployment(
-                        name="cloudflared",
-                        namespace="cloudflare-tunnel",
-                        body=patch_body
-                    )
-                    logger.info("Triggered cloudflared rollout due to reconciled config change")
-                except Exception as rollout_e:
-                    logger.warning("Failed to trigger cloudflared rollout: %s", rollout_e)
+                    cname_target = self.get_tunnel_cname_target()
+                    if not cname_target:
+                        logger.warning("Cannot reconcile public DNS: tunnel CNAME target unknown")
+                        return False
 
-                self.tunnel_config_hash = new_hash
-                self.last_config_update = time.time()
-                logger.info("Reconciled tunnel config applied")
-                return True
-            except Exception as e:
-                logger.exception("Error reconciling tunnel config: %s", e)
-                return False
+                    api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+                    if not api_token:
+                        return True
 
-        def reconcile_public_dns(self):
-            """Ensure CNAME records exist for all public, DNS-enabled services."""
-            try:
-                cname_target = self.get_tunnel_cname_target()
-                if not cname_target:
-                    logger.warning("Cannot reconcile public DNS: tunnel CNAME target unknown")
-                    return False
+                    desired = self.build_desired_public_rules()
+                    hostnames = [r['hostname'] for r in desired]
+                    if not hostnames:
+                        logger.debug("No public services to reconcile DNS for")
+                        return True
 
-                api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
-                if not api_token:
-                    return True
+                    domain_groups = {}
+                    for h in hostnames:
+                        domain = '.'.join(h.split('.')[-2:])
+                        domain_groups.setdefault(domain, []).append(h)
 
-                desired = self.build_desired_public_rules()
-                hostnames = [r['hostname'] for r in desired]
-                if not hostnames:
-                    logger.debug("No public services to reconcile DNS for")
-                    return True
+                    cf = self.ensure_cf_client()
+                    if not cf:
+                        return False
 
-                domain_groups = {}
-                for h in hostnames:
-                    domain = '.'.join(h.split('.')[-2:])
-                    domain_groups.setdefault(domain, []).append(h)
-
-                cf = self.ensure_cf_client()
-                if not cf:
-                    return False
-
-                for domain, names in domain_groups.items():
-                    zone_id = self.get_cloudflare_zone_id(domain, api_token)
-                    if not zone_id:
-                        logger.warning("No zone ID for domain %s; skipping %d public hostnames", domain, len(names))
-                        continue
-
-                    # Optimization: fetch all CNAME records for the zone once
-                    try:
-                        all_cnames = list(cf.dns.records.list(zone_id=zone_id, type='CNAME'))
-                        cname_map = { (getattr(r, 'name', '') or '').lower().rstrip('.'): r for r in all_cnames }
-                    except Exception as e:
-                        if '429' in str(e):
-                            logger.warning("Cloudflare Rate Limit (429) hit while listing CNAMEs for zone %s", zone_id)
+                    for domain, names in domain_groups.items():
+                        zone_id = self.get_cloudflare_zone_id(domain, api_token)
+                        if not zone_id:
+                            logger.warning("No zone ID for domain %s; skipping %d public hostnames", domain, len(names))
                             continue
-                        raise
 
-                    for hostname in names:
+                        # Optimization: fetch all CNAME records for the zone once
                         try:
-                            norm_hostname = hostname.lower().rstrip('.')
-                            existing_obj = cname_map.get(norm_hostname)
-                            
-                            existing = None
-                            if existing_obj:
-                                rec_id = getattr(existing_obj, 'id', None)
-                                rec_content = getattr(existing_obj, 'content', None)
-                                if isinstance(existing_obj, dict):
-                                    rec_id = rec_id or existing_obj.get('id')
-                                    rec_content = rec_content or existing_obj.get('content')
-                                existing = {'id': rec_id, 'content': rec_content}
-
-                            if existing and existing.get('content') == cname_target:
-                                logger.debug("Public DNS CNAME for %s already correct", hostname)
-                                continue
-
-                            if existing:
-                                logger.info("Updating public DNS CNAME %s -> %s", hostname, cname_target)
-                                cf.dns.records.update(
-                                    zone_id=zone_id,
-                                    dns_record_id=existing['id'],
-                                    type='CNAME',
-                                    name=hostname,
-                                    content=cname_target,
-                                    ttl=1,
-                                    proxied=True
-                                )
-                            else:
-                                logger.info("Creating public DNS CNAME %s -> %s", hostname, cname_target)
-                                cf.dns.records.create(
-                                    zone_id=zone_id,
-                                    type='CNAME',
-                                    name=hostname,
-                                    content=cname_target,
-                                    ttl=1,
-                                    proxied=True
-                                )
+                            all_cnames = list(cf.dns.records.list(zone_id=zone_id, type='CNAME'))
+                            cname_map = { (getattr(r, 'name', '') or '').lower().rstrip('.'): r for r in all_cnames }
                         except Exception as e:
-                            msg = str(e).lower()
-                            if '81058' in msg or 'identical' in msg:
-                                logger.debug("Public DNS CNAME for %s already exists (identical)", hostname)
-                            elif '429' in msg:
-                                logger.warning("Cloudflare Rate Limit (429) hit while ensuring CNAME for %s", hostname)
-                            else:
-                                logger.exception("Error ensuring public DNS CNAME for %s: %s", hostname, e)
+                            if '429' in str(e):
+                                logger.warning("Cloudflare Rate Limit (429) hit while listing CNAMEs for zone %s", zone_id)
+                                continue
+                            raise
 
-                logger.info("Public DNS reconcile complete")
-                return True
-            except Exception as e:
-                logger.exception("Error reconciling public DNS: %s", e)
-                return False
+                        for hostname in names:
+                            try:
+                                norm_hostname = hostname.lower().rstrip('.')
+                                existing_obj = cname_map.get(norm_hostname)
+                                
+                                existing = None
+                                if existing_obj:
+                                    rec_id = getattr(existing_obj, 'id', None)
+                                    rec_content = getattr(existing_obj, 'content', None)
+                                    if isinstance(existing_obj, dict):
+                                        rec_id = rec_id or existing_obj.get('id')
+                                        rec_content = rec_content or existing_obj.get('content')
+                                    existing = {'id': rec_id, 'content': rec_content}
 
-        def reconcile_internal_dns(self):
-            """Reconcile internal DNS A records for all internal, DNS-enabled services."""
-            try:
-                services = self.get_services_with_dns_label()
-                hostnames = []
-                for service in services:
-                    labels = (service.metadata and service.metadata.labels) or {}
-                    if labels.get(DNS_ENABLED_LABEL) != "true":
-                        continue
-                    if labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC) != EXPOSURE_INTERNAL:
-                        continue
-                    hostname = labels.get(DNS_HOSTNAME_LABEL)
-                    if hostname:
-                        hostnames.append(hostname.lower().strip().rstrip('.'))
+                                if existing and existing.get('content') == cname_target:
+                                    logger.debug("Public DNS CNAME for %s already correct", hostname)
+                                    continue
 
-                if not hostnames:
-                    logger.debug("No internal services to reconcile")
+                                if existing:
+                                    logger.info("Updating public DNS CNAME %s -> %s", hostname, cname_target)
+                                    cf.dns.records.update(
+                                        zone_id=zone_id,
+                                        dns_record_id=existing['id'],
+                                        type='CNAME',
+                                        name=hostname,
+                                        content=cname_target,
+                                        ttl=1,
+                                        proxied=True
+                                    )
+                                else:
+                                    logger.info("Creating public DNS CNAME %s -> %s", hostname, cname_target)
+                                    cf.dns.records.create(
+                                        zone_id=zone_id,
+                                        type='CNAME',
+                                        name=hostname,
+                                        content=cname_target,
+                                        ttl=1,
+                                        proxied=True
+                                    )
+                            except Exception as e:
+                                msg = str(e).lower()
+                                if '81058' in msg or 'identical' in msg:
+                                    logger.debug("Public DNS CNAME for %s already exists (identical)", hostname)
+                                elif '429' in msg:
+                                    logger.warning("Cloudflare Rate Limit (429) hit while ensuring CNAME for %s", hostname)
+                                else:
+                                    logger.exception("Error ensuring public DNS CNAME for %s: %s", hostname, e)
+
+                    logger.info("Public DNS reconcile complete")
                     return True
-
-                external_ip = self.get_ingress_external_ip()
-                if not external_ip:
-                    logger.debug("No ingress IP available; skipping internal DNS reconcile")
-                    return True
-
-                api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
-                if not api_token:
-                    logger.debug("No CLOUDFLARE_API_TOKEN; skipping internal DNS reconcile")
-                    return True
-
-                # Group hostnames by root domain so each zone is handled independently
-                domain_groups = {}
-                for h in hostnames:
-                    domain = '.'.join(h.split('.')[-2:])
-                    domain_groups.setdefault(domain, []).append(h)
-
-                for domain, names in domain_groups.items():
-                    zone_id = self.get_cloudflare_zone_id(domain, api_token)
-                    if not zone_id:
-                        logger.warning("No zone ID for domain %s; skipping %d hostnames", domain, len(names))
-                        continue
-
-                    current = self.get_cloudflare_records_by_names(zone_id, api_token, names)
-                    current_map = {n: info.get('ip') for n, info in current.items()}
-
-                    desired_fmt = [f"{n} -> {external_ip}" for n in sorted(names)]
-                    current_fmt = [f"{n} -> {current_map.get(n, '<missing>')}" for n in sorted(names)]
-                    logger.info("[%s] Desired internal DNS: %s", domain, desired_fmt)
-                    logger.info("[%s] Current internal DNS: %s", domain, current_fmt)
-
-                    additions = sorted([n for n in names if n not in current_map])
-                    changes = sorted([n for n in names if current_map.get(n) and current_map[n] != external_ip])
-
-                    if not additions and not changes:
-                        logger.info("[%s] Internal DNS: no changes needed", domain)
-                        continue
-
-                    logger.info("[%s] Internal DNS diff: additions=%s changes=%s", domain, additions, changes)
-
-                    for n in additions:
-                        sub = n[: -(len(domain) + 1)] if n.endswith(f".{domain}") else '@'
-                        self.create_dns_record(zone_id, sub, external_ip, api_token, domain)
-                    for n in changes:
-                        sub = n[: -(len(domain) + 1)] if n.endswith(f".{domain}") else '@'
-                        rec = current.get(n)
-                        if rec and rec.get('id'):
-                            self.update_dns_record(zone_id, rec['id'], sub, external_ip, api_token)
-
-                logger.info("Internal DNS reconcile complete")
-                return True
-            except Exception as e:
-                logger.exception("Error reconciling internal DNS: %s", e)
-                return False
-
-        def process_service_event(self, event_type, service):
-            """Process service events"""
-            try:
-                if not service or not service.metadata:
-                    return
-
-                service_name = service.metadata.name
-                namespace = service.metadata.namespace
-                labels = service.metadata.labels or {}
-
-                if labels.get(DNS_ENABLED_LABEL) != "true":
-                    return
-
-                hostname = labels.get(DNS_HOSTNAME_LABEL)
-                exposure_type = labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC)
-
-                if not hostname:
-                    logger.warning("Service %s.%s has DNS enabled but no hostname specified", service_name, namespace)
-                    return
-
-                logger.info("Processing %s event for %s.%s -> %s (exposure: %s)", event_type, service_name, namespace, hostname, exposure_type)
-
-                if event_type in ["ADDED", "MODIFIED", "EXISTING"]:
-                    # Small delay to prevent API bursts when many services are updated at once
-                    time.sleep(0.5) 
-                    
-                    if exposure_type == EXPOSURE_PUBLIC:
-                        self.create_cloudflare_dns_route(hostname)
-                    elif exposure_type == EXPOSURE_INTERNAL:
-                        external_ip = self.get_ingress_external_ip()
-                        if external_ip:
-                            self.create_internal_dns_entry(hostname, external_ip)
-                        else:
-                            logger.debug("Ingress controller has no external IP/hostname yet; skip ensure for %s", hostname)
-                    else:
-                        logger.warning("Unknown exposure type '%s' for service %s.%s", exposure_type, service_name, namespace)
-
-            except Exception as e:
-                logger.exception("Error processing service event: %s", e)
-
-        def reconcile_all(self):
-            """Reconcile all DNS-enabled services and DDNS periodically"""
-            self.reconcile_ddns()
-            self.reconcile_tunnel_config()
-            self.reconcile_public_dns()
-            self.reconcile_internal_dns()
-
-        def start_periodic_reconciliation(self):
-            # Use a static attribute to track if the thread is already running
-            if getattr(self, '_periodic_thread_started', False):
-                logger.debug("Periodic reconciliation thread already running")
-                return
-            
-            def periodic_reconcile():
-                logger.info("Starting periodic reconciliation thread")
-                while True:
-                    time.sleep(RECONCILE_INTERVAL_SEC)
-                    try:
-                        self.reconcile_all()
-                    except Exception as e:
-                        logger.exception("Error in periodic reconciliation: %s", e)
-            
-            self._periodic_thread_started = True
-            thread = threading.Thread(target=periodic_reconcile, daemon=True)
-            thread.start()
-            logger.info("Started periodic reconciliation every %s seconds", RECONCILE_INTERVAL_SEC)
-
-        def get_services_with_dns_label(self):
-            """Get all services that have DNS enabled using label selector"""
-            try:
-                label_selector = f"{DNS_ENABLED_LABEL}=true"
-                services = self.v1.list_service_for_all_namespaces(label_selector=label_selector)
-                return services.items
-            except Exception as e:
-                logger.error("Error getting services with DNS label: %s", e)
-                return []
-
-        def main(self):
-            """Main controller loop"""
-            logger.info("Starting Service Controller...")
-            
-            while True:
-                try:
-                    logger.info("Initializing Kubernetes client...")
-                    try:
-                        config.load_incluster_config()
-                        logger.info("Kubernetes in-cluster config loaded")
-                    except Exception as e:
-                        logger.debug("In-cluster config failed: %s, trying kubeconfig...", e)
-                        config.load_kube_config()
-                        logger.info("Kubernetes kubeconfig loaded")
-
-                    self.v1 = client.CoreV1Api()
-                    self.apps_v1 = client.AppsV1Api()
-
-                    # Test connection
-                    self.v1.list_namespace(limit=1)
-                    logger.info("Kubernetes API connection successful")
-
-                    if DDNS_ENABLED:
-                        logger.info("DDNS enabled for hostname: %s", DDNS_HOSTNAME)
-                    else:
-                        logger.info("DDNS disabled")
-
-                    logger.info("Performing initial full reconciliation...")
-                    self.reconcile_all()
-                    self.start_periodic_reconciliation()
-
-                    logger.info("Watching for service changes with DNS enabled...")
-                    w = watch.Watch()
-                    label_selector = f"{DNS_ENABLED_LABEL}=true"
-                    
-                    for event in w.stream(self.v1.list_service_for_all_namespaces, label_selector=label_selector):
-                        self.process_service_event(event["type"], event["object"])
-                        
                 except Exception as e:
-                    logger.exception("Controller loop encountered an error: %s", e)
-                    logger.info("Restarting loop in 10 seconds...")
-                    time.sleep(10)
+                    logger.exception("Error reconciling public DNS: %s", e)
+                    return False
 
-    if __name__ == "__main__":
-        controller = ServiceController()
-        controller.main()
+            def reconcile_internal_dns(self):
+                """Reconcile internal DNS A records for all internal, DNS-enabled services."""
+                try:
+                    services = self.get_services_with_dns_label()
+                    hostnames = []
+                    for service in services:
+                        labels = (service.metadata and service.metadata.labels) or {}
+                        if labels.get(DNS_ENABLED_LABEL) != "true":
+                            continue
+                        if labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC) != EXPOSURE_INTERNAL:
+                            continue
+                        hostname = labels.get(DNS_HOSTNAME_LABEL)
+                        if hostname:
+                            hostnames.append(hostname.lower().strip().rstrip('.'))
+
+                    if not hostnames:
+                        logger.debug("No internal services to reconcile")
+                        return True
+
+                    external_ip = self.get_ingress_external_ip()
+                    if not external_ip:
+                        logger.debug("No ingress IP available; skipping internal DNS reconcile")
+                        return True
+
+                    api_token = os.environ.get('CLOUDFLARE_API_TOKEN')
+                    if not api_token:
+                        logger.debug("No CLOUDFLARE_API_TOKEN; skipping internal DNS reconcile")
+                        return True
+
+                    # Group hostnames by root domain so each zone is handled independently
+                    domain_groups = {}
+                    for h in hostnames:
+                        domain = '.'.join(h.split('.')[-2:])
+                        domain_groups.setdefault(domain, []).append(h)
+
+                    for domain, names in domain_groups.items():
+                        zone_id = self.get_cloudflare_zone_id(domain, api_token)
+                        if not zone_id:
+                            logger.warning("No zone ID for domain %s; skipping %d hostnames", domain, len(names))
+                            continue
+
+                        current = self.get_cloudflare_records_by_names(zone_id, api_token, names)
+                        current_map = {n: info.get('ip') for n, info in current.items()}
+
+                        desired_fmt = [f"{n} -> {external_ip}" for n in sorted(names)]
+                        current_fmt = [f"{n} -> {current_map.get(n, '<missing>')}" for n in sorted(names)]
+                        logger.info("[%s] Desired internal DNS: %s", domain, desired_fmt)
+                        logger.info("[%s] Current internal DNS: %s", domain, current_fmt)
+
+                        additions = sorted([n for n in names if n not in current_map])
+                        changes = sorted([n for n in names if current_map.get(n) and current_map[n] != external_ip])
+
+                        if not additions and not changes:
+                            logger.info("[%s] Internal DNS: no changes needed", domain)
+                            continue
+
+                        logger.info("[%s] Internal DNS diff: additions=%s changes=%s", domain, additions, changes)
+
+                        for n in additions:
+                            sub = n[: -(len(domain) + 1)] if n.endswith(f".{domain}") else '@'
+                            self.create_dns_record(zone_id, sub, external_ip, api_token, domain)
+                        for n in changes:
+                            sub = n[: -(len(domain) + 1)] if n.endswith(f".{domain}") else '@'
+                            rec = current.get(n)
+                            if rec and rec.get('id'):
+                                self.update_dns_record(zone_id, rec['id'], sub, external_ip, api_token)
+
+                    logger.info("Internal DNS reconcile complete")
+                    return True
+                except Exception as e:
+                    logger.exception("Error reconciling internal DNS: %s", e)
+                    return False
+
+            def process_service_event(self, event_type, service):
+                """Process service events"""
+                try:
+                    if not service or not service.metadata:
+                        return
+
+                    service_name = service.metadata.name
+                    namespace = service.metadata.namespace
+                    labels = service.metadata.labels or {}
+
+                    if labels.get(DNS_ENABLED_LABEL) != "true":
+                        return
+
+                    hostname = labels.get(DNS_HOSTNAME_LABEL)
+                    exposure_type = labels.get(EXPOSURE_TYPE_LABEL, EXPOSURE_PUBLIC)
+
+                    if not hostname:
+                        logger.warning("Service %s.%s has DNS enabled but no hostname specified", service_name, namespace)
+                        return
+
+                    logger.info("Processing %s event for %s.%s -> %s (exposure: %s)", event_type, service_name, namespace, hostname, exposure_type)
+
+                    if event_type in ["ADDED", "MODIFIED", "EXISTING"]:
+                        # Small delay to prevent API bursts when many services are updated at once
+                        time.sleep(0.5) 
+                        
+                        if exposure_type == EXPOSURE_PUBLIC:
+                            self.create_cloudflare_dns_route(hostname)
+                        elif exposure_type == EXPOSURE_INTERNAL:
+                            external_ip = self.get_ingress_external_ip()
+                            if external_ip:
+                                self.create_internal_dns_entry(hostname, external_ip)
+                            else:
+                                logger.debug("Ingress controller has no external IP/hostname yet; skip ensure for %s", hostname)
+                        else:
+                            logger.warning("Unknown exposure type '%s' for service %s.%s", exposure_type, service_name, namespace)
+
+                except Exception as e:
+                    logger.exception("Error processing service event: %s", e)
+
+            def reconcile_all(self):
+                """Reconcile all DNS-enabled services and DDNS periodically"""
+                self.reconcile_ddns()
+                self.reconcile_tunnel_config()
+                self.reconcile_public_dns()
+                self.reconcile_internal_dns()
+
+            def start_periodic_reconciliation(self):
+                # Use a static attribute to track if the thread is already running
+                if getattr(self, '_periodic_thread_started', False):
+                    logger.debug("Periodic reconciliation thread already running")
+                    return
+                
+                def periodic_reconcile():
+                    logger.info("Starting periodic reconciliation thread")
+                    while True:
+                        time.sleep(RECONCILE_INTERVAL_SEC)
+                        try:
+                            self.reconcile_all()
+                        except Exception as e:
+                            logger.exception("Error in periodic reconciliation: %s", e)
+                
+                self._periodic_thread_started = True
+                thread = threading.Thread(target=periodic_reconcile, daemon=True)
+                thread.start()
+                logger.info("Started periodic reconciliation every %s seconds", RECONCILE_INTERVAL_SEC)
+
+            def get_services_with_dns_label(self):
+                """Get all services that have DNS enabled using label selector"""
+                try:
+                    label_selector = f"{DNS_ENABLED_LABEL}=true"
+                    services = self.v1.list_service_for_all_namespaces(label_selector=label_selector)
+                    return services.items
+                except Exception as e:
+                    logger.error("Error getting services with DNS label: %s", e)
+                    return []
+
+            def main(self):
+                """Main controller loop"""
+                logger.info("Starting Service Controller...")
+                
+                while True:
+                    try:
+                        logger.info("Initializing Kubernetes client...")
+                        try:
+                            config.load_incluster_config()
+                            logger.info("Kubernetes in-cluster config loaded")
+                        except Exception as e:
+                            logger.debug("In-cluster config failed: %s, trying kubeconfig...", e)
+                            config.load_kube_config()
+                            logger.info("Kubernetes kubeconfig loaded")
+
+                        self.v1 = client.CoreV1Api()
+                        self.apps_v1 = client.AppsV1Api()
+
+                        # Test connection
+                        self.v1.list_namespace(limit=1)
+                        logger.info("Kubernetes API connection successful")
+
+                        if DDNS_ENABLED:
+                            logger.info("DDNS enabled for hostname: %s", DDNS_HOSTNAME)
+                        else:
+                            logger.info("DDNS disabled")
+
+                        logger.info("Performing initial full reconciliation...")
+                        self.reconcile_all()
+                        self.start_periodic_reconciliation()
+
+                        logger.info("Watching for service changes with DNS enabled...")
+                        w = watch.Watch()
+                        label_selector = f"{DNS_ENABLED_LABEL}=true"
+                        
+                        for event in w.stream(self.v1.list_service_for_all_namespaces, label_selector=label_selector):
+                            self.process_service_event(event["type"], event["object"])
+                            
+                    except Exception as e:
+                        logger.exception("Controller loop encountered an error: %s", e)
+                        logger.info("Restarting loop in 10 seconds...")
+                        time.sleep(10)
+
+        if __name__ == "__main__":
+            controller = ServiceController()
+            controller.main()
 ---
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: service-controller
-  namespace: cloudflare-tunnel
+    name: service-controller
+    namespace: cloudflare-tunnel
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: service-controller
+    name: service-controller
 rules:
-  - apiGroups: [""]
-    resources: ["services"]
-    verbs: ["get", "list", "watch"]
-  - apiGroups: [""]
-    resources: ["namespaces"]
-    verbs: ["get", "list"]
-  - apiGroups: [""]
-    resources: ["configmaps"]
-    verbs: ["get", "patch"]
-  - apiGroups: [""]
-    resources: ["pods"]
-    verbs: ["get", "list"]
-  - apiGroups: [""]
-    resources: ["pods/exec"]
-    verbs: ["create"]
-  - apiGroups: ["apps"]
-    resources: ["deployments"]
-    verbs: ["get", "patch"]
+    - apiGroups: [""]
+      resources: ["services"]
+      verbs: ["get", "list", "watch"]
+    - apiGroups: [""]
+      resources: ["namespaces"]
+      verbs: ["get", "list"]
+    - apiGroups: [""]
+      resources: ["configmaps"]
+      verbs: ["get", "patch"]
+    - apiGroups: [""]
+      resources: ["pods"]
+      verbs: ["get", "list"]
+    - apiGroups: [""]
+      resources: ["pods/exec"]
+      verbs: ["create"]
+    - apiGroups: ["apps"]
+      resources: ["deployments"]
+      verbs: ["get", "patch"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: service-controller
-roleRef:
-  apiGroup: rbac.authorization.k8s.io
-  kind: ClusterRole
-  name: service-controller
-subjects:
-  - kind: ServiceAccount
     name: service-controller
-    namespace: cloudflare-tunnel
+roleRef:
+    apiGroup: rbac.authorization.k8s.io
+    kind: ClusterRole
+    name: service-controller
+subjects:
+    - kind: ServiceAccount
+      name: service-controller
+      namespace: cloudflare-tunnel

@@ -127,7 +127,7 @@ broker:
   nameOverride: "paperless-ngx-broker"
   image:
     repository: "redis"
-    tag: "8.6"
+    tag: "8.8"
 
   command: ["redis-server"]
   args: ["--maxmemory-policy", "noeviction"]

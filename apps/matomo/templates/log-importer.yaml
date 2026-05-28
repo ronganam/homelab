@@ -44,7 +44,7 @@ spec:
       serviceAccountName: matomo-log-importer
       containers:
         - name: importer
-          image: python:3.11-slim
+          image: python:3.14-slim
           command:
             - /bin/bash
             - -c

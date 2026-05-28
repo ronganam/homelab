@@ -64,8 +64,9 @@ spec:
               # Note: Envoy logs use :authority for the hostname
               
               kubectl logs -n envoy-gateway-system -l app.kubernetes.io/name=envoy -c envoy -f --tail=0 | \
-              jq -rc 'select(.":authority" != null and ."x-envoy-origin-path" != null) | [.":authority", (.downstream_remote_address | sub(":[0-9]+$"; "")), .method, ."x-envoy-origin-path", (.protocol // "-"), (.response_code // 200 | tostring), (.bytes_sent // 0 | tostring), .start_time, (."user-agent" // "-")] | map("\"" + . + "\"") | join(" ")' | \
-              python3 import_logs.py \
+              jq --unbuffered -rc 'select(.":authority" != null and ."x-envoy-origin-path" != null) | [.":authority", (.downstream_remote_address | sub(":[0-9]+$"; "")), .method, ."x-envoy-origin-path", (.protocol // "-"), (.response_code // 200 | tostring), (.bytes_sent // 0 | tostring), .start_time, (."user-agent" // "-")] | map("\"" + . + "\"") | join(" ")' | \
+              python3 -u import_logs.py \
+                --debug \
                 --url=http://matomo.matomo.svc.cluster.local \
                 --token-auth="${MATOMO_TOKEN}" \
                 --idsite=1 \

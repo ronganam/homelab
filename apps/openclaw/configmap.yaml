@@ -17,7 +17,10 @@ data:
           "mode": "token"
         },
         "controlUi": {
-          "enabled": true
+          "enabled": true,
+          "allowedOrigins": [
+            "https://openclaw.ganam.app"
+          ]
         }
       },
       "agents": {

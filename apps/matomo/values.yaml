@@ -18,6 +18,12 @@ matomo:
   matomoUsername: "admin"
   existingSecret: "matomo-mariadb"
   matomoEmail: "admin@ganam.app"
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      memory: 768Mi
 
   mariadb:
     enabled: true

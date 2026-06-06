@@ -62,6 +62,10 @@ spec:
           name: cloudflared-config
           jsonPointers:
             - /data/config.yaml
+        - group: ""
+          kind: PersistentVolumeClaim
+          jsonPointers:
+            - /metadata/finalizers
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet
@@ -107,4 +111,8 @@ spec:
           jsonPointers:
             - /spec/volumeClaimTemplates/0/apiVersion
             - /spec/volumeClaimTemplates/0/kind
+        - group: ""
+          kind: PersistentVolumeClaim
+          jsonPointers:
+            - /metadata/finalizers
 

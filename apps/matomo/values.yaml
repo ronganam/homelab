@@ -11,6 +11,12 @@ infisical:
   resyncInterval: 60
 
 matomo:
+  replicaCount: 0
+  cronjobs:
+    taskScheduler:
+      enabled: false
+    archive:
+      enabled: false
   image:
     registry: public.ecr.aws
     repository: bitnami/matomo
@@ -26,7 +32,7 @@ matomo:
       memory: 768Mi
 
   mariadb:
-    enabled: true
+    enabled: false
     architecture: standalone
     image:
       registry: public.ecr.aws
@@ -57,3 +63,6 @@ matomo:
 
   ingress:
     enabled: false
+
+logImporter:
+  enabled: false

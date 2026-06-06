@@ -1,3 +1,4 @@
+{{- if .Values.logImporter.enabled }}
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -90,3 +91,5 @@ spec:
             requests:
               memory: 128Mi
               cpu: 50m
+{{- end }}
+

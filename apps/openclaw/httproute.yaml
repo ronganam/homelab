@@ -1,0 +1,31 @@
+apiVersion: gateway.networking.k8s.io/v1
+kind: HTTPRoute
+metadata:
+  name: openclaw
+  namespace: openclaw
+  annotations:
+    gethomepage.dev/enabled: "true"
+    gethomepage.dev/name: "OpenClaw"
+    gethomepage.dev/description: "AI Agent Gateway"
+    gethomepage.dev/icon: "openclaw.png"
+    gethomepage.dev/group: "Applications"
+    gethomepage.dev/weight: "30"
+spec:
+  parentRefs:
+    - name: homelab-gateway
+      namespace: gateway-system
+      group: gateway.networking.k8s.io
+      kind: Gateway
+  hostnames:
+    - "openclaw.ganam.app"
+  rules:
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /
+      backendRefs:
+        - group: ""
+          kind: Service
+          name: openclaw
+          port: 80
+          weight: 1

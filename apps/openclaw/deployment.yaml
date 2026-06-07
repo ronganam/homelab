@@ -73,8 +73,6 @@ spec:
               value: /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/node/.openclaw/bin
             - name: NODE_ENV
               value: production
-            - name: GOG_KEYRING_PASSWORD
-              value: "***"
           envFrom:
             - secretRef:
                 name: openclaw-secrets

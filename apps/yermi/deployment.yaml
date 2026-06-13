@@ -26,7 +26,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: init-db
-          image: registry.ganam.app/yermi-telegram-bot:1.0.0
+          image: registry.ganam.app/yermi-telegram-bot:1.1.0
           imagePullPolicy: IfNotPresent
           command:
             - python
@@ -46,7 +46,7 @@ spec:
               memory: 64Mi
       containers:
         - name: bot
-          image: registry.ganam.app/yermi-telegram-bot:1.0.0
+          image: registry.ganam.app/yermi-telegram-bot:1.1.0
           imagePullPolicy: IfNotPresent
           args:
             - bot
@@ -72,7 +72,7 @@ spec:
                 - ALL
 
         - name: web
-          image: registry.ganam.app/yermi-telegram-bot:1.0.0
+          image: registry.ganam.app/yermi-telegram-bot:1.1.0
           imagePullPolicy: IfNotPresent
           args:
             - web

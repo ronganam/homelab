@@ -1,0 +1,122 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: yermi
+  namespace: yermi
+  labels:
+    app: yermi
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yermi
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: yermi
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        fsGroup: 10001
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        - name: init-db
+          image: registry.ganam.app/yermi-telegram-bot:1.0.0
+          imagePullPolicy: IfNotPresent
+          command:
+            - python
+            - -c
+            - "import db; db.init_db('schema.sql')"
+          env:
+            - name: DATABASE_PATH
+              value: /data/bot.db
+          volumeMounts:
+            - name: yermi-db
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              memory: 64Mi
+      containers:
+        - name: bot
+          image: registry.ganam.app/yermi-telegram-bot:1.0.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - bot
+          env:
+            - name: DATABASE_PATH
+              value: /data/bot.db
+          envFrom:
+            - secretRef:
+                name: yermi-secrets
+          volumeMounts:
+            - name: yermi-db
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 48Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+
+        - name: web
+          image: registry.ganam.app/yermi-telegram-bot:1.0.0
+          imagePullPolicy: IfNotPresent
+          args:
+            - web
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+          env:
+            - name: DATABASE_PATH
+              value: /data/bot.db
+            - name: PORT
+              value: "8080"
+          envFrom:
+            - secretRef:
+                name: yermi-secrets
+          volumeMounts:
+            - name: yermi-db
+              mountPath: /data
+          resources:
+            requests:
+              cpu: 10m
+              memory: 48Mi
+            limits:
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          livenessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+      volumes:
+        - name: yermi-db
+          persistentVolumeClaim:
+            claimName: yermi-db-pvc

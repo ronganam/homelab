@@ -1,0 +1,21 @@
+# INTERNAL Service - accessible via ingress (HTTPRoute)
+apiVersion: v1
+kind: Service
+metadata:
+  name: yermi
+  namespace: yermi
+  labels:
+    app: yermi
+    # DNS Management Labels for Service Controller
+    dns.service-controller.io/enabled: "true"
+    dns.service-controller.io/hostname: "yermi.ganam.app"
+    exposure.service-controller.io/type: "internal"
+spec:
+  type: ClusterIP
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+  selector:
+    app: yermi

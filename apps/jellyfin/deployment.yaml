@@ -34,7 +34,7 @@ spec:
       terminationGracePeriodSeconds: 30
       containers:
         - name: jellyfin
-          image: ghcr.io/jellyfin/jellyfin:10.11.10
+          image: ghcr.io/jellyfin/jellyfin:10.11.11
           imagePullPolicy: IfNotPresent
           securityContext:
             allowPrivilegeEscalation: false

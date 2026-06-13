@@ -27,7 +27,7 @@ spec:
         fsGroupChangePolicy: OnRootMismatch
       containers:
         - name: homeassistant
-          image: ghcr.io/home-assistant/home-assistant:2026.5.4
+          image: ghcr.io/home-assistant/home-assistant:2026.6.3
           imagePullPolicy: IfNotPresent
           securityContext:
             privileged: true

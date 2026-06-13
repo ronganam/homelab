@@ -24,7 +24,7 @@ spec:
           type: RuntimeDefault
       initContainers:
         - name: init-config
-          image: busybox:1.37
+          image: busybox:1.38
           imagePullPolicy: IfNotPresent
           command:
             - sh
@@ -53,7 +53,7 @@ spec:
               mountPath: /config
       containers:
         - name: gateway
-          image: ghcr.io/openclaw/openclaw:2026.6.5-beta.1-slim
+          image: ghcr.io/openclaw/openclaw:2026.6.7-beta.1-slim
           imagePullPolicy: IfNotPresent
           command:
             - node

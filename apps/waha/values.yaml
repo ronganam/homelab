@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: devlikeapro/waha
-    tag: "noweb-2026.3.4"
+    tag: "noweb-2026.5.1"
 
   containerPort: 3000
 

@@ -1,0 +1,60 @@
+app-blueprint:
+  image:
+    repository: registry.ganam.app/ganam-assistant
+    tag: "1.0.0"
+
+  containerPort: 8080
+
+  dns:
+    hostname: assistant.ganam.app
+    exposure: internal
+
+  homepage:
+    enabled: true
+    name: "Ganam Assistant"
+    group: "Applications"
+    icon: "material-symbols:smart-toy-outline"
+
+  volumes:
+    - name: database-local
+      size: 128Mi
+      mountPath: /app/db
+      storageClass: local-path
+
+  infisical:
+    enabled: true
+    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+    secretsPath: "/ganam-assistant"
+    secretName: ganam-assistant-secret
+
+  env:
+    DATABASE_PATH: "/app/db/db.sqlite3"
+
+  securityContext:
+    runAsUser: 1001
+    runAsGroup: 1001
+    fsGroup: 1001
+    fsGroupChangePolicy: OnRootMismatch
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+  probes:
+    liveness:
+      enabled: true
+      type: tcpSocket
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 3
+    readiness:
+      enabled: true
+      type: tcpSocket
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+      failureThreshold: 3

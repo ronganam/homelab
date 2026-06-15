@@ -1,0 +1,10 @@
+apiVersion: v2
+name: github-runner-ganam-assistant
+description: GitHub Actions Runner Scale Set for ganam-assistant
+type: application
+version: 0.1.0
+appVersion: "0.9.3"
+dependencies:
+  - name: gha-runner-scale-set
+    version: 0.14.2
+    repository: oci://ghcr.io/actions/actions-runner-controller-charts

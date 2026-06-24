@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: registry.ganam.app/ganam-assistant
-    tag: "3.0.1"
+    tag: "4.0.0"
 
   containerPort: 8080
 

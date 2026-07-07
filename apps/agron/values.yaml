@@ -1,0 +1,33 @@
+app-blueprint:
+  image:
+    repository: registry.ganam.app/agron
+    tag: latest
+
+  containerPort: 8000
+
+  dns:
+    hostname: agron.ganam.app
+    exposure: internal
+
+  homepage:
+    name: Agron
+    description: דפדפן מאגר אוכלוסין אגרון פלוס 2006
+    icon: agron.png
+    weight: "20"
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      memory: 1Gi
+
+  probes:
+    liveness:
+      path: "/"
+      initialDelaySeconds: 10
+      periodSeconds: 15
+    readiness:
+      path: "/"
+      initialDelaySeconds: 5
+      periodSeconds: 10

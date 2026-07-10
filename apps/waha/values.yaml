@@ -47,7 +47,7 @@ app-blueprint:
 
   resources:
     requests:
-      cpu: 50m
-      memory: 512Mi
+      cpu: 15m
+      memory: 600Mi
     limits:
-      memory: 2Gi
+      memory: 900Mi

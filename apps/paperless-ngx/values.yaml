@@ -67,10 +67,10 @@ webserver:
 
   resources:
     requests:
-      cpu: "175m"
-      memory: "646Mi"
+      cpu: "10m"
+      memory: "600Mi"
     limits:
-      memory: "763Mi"
+      memory: "800Mi"
 
 db:
   nameOverride: "paperless-ngx-db"
@@ -104,10 +104,10 @@ db:
 
   resources:
     requests:
-      cpu: "50m"
-      memory: "128Mi"
+      cpu: "5m"
+      memory: "64Mi"
     limits:
-      memory: "256Mi"
+      memory: "128Mi"
 
   env:
     POSTGRES_USER: "paperless"
@@ -227,10 +227,10 @@ ai:
 
   resources:
     requests:
-      cpu: "66m"
-      memory: "1635Mi"
+      cpu: "10m"
+      memory: "1300Mi"
     limits:
-      memory: "1933Mi"
+      memory: "1600Mi"
 
   probes:
     liveness:

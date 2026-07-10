@@ -44,10 +44,10 @@ stirling-pdf-chart:
       value: "en_GB"
   resources:
     requests:
-      cpu: "286m"
-      memory: "758Mi"
+      cpu: "5m"
+      memory: "700Mi"
     limits:
-      memory: "896Mi"
+      memory: "1000Mi"
   probes:
     liveness:
       enabled: true

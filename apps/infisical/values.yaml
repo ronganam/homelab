@@ -7,10 +7,10 @@ infisical-standalone:
       type: ClusterIP
     resources:
       requests:
-        cpu: "64m"
-        memory: "874Mi"
+        cpu: "55m"
+        memory: "800Mi"
       limits:
-        memory: "1033Mi"
+        memory: "1200Mi"
   ingress:
     enabled: false
     ingressClassName: nginx
@@ -56,10 +56,10 @@ postgresql:
       storageClass: local-path
     resources:
       requests:
-        cpu: "37m"
-        memory: "91Mi"
+        cpu: "30m"
+        memory: "80Mi"
       limits:
-        memory: "108Mi"
+        memory: "150Mi"
 
 # Configure top-level Redis dependency
 redis:
@@ -74,7 +74,7 @@ redis:
     resources:
       requests:
         cpu: "20m"
-        memory: "69Mi"
+        memory: "80Mi"
       limits:
-        memory: "82Mi"
+        memory: "128Mi"
   architecture: standalone

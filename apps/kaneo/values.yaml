@@ -100,9 +100,9 @@ web:
   resources:
     requests:
       cpu: "77m"
-      memory: "32Mi"
+      memory: "75Mi"
     limits:
-      memory: "64Mi"
+      memory: "150Mi"
   env:
     apiUrl: "https://kaneo.ganam.app"
 

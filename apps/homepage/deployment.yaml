@@ -64,9 +64,9 @@ spec:
           resources:
             requests:
               cpu: "13m"
-              memory: "126Mi"
+              memory: "150Mi"
             limits:
-              memory: "149Mi"
+              memory: "200Mi"
           livenessProbe:
             httpGet:
               path: /

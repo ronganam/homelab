@@ -58,9 +58,9 @@ spec:
                         mountPath: /app
                   resources:
                       limits:
-                          memory: 200Mi
+                          memory: 300Mi
                       requests:
-                          memory: 120Mi
+                          memory: 180Mi
                           cpu: 5m
             volumes:
                 - name: controller-script

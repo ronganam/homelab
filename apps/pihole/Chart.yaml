@@ -6,6 +6,6 @@ version: 0.1.0
 appVersion: "2026.04.0"
 dependencies:
   - name: pihole
-    version: "2.35.0"
+    version: "2.38.0"
     repository: https://mojo2600.github.io/pihole-kubernetes/
 

@@ -79,15 +79,12 @@ frigate:
       accessMode: ReadWriteOnce
       mountPath: /config
 
-  # Example Frigate configuration (adjust to your environment)
   config: |
     environment_vars:
       FRIGATE_FRONT_CAM_URL: '{FRIGATE_FRONT_CAM_URL}'
     mqtt:
       host: mqtt.mqtt.svc.cluster.local
       port: 1883
-      # user: "frigate"
-      # password: "change-me"
     detectors:
       onnx:
         type: onnx
@@ -102,11 +99,13 @@ frigate:
       labelmap_path: /labelmap/coco-80.txt
     go2rtc:
       streams:
-        dog_cam:
-          - ffmpeg:http://192.168.1.193:8080/video#async=1#video=h264#hardware=cuda
-          - http://192.168.1.193:8080/audio.aac
         front_cam:
           - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error -fflags nobuffer -flags low_delay -rtsp_transport udp -i "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 -'#video=h264
+        ptz:
+          - rtsp://admin:Rg%40243199@192.168.1.203/cam/realmonitor?channel=1&subtype=0#backchannel=0
+          - "ffmpeg:ptz#audio=opus"
+        ptz_talk:
+          - rtsp://admin:Rg%40243199@192.168.1.203/cam/realmonitor?channel=1&subtype=0
       webrtc:
         candidates:
           - 192.168.1.178:8555
@@ -115,50 +114,12 @@ frigate:
         level: info
         rtsp: trace
     cameras:
-      dog_cam:
-        ffmpeg:
-          hwaccel_args: preset-nvidia-h264
-          inputs:
-            - path: rtsp://127.0.0.1:8554/dog_cam
-              roles:
-                - detect
-                - record
-        detect:
-          enabled: true
-        objects:
-          track:
-            - dog
-            - person
-          filters:
-            dog:
-              threshold: 0.4
-            person:
-              threshold: 0.7
-        snapshots:
-          enabled: true
-        record:
-          enabled: true
-          continuous:
-            days: 3
-          motion:
-            days: 0
-        live:
-          streams:
-            Main: dog_cam
-        zones:
-          food-zone:
-            coordinates: 0.598,0.391,0.392,0.45,0.565,0.664,0.78,0.601
-            inertia: 3
-            loitering_time: 0
-          pad-zone:
-            coordinates: 0.119,0.515,0.384,0.452,0.557,0.666,0.135,0.799
-            inertia: 3
-            loitering_time: 0
       front_cam:
         ffmpeg:
           hwaccel_args: preset-nvidia-h264
           inputs:
             - path: rtsp://127.0.0.1:8554/front_cam
+              input_args: preset-rtsp-restream
               roles:
                 - detect
                 - record
@@ -179,6 +140,38 @@ frigate:
             Main: front_cam
         motion:
           mask: 0,0.528,0.226,0.565,0.415,0.613,0.499,0.544,1,0.531,1,0,0,0
+      ptz:
+        ffmpeg:
+          hwaccel_args: preset-nvidia-h264
+          output_args:
+            record: preset-record-generic-audio-copy
+          inputs:
+            - path: rtsp://127.0.0.1:8554/ptz
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+                - record
+                - audio
+        onvif:
+          host: 192.168.1.203
+          port: 80
+          user: admin
+          password: "Rg@243199"
+        detect:
+          enabled: true
+        snapshots:
+          enabled: true
+        record:
+          enabled: true
+          alerts:
+            retain:
+              days: 10
+          detections:
+            retain:
+              days: 10
+        live:
+          streams:
+            Main: ptz
     version: 0.17-0
     semantic_search:
       enabled: true
@@ -199,8 +192,8 @@ frigate:
         order: 1
         icon: LuAperture
         cameras:
-          - dog_cam
           - front_cam
+          - ptz
 
   resources:
     requests:

@@ -163,6 +163,8 @@ frigate:
           enabled: true
         record:
           enabled: true
+          retain:
+            days: 1
           alerts:
             retain:
               days: 10

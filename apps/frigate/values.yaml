@@ -73,11 +73,13 @@ frigate:
       size: 15Gi
       accessMode: ReadWriteOnce
       mountPath: /media
+      storageClass: local-path
     config:
       enabled: true
       size: 100Mi
       accessMode: ReadWriteOnce
       mountPath: /config
+      storageClass: local-path
 
   config: |
     environment_vars:
@@ -163,7 +165,7 @@ frigate:
           enabled: true
         record:
           enabled: true
-          retain:
+          continuous:
             days: 1
           alerts:
             retain:

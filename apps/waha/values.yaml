@@ -33,6 +33,19 @@ app-blueprint:
   env:
     WHATSAPP_DEFAULT_ENGINE: "NOWEB"
 
+    # Stable worker ID so sessions stay assigned and auto-restart across pod restarts
+    WAHA_WORKER_ID: "waha"
+    # Start all previously saved sessions after container restarts
+    WHATSAPP_RESTART_ALL_SESSIONS: "True"
+    WAHA_WORKER_RESTART_SESSIONS: "True"
+
+    # Keep the session offline (no online presence on start or after API activity)
+    WAHA_PRESENCE_AUTO_ONLINE: "False"
+    WAHA_PRINT_QR: "False"
+
+    # Persist media files on the mounted PVC (default folder /tmp/whatsapp-files is ephemeral)
+    WHATSAPP_FILES_FOLDER: "/app/.media"
+
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000

@@ -11,11 +11,10 @@ frigate:
   replicaCount: 1
 
   image:
-    tag: "0.17.1-tensorrt"
+    tag: "0.18.0-beta2-tensorrt"
     pullPolicy: IfNotPresent
 
   env:
-    YOLO_MODELS: "yolov9-s-320"
     GO2RTC_ALLOW_ARBITRARY_EXEC: "true"
 
   envFromSecrets:
@@ -90,7 +89,7 @@ frigate:
     detectors:
       onnx:
         type: onnx
-        device: '0'
+        device: 'GPU'
     model:
       model_type: yolo-generic
       path: /config/model_cache/tensorrt_models/yolov9-s-320.onnx
@@ -102,9 +101,11 @@ frigate:
     go2rtc:
       streams:
         front_cam:
+          # Native go2rtc RTSP alternative (tested: this camera returns 404 on DESCRIBE, so exec is required):
+          # - "rtsp://{FRIGATE_FRONT_CAM_URL}"
           - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error -fflags nobuffer -flags low_delay -rtsp_transport udp -i "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 -'#video=h264
         ptz:
-          - rtsp://admin:Rg%40243199@192.168.1.203/cam/realmonitor?channel=1&subtype=0
+          - "rtsp://{FRIGATE_PTZ_USER}:{FRIGATE_PTZ_PASSWORD}@{FRIGATE_PTZ_IP}/cam/realmonitor?channel=1&subtype=0"
           - "ffmpeg:ptz#audio=opus"
       webrtc:
         candidates:
@@ -141,6 +142,16 @@ frigate:
         motion:
           mask: 0,0.528,0.226,0.565,0.415,0.613,0.499,0.544,1,0.531,1,0,0,0
       ptz:
+        objects:
+          track:
+            - person
+            - dog
+          filters:
+            dog:
+              min_area: 500
+              max_ratio: 2.5
+              threshold: 0.6
+              min_score: 0.5
         ffmpeg:
           hwaccel_args: preset-nvidia-h264
           output_args:
@@ -153,10 +164,10 @@ frigate:
                 - record
                 - audio
         onvif:
-          host: 192.168.1.203
+          host: "{FRIGATE_PTZ_IP}"
           port: 80
-          user: admin
-          password: "Rg@243199"
+          user: "{FRIGATE_PTZ_USER}"
+          password: "{FRIGATE_PTZ_PASSWORD}"
         detect:
           enabled: true
         snapshots:

@@ -89,7 +89,7 @@ frigate:
     detectors:
       onnx:
         type: onnx
-        device: 'GPU'
+        device: GPU
     model:
       model_type: yolo-generic
       path: /config/model_cache/tensorrt_models/yolov9-s-320.onnx
@@ -101,12 +101,12 @@ frigate:
     go2rtc:
       streams:
         front_cam:
-          # Native go2rtc RTSP alternative (tested: this camera returns 404 on DESCRIBE, so exec is required):
-          - "rtsp://{FRIGATE_FRONT_CAM_URL}"
-          # - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error -fflags nobuffer -flags low_delay -rtsp_transport udp -i "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 -'#video=h264
+          - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error 
+            -fflags nobuffer -flags low_delay -rtsp_transport udp -i 
+            "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 -'#video=h264
         ptz:
-          - "rtsp://{FRIGATE_PTZ_USER}:{FRIGATE_PTZ_PASSWORD}@{FRIGATE_PTZ_IP}/cam/realmonitor?channel=1&subtype=0"
-          - "ffmpeg:ptz#audio=opus"
+          - rtsp://{FRIGATE_PTZ_USER}:{FRIGATE_PTZ_PASSWORD}@{FRIGATE_PTZ_IP}/cam/realmonitor?channel=1&subtype=0
+          - ffmpeg:ptz#audio=opus
       webrtc:
         candidates:
           - 192.168.1.178:8555
@@ -140,7 +140,12 @@ frigate:
           streams:
             Main: front_cam
         motion:
-          mask: 0,0.528,0.226,0.565,0.415,0.613,0.499,0.544,1,0.531,1,0,0,0
+          mask:
+            motion_mask_1:
+              friendly_name: Motion Mask 1
+              enabled: true
+              coordinates: 
+                0,0.528,0.226,0.565,0.415,0.613,0.499,0.544,1,0.531,1,0,0,0
       ptz:
         objects:
           track:
@@ -164,10 +169,10 @@ frigate:
                 - record
                 - audio
         onvif:
-          host: "{FRIGATE_PTZ_IP}"
+          host: '{FRIGATE_PTZ_IP}'
           port: 80
-          user: "{FRIGATE_PTZ_USER}"
-          password: "{FRIGATE_PTZ_PASSWORD}"
+          user: '{FRIGATE_PTZ_USER}'
+          password: '{FRIGATE_PTZ_PASSWORD}'
         detect:
           enabled: true
         snapshots:
@@ -185,7 +190,16 @@ frigate:
         live:
           streams:
             Main: ptz
-    version: 0.17-0
+        audio:
+          enabled: true
+          listen:
+            - bark
+            - speech
+            - yell
+            - crying
+        audio_transcription:
+          enabled: true
+    version: 0.18-0
     semantic_search:
       enabled: true
       model: jinav1
@@ -207,6 +221,16 @@ frigate:
         cameras:
           - front_cam
           - ptz
+    audio:
+      listen:
+        - bark
+        - speech
+        - yell
+        - crying
+    audio_transcription:
+      enabled: true
+      language: he
+      device: GPU
 
   resources:
     requests:

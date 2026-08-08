@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: ghcr.io/donkie/spoolman
-    tag: "0.23.1"
+    tag: "0.26.1"
 
   containerPort: 8000
   enableServiceLinks: false

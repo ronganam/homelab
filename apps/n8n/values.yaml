@@ -41,7 +41,7 @@ app-blueprint:
       cpu: "5m"
       memory: "350Mi"
     limits:
-      memory: "450Mi"
+      memory: "550Mi"
 
   probes:
     liveness:

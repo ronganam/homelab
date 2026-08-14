@@ -1,4 +1,5 @@
 dcgm-exporter:
+  runtimeClassName: nvidia
   nodeSelector:
     nvidia.com/gpu.present: "true"
   resources:

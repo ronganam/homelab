@@ -17,7 +17,7 @@ spec:
       group: gateway.networking.k8s.io
       kind: Gateway
   hostnames:
-    - "jellyfin.buildin.group"
+    - "jellyfin.ganam.app"
   rules:
     - matches:
         - path:

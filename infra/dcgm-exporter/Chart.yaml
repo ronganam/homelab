@@ -1,0 +1,10 @@
+apiVersion: v2
+name: dcgm-exporter
+description: NVIDIA DCGM exporter for GPU metrics
+type: application
+version: 0.1.0
+appVersion: ""
+dependencies:
+  - name: dcgm-exporter
+    version: "4.8.3"
+    repository: https://nvidia.github.io/dcgm-exporter/helm-charts

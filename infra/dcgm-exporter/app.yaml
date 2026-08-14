@@ -1,0 +1,4 @@
+name: dcgm-exporter
+namespace: monitoring
+path: infra/dcgm-exporter
+wave: "26"

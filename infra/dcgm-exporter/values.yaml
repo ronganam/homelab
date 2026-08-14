@@ -1,0 +1,13 @@
+dcgm-exporter:
+  nodeSelector:
+    nvidia.com/gpu.present: "true"
+  resources:
+    limits:
+      cpu: 200m
+      memory: 512Mi
+    requests:
+      cpu: 100m
+      memory: 128Mi
+  serviceMonitor:
+    enabled: true
+    interval: 30s

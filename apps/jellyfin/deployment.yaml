@@ -20,9 +20,10 @@ spec:
         app: jellyfin
         app.kubernetes.io/name: jellyfin
     spec:
-      # Schedule Jellyfin on your GPU node(s)
+      runtimeClassName: nvidia
       nodeSelector:
         kubernetes.io/arch: amd64
+        nvidia.com/gpu.present: "true"
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -46,6 +47,10 @@ spec:
           env:
             - name: TZ
               value: Asia/Jerusalem
+            - name: NVIDIA_DRIVER_CAPABILITIES
+              value: all
+            - name: NVIDIA_VISIBLE_DEVICES
+              value: all
           volumeMounts:
             - name: config
               mountPath: /config
@@ -64,6 +69,7 @@ spec:
               memory: 1Gi
             limits:
               memory: 3Gi
+              nvidia.com/gpu: 1
           livenessProbe:
             tcpSocket:
               port: 8096

@@ -1,0 +1,34 @@
+app-blueprint:
+  image:
+    repository: registry.ganam.app/gods-eye-view
+    tag: "0.1.1"
+
+  containerPort: 4173
+  servicePort: 80
+
+  dns:
+    hostname: gods-eye.ganam.app
+    exposure: internal
+
+  homepage:
+    name: God's Eye View
+    description: Live 3D globe — aircraft, ships, satellites, earthquakes
+    icon: mdi:earth
+    group: Applications
+    weight: "50"
+
+  env:
+    PORT: "4173"
+
+  securityContext:
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+
+  resources:
+    requests:
+      cpu: 50m
+      memory: 128Mi
+    limits:
+      memory: 512Mi

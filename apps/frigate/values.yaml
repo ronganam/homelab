@@ -128,115 +128,138 @@ frigate:
           enabled: true
         snapshots:
           enabled: true
-      record:
-        enabled: true
-        alerts:
-          retain:
-            days: 10
-        detections:
-          retain:
-            days: 10
-      live:
-        streams:
-          Main: front_cam
-      motion:
-        mask:
-          motion_mask_1:
-            friendly_name: Motion Mask 1
-            enabled: true
-            coordinates: 
-              0,0.528,0.226,0.565,0.415,0.613,0.499,0.544,1,0.531,1,0,0,0
-    ptz:
-      objects:
-        track:
-          - person
-          - dog
-        filters:
-          dog:
-            min_area: 500
-            max_ratio: 2.5
-            threshold: 0.6
-            min_score: 0.5
-      ffmpeg:
-        hwaccel_args: preset-nvidia-h264
-        output_args:
-          record: preset-record-generic-audio-copy
-        inputs:
-          - path: rtsp://127.0.0.1:8554/ptz
-            input_args: preset-rtsp-restream
-            roles:
-              - detect
-              - record
-              - audio
-      onvif:
-        host: '{FRIGATE_PTZ_IP}'
-        port: 80
-        user: '{FRIGATE_PTZ_USER}'
-        password: '{FRIGATE_PTZ_PASSWORD}'
-      detect:
-        enabled: true
-      snapshots:
-        enabled: true
-      record:
-        enabled: true
-        continuous:
-          days: 1
-        alerts:
-          retain:
-            days: 10
-        detections:
-          retain:
-            days: 10
-      live:
-        streams:
-          Main: ptz
-      audio:
-        enabled: true
-        listen:
-          - bark
-          - speech
-          - yell
-          - crying
-      audio_transcription:
-        enabled: true
-      zones:
-        kitchen:
-          coordinates: 
-            0.462,0.08,0.46,0.19,0.395,0.254,0.392,0.531,0.454,0.531,0.478,0.342,0.532,0.265,0.782,0.278,0.777,0.087
+        record:
           enabled: true
-          inertia: 3
-          loitering_time: 0
-          objects: person
-  version: 0.18-0
-  semantic_search:
-    enabled: true
-    model: jinav1
-    model_size: large
-    device: '0'
-    reindex: false
-  face_recognition:
-    enabled: false
-    model_size: small
-  lpr:
-    enabled: false
-  classification:
-    bird:
+          alerts:
+            retain:
+              days: 10
+          detections:
+            retain:
+              days: 10
+        live:
+          streams:
+            Main: front_cam
+        motion:
+          mask:
+            motion_mask_1:
+              friendly_name: Motion Mask 1
+              enabled: true
+              coordinates: 
+                0,0.528,0.226,0.565,0.415,0.613,0.499,0.544,1,0.531,1,0,0,0
+      ptz:
+        objects:
+          track:
+            - person
+            - dog
+          filters:
+            dog:
+              min_area: 500
+              max_ratio: 2.5
+              threshold: 0.6
+              min_score: 0.5
+        ffmpeg:
+          hwaccel_args: preset-nvidia-h264
+          output_args:
+            record: preset-record-generic-audio-copy
+          inputs:
+            - path: rtsp://127.0.0.1:8554/ptz
+              input_args: preset-rtsp-restream
+              roles:
+                - detect
+                - record
+                - audio
+        onvif:
+          host: '{FRIGATE_PTZ_IP}'
+          port: 80
+          user: '{FRIGATE_PTZ_USER}'
+          password: '{FRIGATE_PTZ_PASSWORD}'
+        detect:
+          enabled: true
+        snapshots:
+          enabled: true
+        record:
+          enabled: true
+          continuous:
+            days: 1
+          alerts:
+            retain:
+              days: 10
+          detections:
+            retain:
+              days: 10
+        live:
+          streams:
+            Main: ptz
+        audio:
+          enabled: true
+          listen:
+            - bark
+            - speech
+            - yell
+            - crying
+        audio_transcription:
+          enabled: true
+        zones:
+          kitchen:
+            coordinates: 0.462,0.08,0.46,0.19,0.395,0.254,0.392,0.531,0.454,0.531,0.478,0.342,0.532,0.265,0.782,0.278,0.777,0.087
+            enabled: true
+            inertia: 3
+            loitering_time: 0
+            objects:
+              - person
+    version: 0.18-0
+    semantic_search:
+      enabled: true
+      model: jinav1
+      model_size: large
+      device: '0'
+      reindex: false
+    face_recognition:
       enabled: false
-  camera_groups:
-    Main:
-      order: 1
-      icon: LuAperture
-      cameras:
-        - front_cam
-        - ptz
-  audio:
-    listen:
-      - bark
-      - speech
-      - yell
-      - crying
-  audio_transcription:
-    enabled: true
-    language: he
-    device: GPU
+      model_size: small
+    lpr:
+      enabled: false
+    classification:
+      bird:
+        enabled: false
+    camera_groups:
+      Main:
+        order: 1
+        icon: LuAperture
+        cameras:
+          - front_cam
+          - ptz
+    audio:
+      listen:
+        - bark
+        - speech
+        - yell
+        - crying
+    audio_transcription:
+      enabled: true
+      language: he
+      device: GPU
 
+  resources:
+    requests:
+      cpu: "2808m"
+      memory: "4599Mi"
+    limits:
+      memory: "5435Mi"
+      nvidia.com/gpu: 1
+
+  probes:
+    liveness:
+      enabled: true
+      initialDelaySeconds: 60
+      periodSeconds: 10
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 12
+    readiness:
+      enabled: true
+      initialDelaySeconds: 30
+      periodSeconds: 5
+      timeoutSeconds: 5
+      successThreshold: 1
+      failureThreshold: 12

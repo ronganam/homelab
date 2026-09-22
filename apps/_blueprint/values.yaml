@@ -10,6 +10,8 @@ containerPort: 80
 servicePort: 80
 strategy: RollingUpdate
 
+hostNetwork: false
+
 namespace:
   enabled: true
 

@@ -21,6 +21,12 @@ spec:
       labels:
         {{- include "app.selectorLabels" . | nindent 8 }}
     spec:
+      {{- if hasKey .Values "hostNetwork" }}
+      hostNetwork: {{ .Values.hostNetwork }}
+      {{- if .Values.hostNetwork }}
+      dnsPolicy: ClusterFirstWithHostNet
+      {{- end }}
+      {{- end }}
       {{- if hasKey .Values "enableServiceLinks" }}
       enableServiceLinks: {{ .Values.enableServiceLinks }}
       {{- end }}

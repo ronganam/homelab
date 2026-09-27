@@ -33,6 +33,23 @@ velero:
 
     resourcePoliciesConfigMap: velero-resource-policy
 
+    # ── OCI Object Storage (S3-compatible) checksum workaround ─────────────────
+    # OCI's S3 API rejects the trailing CRC32 checksum that AWS SDK v2 now adds
+    # by default, because that forces Content-Encoding: aws-chunked:
+    #   501 NotImplemented: AWS chunked encoding not supported
+    # The BSL's checksumAlgorithm: "" only clears the per-request field; it does
+    # not change the SDK default, so the chunked encoding still happens and
+    # every backup fails at velero-backup.json upload.
+    # These env vars disable the SDK-level default (read by the AWS plugin
+    # process, which inherits the velero server environment).
+    # Applied to both the velero server and the node-agent DaemonSet, so kopia
+    # PV uploads are covered as well as server-side metadata writes.
+    extraEnvVars:
+      - name: AWS_REQUEST_CHECKSUM_CALCULATION
+        value: "when_required"
+      - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+        value: "when_required"
+
     backupStorageLocation:
       - name: default
         provider: aws

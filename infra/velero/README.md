@@ -203,12 +203,26 @@ docker run --rm \
 If deploying Velero in a local `kind` cluster for recovery testing, be aware of these requirements:
 
 ### 1. S3-Compatible Chunked Encoding
-Oracle Cloud Infrastructure (OCI) Object Storage does not support AWS chunked encoding. When configuring the BackupStorageLocation (BSL), the config **must** include:
+Oracle Cloud Infrastructure (OCI) Object Storage does not support AWS chunked encoding. AWS SDK v2 adds a trailing CRC32 checksum by default, which forces `Content-Encoding: aws-chunked`, so every object upload fails with `501 NotImplemented: AWS chunked encoding not supported`.
+
+The BSL needs the OCI endpoint, path-style addressing, and an empty checksum algorithm:
 ```yaml
 config:
+  region: il-jerusalem-1
+  s3Url: https://<namespace>.compat.objectstorage.<region>.oraclecloud.com
+  s3ForcePathStyle: "true"
   checksumAlgorithm: ""
 ```
-Without this, object uploads (like restore logs) will fail with `501 NotImplemented: AWS chunked encoding not supported`.
+
+`checksumAlgorithm: ""` alone is **not sufficient** — it clears the per-request field but leaves the SDK default in place, so backups still fail at the `velero-backup.json` upload. The SDK default must be disabled via environment variables, set in `values.yaml` under `velero.configuration.extraEnvVars`:
+```yaml
+extraEnvVars:
+  - name: AWS_REQUEST_CHECKSUM_CALCULATION
+    value: "when_required"
+  - name: AWS_RESPONSE_CHECKSUM_VALIDATION
+    value: "when_required"
+```
+These apply to both the velero server and the node-agent DaemonSet, covering server-side metadata writes and Kopia PV uploads.
 
 ### 2. Local-Path Provisioner (Volume Type)
 By default, Rancher's `local-path-provisioner` in Kind creates `hostPath` volumes. Kubelet does not mount `hostPath` volumes inside the node's `/var/lib/kubelet/pods` directory, making them invisible to the Velero node-agent.

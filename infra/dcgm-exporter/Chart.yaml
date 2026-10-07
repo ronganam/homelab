@@ -6,5 +6,5 @@ version: 0.1.0
 appVersion: ""
 dependencies:
   - name: dcgm-exporter
-    version: "4.8.3"
+    version: "4.8.4"
     repository: https://nvidia.github.io/dcgm-exporter/helm-charts

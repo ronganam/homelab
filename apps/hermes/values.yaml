@@ -1,0 +1,79 @@
+app-blueprint:
+  image:
+    repository: nousresearch/hermes-agent
+    tag: "latest"
+
+  # Dashboard port is the primary user-facing UI
+  containerPort: 9119
+  servicePort: 9119
+
+  # Gateway runs as the container command
+  command: ["gateway"]
+  args: ["run"]
+
+  dns:
+    hostname: hermes.ganam.app
+    exposure: internal
+
+  homepage:
+    enabled: true
+    name: "Hermes Agent"
+    description: "NousResearch AI Agent Gateway"
+    icon: "mdi:robot-outline"
+    group: "AI"
+    weight: "20"
+
+  # /opt/data is the single source of truth for all Hermes state
+  # (config, .env, sessions, memories, skills, logs)
+  volumes:
+    - name: hermes-data
+      size: 1Gi
+      mountPath: /opt/data
+      storageClass: local-path
+
+  # Secrets (API keys, bot tokens) injected via Infisical as env vars.
+  # Hermes reads env vars with priority over /opt/data/.env, so this
+  # works without touching the mounted volume.
+  infisical:
+    enabled: true
+    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+    secretsPath: "/hermes"
+    secretName: hermes-secret
+
+  env:
+    # Enable the web dashboard and bind it on all interfaces
+    HERMES_DASHBOARD: "1"
+    HERMES_DASHBOARD_HOST: "0.0.0.0"
+    HERMES_DASHBOARD_PORT: "9119"
+    # Use basic-auth for the dashboard (credentials come from Infisical:
+    # HERMES_DASHBOARD_BASIC_AUTH_USERNAME, HERMES_DASHBOARD_BASIC_AUTH_PASSWORD,
+    # HERMES_DASHBOARD_BASIC_AUTH_SECRET)
+
+  # The hermes user inside the container runs as UID 10000 by default.
+  # The stage2 hook handles chowning /opt/data on first boot, so no
+  # fsGroup override is needed unless your node's local-path provisioner
+  # creates the directory with a conflicting owner.
+  securityContext: {}
+
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "1Gi"
+    limits:
+      memory: "4Gi"
+
+  probes:
+    liveness:
+      enabled: true
+      type: tcpSocket
+      initialDelaySeconds: 60
+      periodSeconds: 15
+      timeoutSeconds: 5
+      failureThreshold: 5
+    readiness:
+      enabled: true
+      type: tcpSocket
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 5
+      failureThreshold: 5

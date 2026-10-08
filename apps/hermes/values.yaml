@@ -39,6 +39,8 @@ app-blueprint:
     identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
     secretsPath: "/hermes"
     secretName: hermes-secret
+    projectSlug: "homelab-k8s"
+    envSlug: "prod"
 
   env:
     # Enable the web dashboard and bind it on all interfaces

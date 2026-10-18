@@ -100,6 +100,11 @@ spec:
         - name: frontend
           image: zimengxiong/excalidash-frontend:0.6.5
           imagePullPolicy: IfNotPresent
+          # Image 0.6.x runs nginx as non-root (UID 101) but still listens on
+          # port 80; NET_BIND_SERVICE lets it bind the privileged port.
+          securityContext:
+            capabilities:
+              add: ["NET_BIND_SERVICE"]
           ports:
             - containerPort: 80
               name: http

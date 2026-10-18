@@ -46,6 +46,12 @@ app-blueprint:
     # Persist media files on the mounted PVC (default folder /tmp/whatsapp-files is ephemeral)
     WHATSAPP_FILES_FOLDER: "/app/.media"
 
+    # Forward incoming message events to ganam-assistant, which transcribes
+    # incoming 1:1 voice notes and pushes them to the phone. Global (all
+    # sessions); does not appear in session.config. In-cluster ClusterIP only.
+    WHATSAPP_HOOK_URL: "http://ganam-assistant.ganam-assistant.svc.cluster.local/webhook/waha"
+    WHATSAPP_HOOK_EVENTS: "message"
+
   securityContext:
     runAsUser: 1000
     runAsGroup: 1000

@@ -128,7 +128,6 @@ velero:
           - gilartworks-store
           - excalidraw
           - infisical
-          - kaneo
           - n8n
           - paperless-ngx
           - wireguard

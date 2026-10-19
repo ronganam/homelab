@@ -7,9 +7,11 @@ app-blueprint:
   containerPort: 9119
   servicePort: 9119
 
-  # Gateway runs as the container command
-  command: ["gateway"]
-  args: ["run"]
+  # Use the image's entrypoint dispatcher (PID-1 / s6-overlay bootstrap) so the
+  # dashboard and stage2 hooks start correctly, then run the gateway.
+  # Running `gateway` directly fails: that binary is not on PATH in current images.
+  command: ["/opt/hermes/docker/entrypoint-dispatch.sh"]
+  args: ["gateway", "run"]
 
   dns:
     hostname: hermes.ganam.app

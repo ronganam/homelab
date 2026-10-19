@@ -16,9 +16,5 @@ spec:
       port: 80
       targetPort: 8080
       protocol: TCP
-    - name: websocket
-      port: 3012
-      targetPort: 3012
-      protocol: TCP
   selector:
     app: bitwarden

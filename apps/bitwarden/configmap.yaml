@@ -10,9 +10,8 @@ data:
   DOMAIN: "https://bitwarden.ganam.app"
   ROCKET_ADDRESS: "0.0.0.0"
   SIGNUPS_ALLOWED: "false"
-  WEBSOCKET_ENABLED: "true"
-  WEBSOCKET_ADDRESS: "0.0.0.0"
-  WEBSOCKET_PORT: "3012"
+  # Websocket notifications are served on the main Rocket port since
+  # Vaultwarden 1.32 (WEBSOCKET_* settings deprecated/ignored)
   DATA_FOLDER: "/data"
   # SMTP config removed - add back to enable email support
   # SMTP_FROM: "noreply@example.com"

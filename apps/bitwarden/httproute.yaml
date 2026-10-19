@@ -12,16 +12,9 @@ spec:
   hostnames:
     - bitwarden.ganam.app
   rules:
-    - matches:
-        - path:
-            type: PathPrefix
-            value: /notifications/hub
-      backendRefs:
-        - group: ""
-          kind: Service
-          name: bitwarden
-          port: 3012
-          weight: 1
+    # Websocket notifications are served on the main port since Vaultwarden
+    # 1.32 (WEBSOCKET_PORT deprecated). The / prefix rule below covers
+    # /notifications/hub, so no dedicated rule is needed.
     - matches:
         - path:
             type: PathPrefix

@@ -102,7 +102,7 @@ frigate:
       streams:
         front_cam:
           - exec:sh -c '/usr/lib/ffmpeg/7.0/bin/ffmpeg -hide_banner -loglevel error 
-            -fflags nobuffer -flags low_delay -rtsp_transport tcp -i 
+            -fflags nobuffer -flags low_delay -rtsp_transport udp -i 
             "$FRIGATE_FRONT_CAM_URL" -c:v copy -an -f h264 -'#video=h264
         ptz:
           - rtsp://{FRIGATE_PTZ_USER}:{FRIGATE_PTZ_PASSWORD}@{FRIGATE_PTZ_IP}/cam/realmonitor?channel=1&subtype=0

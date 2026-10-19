@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: ghcr.io/anomalyco/opencode
-    tag: "2.0.24"
+    tag: "2.0.32"
 
   containerPort: 4096
 

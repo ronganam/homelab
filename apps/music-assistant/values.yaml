@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: ghcr.io/music-assistant/server
-    tag: "2.10.5"
+    tag: "2.10.7"
 
   containerPort: 8095
   servicePort: 8095

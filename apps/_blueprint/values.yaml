@@ -11,6 +11,8 @@ servicePort: 80
 strategy: RollingUpdate
 
 hostNetwork: false
+# Optional: set to false to keep the ServiceAccount token out of the pod
+# automountServiceAccountToken: false
 
 namespace:
   enabled: true
@@ -54,6 +56,10 @@ infisical:
   identityId: ""
   secretsPath: ""
   secretName: ""
+  # Optional CR name; defaults to "<app>-infisical-secret".
+  # Keep the previous name when migrating an existing app so the managed
+  # Secret is not garbage-collected along with the old CR.
+  nameOverride: ""
   projectSlug: "homelab-k8s"
   envSlug: "prod"
   resyncInterval: 60
@@ -67,6 +73,18 @@ initContainers: []
 #   - name: wait-db
 #     image: busybox
 #     command: ['sh', '-c', 'until nc -z db 5432; do sleep 1; done']
+
+extraContainers: []
+# Additional sidecar/worker containers rendered inside the same pod.
+# Each entry is a full Kubernetes container spec (env, envFrom, volumeMounts,
+# resources and securityContext must be repeated per container).
+# Example:
+#   - name: worker
+#     image: "registry.ganam.app/my-app:1.0.0"
+#     args: ["worker"]
+#     volumeMounts:
+#       - name: data
+#         mountPath: /data
 
 securityContext: {}
 # Example:

@@ -45,6 +45,13 @@ data:
             description: Workflow automation
             namespace: n8n
             app: n8n
+        - Yermi:
+            icon: telegram.png
+            href: "https://yermi.ganam.app"
+            description: Telegram Bot Dashboard
+            namespace: yermi
+            app: yermi
+            weight: 40
   widgets.yaml: |
     - kubernetes:
         cluster:

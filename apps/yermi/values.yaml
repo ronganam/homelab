@@ -1,0 +1,133 @@
+app-blueprint:
+  image:
+    repository: registry.ganam.app/yermi-telegram-bot
+    tag: "2.0.0"
+
+  # `web` is the exposed dashboard; the Telegram bot runs as an extra container
+  containerPort: 8080
+  servicePort: 80
+  args: ["web"]
+
+  # Bot and web share one SQLite file on a RWO volume, so they must stay in the
+  # same pod. Recreate ensures the old pod releases the volume before the new one starts.
+  strategy: Recreate
+
+  dns:
+    hostname: yermi.ganam.app
+    exposure: public
+
+  # Public apps have no HTTPRoute, so Homepage cannot auto-discover them.
+  # The dashboard entry lives in apps/homepage/configmap.yaml instead.
+  homepage:
+    enabled: false
+
+  automountServiceAccountToken: false
+
+  securityContext:
+    runAsUser: 10001
+    runAsGroup: 10001
+    fsGroup: 10001
+    seccompProfile:
+      type: RuntimeDefault
+
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop:
+        - ALL
+
+  env:
+    DATABASE_PATH: /data/bot.db
+    PORT: "8080"
+
+  # Volume name is "db-pvc" on purpose: the blueprint names PVCs
+  # "<name>-<volume>", so this keeps the existing PVC `yermi-db-pvc` (and its data).
+  volumes:
+    - name: db-pvc
+      size: 1Gi
+      mountPath: /data
+      storageClass: local-path
+
+  infisical:
+    enabled: true
+    # Keep the pre-migration CR name so the `yermi-secrets` Secret (owned by
+    # this CR) survives the migration instead of being garbage-collected.
+    nameOverride: yermi-secrets
+    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+    secretsPath: "/yermi"
+    secretName: yermi-secrets
+    projectSlug: "homelab-k8s"
+    envSlug: "prod"
+    resyncInterval: 60
+
+  initContainers:
+    - name: init-db
+      image: registry.ganam.app/yermi-telegram-bot:2.0.0
+      imagePullPolicy: IfNotPresent
+      command:
+        - python
+        - -c
+        - "import db; db.init_db('schema.sql')"
+      env:
+        - name: DATABASE_PATH
+          value: /data/bot.db
+      volumeMounts:
+        - name: db-pvc
+          mountPath: /data
+      resources:
+        requests:
+          cpu: 10m
+          memory: 32Mi
+        limits:
+          memory: 64Mi
+
+  # Telegram bot loop - no ports or probes, shares the DB with the web container
+  extraContainers:
+    - name: bot
+      image: registry.ganam.app/yermi-telegram-bot:2.0.0
+      imagePullPolicy: IfNotPresent
+      args:
+        - bot
+      env:
+        - name: DATABASE_PATH
+          value: /data/bot.db
+      envFrom:
+        - secretRef:
+            name: yermi-secrets
+      volumeMounts:
+        - name: db-pvc
+          mountPath: /data
+      resources:
+        requests:
+          cpu: 10m
+          memory: 48Mi
+        limits:
+          memory: 128Mi
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities:
+          drop:
+            - ALL
+
+  resources:
+    requests:
+      cpu: 10m
+      memory: 48Mi
+    limits:
+      memory: 128Mi
+
+  probes:
+    liveness:
+      enabled: true
+      type: httpGet
+      path: "/app"
+      initialDelaySeconds: 15
+      periodSeconds: 20
+      timeoutSeconds: 5
+    readiness:
+      enabled: true
+      type: httpGet
+      path: "/app"
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      timeoutSeconds: 5

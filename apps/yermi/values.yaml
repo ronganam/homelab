@@ -39,6 +39,7 @@ app-blueprint:
   env:
     DATABASE_PATH: /data/bot.db
     PORT: "8080"
+    MINI_APP_URL: https://yermi.ganam.app/app
 
   # Volume name is "db-pvc" on purpose: the blueprint names PVCs
   # "<name>-<volume>", so this keeps the existing PVC `yermi-db-pvc` (and its data).
@@ -91,6 +92,8 @@ app-blueprint:
       env:
         - name: DATABASE_PATH
           value: /data/bot.db
+        - name: MINI_APP_URL
+          value: https://yermi.ganam.app/app
       envFrom:
         - secretRef:
             name: yermi-secrets

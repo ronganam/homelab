@@ -89,7 +89,7 @@
         "type": "prometheus",
         "uid": "Prometheus"
       },
-      "description": "",
+      "description": "Real-time CPU core utilization of container $container (5-minute rate).",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -236,7 +236,7 @@
         "type": "prometheus",
         "uid": "Prometheus"
       },
-      "description": "",
+      "description": "Guaranteed CPU QoS: CPU request currently configured in the pod spec.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -318,7 +318,7 @@
         "type": "prometheus",
         "uid": "Prometheus"
       },
-      "description": "",
+      "description": "Burstable CPU QoS: Maximum CPU limit currently configured in the pod spec.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -430,7 +430,7 @@
         "type": "prometheus",
         "uid": "Prometheus"
       },
-      "description": "",
+      "description": "Real-time Memory working set bytes consumed by container $container.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -571,7 +571,7 @@
         "type": "prometheus",
         "uid": "Prometheus"
       },
-      "description": "",
+      "description": "Guaranteed Memory QoS: Memory request currently configured in the pod spec.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -693,7 +693,7 @@
         "type": "prometheus",
         "uid": "Prometheus"
       },
-      "description": "",
+      "description": "Burstable Memory QoS: Maximum Memory limit currently configured in the pod spec.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -805,7 +805,7 @@
         "type": "prometheus",
         "uid": "Prometheus"
       },
-      "description": "",
+      "description": "Historical timeline comparing actual CPU usage against pod requests/limits and VPA recommendations:\n\n\u2022 **Target**: Optimal CPU request recommended by VPA.\n\u2022 **Lower Bound**: Minimum safe request threshold below which throttling may occur.\n\u2022 **Upper Bound**: Peak spike ceiling based on observed consumption history.",
       "fieldConfig": {
         "defaults": {
           "color": {
@@ -1095,7 +1095,7 @@
         "type": "prometheus",
         "uid": "Prometheus"
       },
-      "description": "",
+      "description": "Historical timeline comparing actual Memory usage against pod requests/limits and VPA recommendations:\n\n\u2022 **Target**: Optimal Memory request recommended by VPA.\n\u2022 **Lower Bound**: Minimum safe request threshold below which OOM kills may occur.\n\u2022 **Upper Bound**: Peak spike ceiling based on observed consumption history.",
       "fieldConfig": {
         "defaults": {
           "color": {

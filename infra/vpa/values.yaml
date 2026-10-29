@@ -53,7 +53,7 @@ vpa:
     extraArgs:
       client-ca-file: /etc/tls-certs/ca
       tls-cert-file: /etc/tls-certs/cert
-      tls-private-key-file: /etc/tls-certs/key
+      tls-private-key: /etc/tls-certs/key
     mutatingWebhookConfiguration:
       # Never let a VPA outage block pod creation cluster-wide.
       failurePolicy: Ignore

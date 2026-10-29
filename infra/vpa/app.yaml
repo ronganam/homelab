@@ -1,0 +1,7 @@
+name: vpa
+namespace: vpa
+path: infra/vpa
+wave: "16"
+syncPolicy:
+  syncOptions:
+    - ServerSideApply=true

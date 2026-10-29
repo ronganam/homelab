@@ -66,6 +66,15 @@ spec:
           kind: PersistentVolumeClaim
           jsonPointers:
             - /metadata/finalizers
+        # Webhook caBundles are injected at runtime (VPA certgen, cert-manager).
+        - group: admissionregistration.k8s.io
+          kind: MutatingWebhookConfiguration
+          jqPathExpressions:
+            - '.webhooks[]?.clientConfig.caBundle'
+        - group: admissionregistration.k8s.io
+          kind: ValidatingWebhookConfiguration
+          jqPathExpressions:
+            - '.webhooks[]?.clientConfig.caBundle'
 ---
 apiVersion: argoproj.io/v1alpha1
 kind: ApplicationSet

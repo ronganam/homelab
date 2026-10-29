@@ -1,0 +1,116 @@
+# ── Vertical Pod Autoscaler controller ────────────────────────────────────────
+# Fairwinds chart: https://github.com/FairwindsOps/charts/tree/master/stable/vpa
+# Deploys the three VPA components into the `vpa` namespace:
+#   - recommender: watches usage and writes recommendations
+#   - updater: evicts pods whose requests drift outside the recommendation
+#   - admission-controller: mutates new pods with the recommended requests
+vpa:
+  recommender:
+    # Modest footprint; this cluster runs on a single 24Gi node.
+    resources:
+      requests:
+        cpu: 25m
+        memory: 256Mi
+      limits:
+        memory: 512Mi
+    extraArgs:
+      v: "4"
+      # Lower the floors from the chart defaults (15m / 100Mi) so small
+      # homelab workloads are not inflated to 100Mi requests.
+      pod-recommendation-min-cpu-millicores: 10
+      pod-recommendation-min-memory-mb: 32
+
+  updater:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+
+  admissionController:
+    resources:
+      requests:
+        cpu: 25m
+        memory: 128Mi
+      limits:
+        memory: 256Mi
+    # The chart generates the webhook serving cert with a pre-install job.
+    generateCertificate: true
+    # Let the chart own the MutatingWebhookConfiguration; the certgen
+    # post-install job patches its caBundle.
+    registerWebhook: false
+    mutatingWebhookConfiguration:
+      # Never let a VPA outage block pod creation cluster-wide.
+      failurePolicy: Ignore
+
+  # Metrics Server is already managed by infra/metrics-server.
+  metrics-server:
+    enabled: false
+
+# ── VPA custom resources ──────────────────────────────────────────────────────
+# Every entry creates a VerticalPodAutoscaler in the target namespace with
+# updateMode: Auto. Requests are managed; limits are left untouched
+# (controlledValues: RequestsOnly), so VPA can reclaim scheduler capacity
+# without changing each app's OOM ceiling.
+#
+# Excluded on purpose: databases/StatefulSets, GPU workloads (frigate),
+# cluster-critical services (pihole DNS, wireguard, registry, infisical), and
+# containers whose request already equals a tiny limit (no headroom to tune).
+vpaTargets:
+  defaults:
+    updateMode: Auto
+    minCpu: 10m
+    minMemory: 32Mi
+    maxCpu: "2"
+    maxMemory: 4Gi
+
+  targets:
+    - namespace: agron
+      deployment: agron
+    - namespace: convertx
+      deployment: convertx
+    - namespace: excalidraw
+      deployment: excalidraw-backend
+    - namespace: ganam-assistant
+      deployment: ganam-assistant
+    - namespace: gilartworks-portfolio
+      deployment: gilartworks-portfolio
+    - namespace: gilartworks-store
+      deployment: gilartworks-store
+    - namespace: gods-eye-view
+      deployment: gods-eye-view
+    - namespace: hermes
+      deployment: hermes
+    - namespace: homeassistant
+      deployment: homeassistant
+    - namespace: homepage
+      deployment: homepage
+    - namespace: jellyfin
+      deployment: jellyfin
+    - namespace: matomo
+      deployment: matomo
+    - namespace: music-assistant
+      deployment: music-assistant
+    - namespace: n8n
+      deployment: n8n
+    - namespace: obsidian-livesync
+      deployment: obsidian-livesync
+    - namespace: opencode
+      deployment: opencode
+    - namespace: paperless-ngx
+      deployment: paperless-ai
+    - namespace: paperless-ngx
+      deployment: paperless-webserver
+    - namespace: spoolman
+      deployment: spoolman
+    - namespace: stirling-pdf
+      deployment: stirling-pdf-stirling-pdf-chart
+    - namespace: transmission
+      deployment: transmission
+    - namespace: waha
+      deployment: waha
+    - namespace: webtop
+      deployment: webtop
+    - namespace: yermi
+      deployment: yermi

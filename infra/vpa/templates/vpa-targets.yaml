@@ -1,0 +1,32 @@
+{{- $defaults := .Values.vpaTargets.defaults -}}
+{{- range .Values.vpaTargets.targets }}
+---
+apiVersion: autoscaling.k8s.io/v1
+kind: VerticalPodAutoscaler
+metadata:
+  name: {{ printf "%s-vpa" .deployment | trunc 63 | trimSuffix "-" }}
+  namespace: {{ .namespace }}
+  labels:
+    app.kubernetes.io/part-of: vertical-pod-autoscaler
+    vpa.ganam.app/target: {{ .deployment }}
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .deployment }}
+  updatePolicy:
+    updateMode: {{ .updateMode | default $defaults.updateMode }}
+  resourcePolicy:
+    containerPolicies:
+      - containerName: "*"
+        controlledResources:
+          - cpu
+          - memory
+        controlledValues: RequestsOnly
+        minAllowed:
+          cpu: {{ .minCpu | default $defaults.minCpu | quote }}
+          memory: {{ .minMemory | default $defaults.minMemory | quote }}
+        maxAllowed:
+          cpu: {{ .maxCpu | default $defaults.maxCpu | quote }}
+          memory: {{ .maxMemory | default $defaults.maxMemory | quote }}
+{{- end }}

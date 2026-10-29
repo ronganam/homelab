@@ -138,7 +138,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\"})",
+          "expr": "sum(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\"})",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -201,7 +201,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "sum(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\"})",
+          "expr": "sum(kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory{namespace=~\"$namespace\"})",
           "instant": true,
           "range": false,
           "refId": "A"
@@ -434,7 +434,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\"}",
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\"}",
           "format": "table",
           "instant": true,
           "range": false,
@@ -446,7 +446,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"cpu\", namespace=~\"$namespace\"}",
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_cpu{namespace=~\"$namespace\"}",
           "format": "table",
           "instant": true,
           "range": false,
@@ -458,7 +458,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"cpu\", namespace=~\"$namespace\"}",
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_cpu{namespace=~\"$namespace\"}",
           "format": "table",
           "instant": true,
           "range": false,
@@ -470,7 +470,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\"}",
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory{namespace=~\"$namespace\"}",
           "format": "table",
           "instant": true,
           "range": false,
@@ -482,7 +482,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound{resource=\"memory\", namespace=~\"$namespace\"}",
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound_memory{namespace=~\"$namespace\"}",
           "format": "table",
           "instant": true,
           "range": false,
@@ -494,7 +494,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound{resource=\"memory\", namespace=~\"$namespace\"}",
+          "expr": "kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound_memory{namespace=~\"$namespace\"}",
           "format": "table",
           "instant": true,
           "range": false,
@@ -642,7 +642,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "topk(15, kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"cpu\", namespace=~\"$namespace\"})",
+          "expr": "topk(15, kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_cpu{namespace=~\"$namespace\"})",
           "format": "time_series",
           "instant": true,
           "legendFormat": "{{namespace}} / {{target_name}}",
@@ -734,7 +734,7 @@
             "uid": "prometheus"
           },
           "editorMode": "code",
-          "expr": "topk(15, kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target{resource=\"memory\", namespace=~\"$namespace\"})",
+          "expr": "topk(15, kube_customresource_verticalpodautoscaler_status_recommendation_containerrecommendations_target_memory{namespace=~\"$namespace\"})",
           "format": "time_series",
           "instant": true,
           "legendFormat": "{{namespace}} / {{target_name}}",

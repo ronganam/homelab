@@ -1,0 +1,4 @@
+name: cloudnative-pg
+namespace: cnpg-system
+path: infra/cloudnative-pg
+wave: "5"

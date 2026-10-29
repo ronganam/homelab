@@ -1,0 +1,34 @@
+{{- if .Values.database.enabled }}
+{{- $name := default (printf "%s-db" (include "app.name" .)) .Values.database.name }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "app.namespace" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  instances: {{ .Values.database.instances }}
+  {{- with .Values.database.imageName }}
+  imageName: {{ . | quote }}
+  {{- end }}
+  storage:
+    size: {{ .Values.database.storage.size }}
+    {{- with .Values.database.storage.storageClass }}
+    storageClass: {{ . | quote }}
+    {{- end }}
+  {{- with .Values.database.resources }}
+  resources:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+  bootstrap:
+    initdb:
+      {{- with .Values.database.database }}
+      database: {{ . | quote }}
+      {{- end }}
+      {{- with .Values.database.owner }}
+      owner: {{ . | quote }}
+      {{- end }}
+      secret:
+        name: {{ default (printf "%s-credentials" $name) .Values.database.bootstrapSecret.name }}
+{{- end }}

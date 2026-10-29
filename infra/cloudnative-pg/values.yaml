@@ -1,0 +1,27 @@
+# CloudNativePG operator.
+#
+# The operator only manages the CRDs and the controller. Actual PostgreSQL
+# clusters are declared by applications through the app-blueprint `database`
+# block (see apps/_blueprint), so an app never needs to talk to this chart
+# directly.
+cloudnative-pg:
+  replicaCount: 1
+
+  resources:
+    requests:
+      cpu: "20m"
+      memory: "64Mi"
+    limits:
+      memory: "256Mi"
+
+  # CRDs are rendered as templates by the upstream chart, so Argo CD installs
+  # them on sync. Keep this enabled.
+  crds:
+    create: true
+
+  # Prometheus Operator CRDs are not a hard requirement here; leave the
+  # PodMonitor disabled unless the monitoring stack is wired up for it.
+  monitoring:
+    podMonitorEnabled: false
+    grafanaDashboard:
+      create: false

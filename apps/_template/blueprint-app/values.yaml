@@ -51,3 +51,19 @@ app-blueprint:
   # probes:
   #   liveness:  { path: "/health" }
   #   readiness: { path: "/health" }
+
+  # Managed PostgreSQL via CloudNativePG (requires infra/cloudnative-pg).
+  # The operator exposes "<name>-rw" as the read-write Service.
+  # database:
+  #   enabled: true
+  #   database: mydb
+  #   owner: myuser
+  #   bootstrapSecret:
+  #     name: my-app-secret      # must contain `username` and `password`
+
+  # In-cluster Valkey (Redis-compatible) cache.
+  # cache:
+  #   enabled: true
+  #   passwordSecret:
+  #     name: my-app-secret
+  #     key: password

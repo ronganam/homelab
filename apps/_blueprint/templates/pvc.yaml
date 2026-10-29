@@ -1,3 +1,4 @@
+{{- if .Values.enabled }}
 {{- range .Values.volumes }}
 {{- if and (not .hostPath) (not .nfs) }}
 ---
@@ -13,5 +14,6 @@ spec:
     requests:
       storage: {{ .size }}
   storageClassName: {{ .storageClass | default "local-path" }}
+{{- end }}
 {{- end }}
 {{- end }}

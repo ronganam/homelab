@@ -1,0 +1,101 @@
+{{- if .Values.cache.enabled }}
+{{- $name := default (printf "%s-cache" (include "app.name" .)) .Values.cache.name }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "app.namespace" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  type: ClusterIP
+  ports:
+    - name: valkey
+      port: 6379
+      targetPort: valkey
+      protocol: TCP
+  selector:
+    {{- include "app.selectorLabels" . | nindent 4 }}
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $name }}
+  namespace: {{ include "app.namespace" . }}
+  labels:
+    {{- include "app.labels" . | nindent 4 }}
+spec:
+  serviceName: {{ $name }}
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "app.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "app.selectorLabels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: valkey
+          image: "{{ .Values.cache.image.repository }}:{{ .Values.cache.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          {{- if .Values.cache.passwordSecret.name }}
+          env:
+            - name: VALKEY_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.cache.passwordSecret.name }}
+                  key: {{ .Values.cache.passwordSecret.key }}
+          {{- end }}
+          command:
+            - sh
+            - -c
+            - |
+              exec valkey-server \
+                --port 6379 \
+                --dir /data \
+                --appendonly {{ if .Values.cache.persistence.enabled }}yes{{ else }}no{{ end }}{{ if .Values.cache.passwordSecret.name }} \
+                --requirepass "$VALKEY_PASSWORD"{{ end }}
+          ports:
+            - name: valkey
+              containerPort: 6379
+              protocol: TCP
+          {{- with .Values.cache.resources }}
+          resources:
+            {{- toYaml . | nindent 12 }}
+          {{- end }}
+          livenessProbe:
+            tcpSocket:
+              port: valkey
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 5
+          readinessProbe:
+            tcpSocket:
+              port: valkey
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+            failureThreshold: 3
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      {{- if not .Values.cache.persistence.enabled }}
+      volumes:
+        - name: data
+          emptyDir: {}
+      {{- end }}
+  {{- if .Values.cache.persistence.enabled }}
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: {{ .Values.cache.persistence.size }}
+        storageClassName: {{ .Values.cache.persistence.storageClass | default "local-path" }}
+  {{- end }}
+{{- end }}

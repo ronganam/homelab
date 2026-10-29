@@ -35,14 +35,30 @@ vpa:
         memory: 128Mi
       limits:
         memory: 256Mi
-    # The chart generates the webhook serving cert with a pre-install job.
-    generateCertificate: true
-    # Let the chart own the MutatingWebhookConfiguration; the certgen
-    # post-install job patches its caBundle.
+    # The webhook serving cert is issued by cert-manager (see templates/certificate.yaml)
+    # instead of the chart's pre-install certgen hooks. cert-manager also keeps
+    # the MutatingWebhookConfiguration caBundle in sync via cainjector.
+    generateCertificate: false
     registerWebhook: false
+    secretName: vpa-webhook-tls
+    tlsSecretKeys:
+      - key: ca.crt
+        path: ca
+      - key: tls.crt
+        path: cert
+      - key: tls.key
+        path: key
+    # generateCertificate: false also drops the chart's TLS flags, so set them
+    # explicitly to point at the cert-manager secret mounted at /etc/tls-certs.
+    extraArgs:
+      client-ca-file: /etc/tls-certs/ca
+      tls-cert-file: /etc/tls-certs/cert
+      tls-private-key-file: /etc/tls-certs/key
     mutatingWebhookConfiguration:
       # Never let a VPA outage block pod creation cluster-wide.
       failurePolicy: Ignore
+      annotations:
+        cert-manager.io/inject-ca-from: vpa/vpa-webhook-cert
 
   # Metrics Server is already managed by infra/metrics-server.
   metrics-server:

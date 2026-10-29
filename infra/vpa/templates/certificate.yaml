@@ -1,0 +1,32 @@
+# Self-signed issuer for the VPA admission webhook. The public
+# letsencrypt-dns01 ClusterIssuer cannot issue certs for in-cluster names.
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: vpa-selfsigned
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  selfSigned: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: vpa-webhook-cert
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    argocd.argoproj.io/sync-wave: "-1"
+spec:
+  secretName: vpa-webhook-tls
+  duration: 8760h
+  renewBefore: 720h
+  privateKey:
+    rotationPolicy: Always
+  issuerRef:
+    name: vpa-selfsigned
+    kind: Issuer
+  dnsNames:
+    - vpa-webhook
+    - vpa-webhook.{{ .Release.Namespace }}.svc
+    - vpa-webhook.{{ .Release.Namespace }}.svc.cluster.local

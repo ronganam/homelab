@@ -31,6 +31,10 @@ vpa:
       # Every workload in this homelab runs a single replica. The updater
       # default of 2 would silently skip all of them, so allow evicting one.
       min-replicas: "1"
+      # VPA 1.7 defaults to unlimited evictions. Throttle so a recommendation
+      # change does not restart every app on the node simultaneously.
+      eviction-rate-limit: "0.2"
+      eviction-rate-burst: "1"
 
   admissionController:
     resources:

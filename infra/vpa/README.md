@@ -10,7 +10,7 @@ The Fairwinds `vpa` chart (v5.1.0 / VPA 1.7.1) installs into the `vpa` namespace
 | Component | Purpose |
 |---|---|
 | Recommender | Watches Metrics Server data and writes recommendations to each VPA |
-| Updater | Evicts pods whose requests are outside the recommendation (`Auto`) |
+| Updater | Resizes pods in-place or evicts pods whose requests drift outside the recommendation |
 | Admission Controller | Mutates newly created pods with the recommended requests |
 
 Metrics Server already exists in `infra/metrics-server`; the chart's bundled
@@ -18,9 +18,7 @@ Metrics Server is disabled.
 
 ## Design choices
 
-- **`updateMode: Auto`** — evict + recreate. `Auto` is deprecated in VPA 1.7 in
-  favour of the equivalent `Recreate`, but is kept here because it is still
-  served and is what this repo standardised on.
+- **`updateMode: InPlaceOrRecreate`** — leverages Kubernetes native in-place pod vertical scaling (`InPlacePodVerticalScaling`). Changes container CPU and memory requests dynamically without evicting or restarting running pods; falls back to recreation only if in-place resize cannot fit node capacity.
 - **`controlledValues: RequestsOnly`** — VPA changes requests only. Container
   limits (the OOM ceiling) are never touched, and recommendations are capped at
   the existing limit. This is what frees scheduler capacity without changing
@@ -28,7 +26,7 @@ Metrics Server is disabled.
 - **`min-replicas: "1"`** — the upstream default of 2 would silently skip every
   single-replica workload in this cluster.
 - **Throttled evictions** — `eviction-rate-limit: 0.2` avoids restarting all
-  apps at once when a recommendation changes.
+  apps at once when a fallback recreate occurs.
 - **cert-manager webhook certs** — `templates/certificate.yaml` creates a
   self-signed `Issuer` + `Certificate`; cainjector injects the CA into the
   webhook. The chart's Helm certgen hooks are disabled because they regenerate
@@ -37,7 +35,7 @@ Metrics Server is disabled.
 
 ## Adding a workload
 
-Append an entry to `vpaTargets.targets` in `values.yaml`:
+Append an entry to `vpaTargets.targets` in `values.yaml`:\
 
 ```yaml
     - namespace: my-app
@@ -76,7 +74,7 @@ kubectl get pods -A -o json | jq -r '
   | @tsv'
 ```
 
-Evictions are recorded as `EvictedByVPA` events:
+Evictions (when fallback recreation occurs) are recorded as `EvictedByVPA` events:
 
 ```bash
 kubectl get events -A --field-selector reason=EvictedByVPA

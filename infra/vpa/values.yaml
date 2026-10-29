@@ -1,4 +1,4 @@
-# ── Vertical Pod Autoscaler controller ────────────────────────────────────────
+# ── Vertical Pod Autoscaler controller ────────────────────────────────────
 # Fairwinds chart: https://github.com/FairwindsOps/charts/tree/master/stable/vpa
 # Deploys the three VPA components into the `vpa` namespace:
 #   - recommender: watches usage and writes recommendations
@@ -35,6 +35,9 @@ vpa:
       # change does not restart every app on the node simultaneously.
       eviction-rate-limit: "0.2"
       eviction-rate-burst: "1"
+      # Enable in-place pod resizing (Kubernetes InPlacePodVerticalScaling)
+      feature-gates: "InPlace=true"
+      in-place-skip-disruption-budget: "true"
 
   admissionController:
     resources:
@@ -62,6 +65,7 @@ vpa:
       client-ca-file: /etc/tls-certs/ca
       tls-cert-file: /etc/tls-certs/cert
       tls-private-key: /etc/tls-certs/key
+      feature-gates: "InPlace=true"
     mutatingWebhookConfiguration:
       # Never let a VPA outage block pod creation cluster-wide.
       failurePolicy: Ignore
@@ -72,20 +76,19 @@ vpa:
   metrics-server:
     enabled: false
 
-# ── VPA custom resources ──────────────────────────────────────────────────────
+# ── VPA custom resources ──────────────────────────────────────────────
 # Every entry creates a VerticalPodAutoscaler in the target namespace with
-# updateMode: Auto. Requests are managed; limits are left untouched
-# (controlledValues: RequestsOnly), so VPA can reclaim scheduler capacity
-# without changing each app's OOM ceiling.
+# updateMode: InPlaceOrRecreate. In-place live resizing updates cgroups without
+# restarting the pod; if in-place cannot fit, it falls back to recreate.
+# Requests are managed; limits are left untouched (controlledValues: RequestsOnly),
+# so VPA can reclaim scheduler capacity without changing each app's OOM ceiling.
 #
 # Excluded on purpose: databases/StatefulSets, GPU workloads (frigate),
 # cluster-critical services (pihole DNS, wireguard, registry, infisical), and
 # containers whose request already equals a tiny limit (no headroom to tune).
 vpaTargets:
   defaults:
-    # Auto evicts + recreates pods. VPA 1.7 marks Auto as deprecated in favor
-    # of the equivalent `Recreate`; keep Auto until the API version changes.
-    updateMode: Auto
+    updateMode: InPlaceOrRecreate
     minCpu: 10m
     minMemory: 32Mi
     maxCpu: "2"

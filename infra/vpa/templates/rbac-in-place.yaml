@@ -1,0 +1,27 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vpa-updater-in-place
+  labels:
+    app.kubernetes.io/name: vpa
+    app.kubernetes.io/component: updater
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "pods/resize", "pods/status"]
+    verbs: ["get", "patch", "update"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vpa-updater-in-place-binding
+  labels:
+    app.kubernetes.io/name: vpa
+    app.kubernetes.io/component: updater
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vpa-updater-in-place
+subjects:
+  - kind: ServiceAccount
+    name: vpa-updater
+    namespace: {{ .Release.Namespace }}

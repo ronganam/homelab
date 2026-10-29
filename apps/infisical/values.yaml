@@ -71,10 +71,14 @@ redis:
     persistence:
       size: 1Gi
       storageClass: local-path
+    # The Redis dataset alone is ~115MiB ("RDB memory usage when created 114.64 Mb"),
+    # so the previous 128Mi limit left no room for client buffers or the fork
+    # Redis performs on every AOF rewrite (see auto-aof-rewrite-percentage),
+    # which OOMKilled the pod repeatedly.
     resources:
       requests:
         cpu: "20m"
-        memory: "80Mi"
+        memory: "256Mi"
       limits:
-        memory: "128Mi"
+        memory: "512Mi"
   architecture: standalone

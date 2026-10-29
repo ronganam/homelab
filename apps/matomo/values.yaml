@@ -39,6 +39,7 @@ app-blueprint:
     envSlug: "prod"
     secretsPath: "/matomo"
     nameOverride: "matomo-mariadb"
+    secretName: "matomo-mariadb"
     resyncInterval: 60
 
   mariadb:

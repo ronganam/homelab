@@ -177,3 +177,27 @@ cache:
       memory: "128Mi"
     limits:
       memory: "512Mi"
+
+# Managed MariaDB through official mariadb image (optional component)
+mariadb:
+  enabled: false
+  name: ""
+  image:
+    repository: mariadb
+    tag: "11.4"
+  persistence:
+    enabled: true
+    size: 1Gi
+    storageClass: local-path
+  auth:
+    database: matomo
+    username: matomo
+    passwordSecret:
+      name: ""
+      key: password
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "256Mi"
+    limits:
+      memory: "1Gi"

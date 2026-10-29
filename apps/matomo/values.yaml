@@ -1,68 +1,76 @@
-global:
-  security:
-    allowInsecureImages: true
+# Values for Matomo deployment via blueprint component chart
 
-infisical:
+app-blueprint:
   enabled: true
-  identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
-  projectSlug: "homelab-k8s"
-  envSlug: "prod"
-  secretsPath: "/matomo"
-  resyncInterval: 60
+  nameOverride: "matomo"
 
-matomo:
-  replicaCount: 0
-  cronjobs:
-    taskScheduler:
-      enabled: false
-    archive:
-      enabled: false
   image:
-    registry: public.ecr.aws
-    repository: bitnami/matomo
-    tag: 5.10.0-debian-12-r2
-  matomoUsername: "admin"
-  existingSecret: "matomo-mariadb"
-  matomoEmail: "admin@ganam.app"
-  resources:
-    requests:
-      cpu: 250m
-      memory: 256Mi
-    limits:
-      memory: 768Mi
+    repository: "docker.io/library/matomo"
+    tag: "5.14.2-apache"
+    pullPolicy: IfNotPresent
+
+  replicas: 0
+
+  containerPort: 80
+
+  dns:
+    enabled: true
+    hostname: "matomo.ganam.app"
+    exposure: "internal"
+
+  homepage:
+    enabled: true
+    name: "Matomo"
+    description: "Web Analytics"
+    icon: "matomo.png"
+    group: "Monitoring"
+    weight: "10"
+
+  volumes:
+    - name: data
+      size: 1Gi
+      storageClass: local-path
+      mountPath: /var/www/html
+
+  infisical:
+    enabled: true
+    identityId: "646edad3-7cfd-466a-b6cd-6114b3682e3c"
+    projectSlug: "homelab-k8s"
+    envSlug: "prod"
+    secretsPath: "/matomo"
+    nameOverride: "matomo-mariadb"
+    resyncInterval: 60
 
   mariadb:
-    enabled: false
-    architecture: standalone
-    image:
-      registry: public.ecr.aws
-      repository: bitnami/mariadb
-      tag: 12.2.2-debian-12-r6
-    auth:
-      existingSecret: "matomo-mariadb"
-      database: "bitnami_matomo"
-      username: "bn_matomo"
-    primary:
-      persistence:
-        enabled: true
-        storageClass: "local-path"
-        size: 1Gi
-
-  persistence:
     enabled: true
-    storageClass: "local-path"
-    size: 1Gi
+    name: matomo-mariadb
+    image:
+      repository: mariadb
+      tag: "11.4"
+    persistence:
+      enabled: true
+      size: 1Gi
+      storageClass: local-path
+    auth:
+      database: matomo
+      username: matomo
+      passwordSecret:
+        name: matomo-mariadb
+        key: mariadb-password
+        rootKey: mariadb-root-password
+    resources:
+      requests:
+        cpu: "50m"
+        memory: "256Mi"
+      limits:
+        memory: "1Gi"
 
-  commonLabels:
-    dns.service-controller.io/enabled: "true"
-    dns.service-controller.io/hostname: "matomo.ganam.app"
-    exposure.service-controller.io/type: "internal"
-
-  service:
-    type: ClusterIP
-
-  ingress:
-    enabled: false
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      memory: "768Mi"
 
 logImporter:
   enabled: false

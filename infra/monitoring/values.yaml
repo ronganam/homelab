@@ -194,3 +194,118 @@ kube-prometheus-stack:
     enabled: true
   kubeDns:
     enabled: false
+  kube-state-metrics:
+    rbac:
+      extraRules:
+        - apiGroups: ["autoscaling.k8s.io"]
+          resources: ["verticalpodautoscalers"]
+          verbs: ["list", "watch"]
+    customResourceState:
+      enabled: true
+      config:
+        kind: CustomResourceStateMetrics
+        spec:
+          resources:
+            - groupVersionKind:
+                group: autoscaling.k8s.io
+                version: "v1"
+                kind: "VerticalPodAutoscaler"
+              labelsFromPath:
+                verticalpodautoscaler: [metadata, name]
+                namespace: [metadata, namespace]
+                target_api_version: [spec, targetRef, apiVersion]
+                target_kind: [spec, targetRef, kind]
+                target_name: [spec, targetRef, name]
+              metrics:
+                - name: "verticalpodautoscaler_labels"
+                  help: "Kubernetes labels converted to Prometheus labels"
+                  each:
+                    type: Info
+                    info:
+                      labelsFromPath:
+                        name: [metadata, name]
+                        verticalpodautoscaler: [metadata, name]
+                        namespace: [metadata, namespace]
+                        target_api_version: [spec, targetRef, apiVersion]
+                        target_kind: [spec, targetRef, kind]
+                        target_name: [spec, targetRef, name]
+                - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target"
+                  help: "VPA target recommendation"
+                  each:
+                    type: Gauge
+                    gauge:
+                      path: [status, recommendation, containerRecommendations]
+                      valueFrom: [target, memory]
+                      labelsFromPath:
+                        container: [containerName]
+                        resource: ["memory"]
+                - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target"
+                  help: "VPA target recommendation"
+                  each:
+                    type: Gauge
+                    gauge:
+                      path: [status, recommendation, containerRecommendations]
+                      valueFrom: [target, cpu]
+                      labelsFromPath:
+                        container: [containerName]
+                        resource: ["cpu"]
+                - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
+                  help: "VPA lower bound recommendation"
+                  each:
+                    type: Gauge
+                    gauge:
+                      path: [status, recommendation, containerRecommendations]
+                      valueFrom: [lowerBound, memory]
+                      labelsFromPath:
+                        container: [containerName]
+                        resource: ["memory"]
+                - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
+                  help: "VPA lower bound recommendation"
+                  each:
+                    type: Gauge
+                    gauge:
+                      path: [status, recommendation, containerRecommendations]
+                      valueFrom: [lowerBound, cpu]
+                      labelsFromPath:
+                        container: [containerName]
+                        resource: ["cpu"]
+                - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound"
+                  help: "VPA upper bound recommendation"
+                  each:
+                    type: Gauge
+                    gauge:
+                      path: [status, recommendation, containerRecommendations]
+                      valueFrom: [upperBound, memory]
+                      labelsFromPath:
+                        container: [containerName]
+                        resource: ["memory"]
+                - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound"
+                  help: "VPA upper bound recommendation"
+                  each:
+                    type: Gauge
+                    gauge:
+                      path: [status, recommendation, containerRecommendations]
+                      valueFrom: [upperBound, cpu]
+                      labelsFromPath:
+                        container: [containerName]
+                        resource: ["cpu"]
+                - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget"
+                  help: "VPA uncapped target recommendation"
+                  each:
+                    type: Gauge
+                    gauge:
+                      path: [status, recommendation, containerRecommendations]
+                      valueFrom: [uncappedTarget, memory]
+                      labelsFromPath:
+                        container: [containerName]
+                        resource: ["memory"]
+                - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget"
+                  help: "VPA uncapped target recommendation"
+                  each:
+                    type: Gauge
+                    gauge:
+                      path: [status, recommendation, containerRecommendations]
+                      valueFrom: [uncappedTarget, cpu]
+                      labelsFromPath:
+                        container: [containerName]
+                        resource: ["cpu"]

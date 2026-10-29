@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vpa-grafana-dashboard
+  namespace: {{ .Release.Namespace }}
+  labels:
+    grafana_dashboard: "1"
+    app.kubernetes.io/name: grafana-dashboard
+data:
+  vpa-recommendations.json: |-
+    {{- .Files.Get "dashboards/vpa-recommendations.json" | nindent 4 }}

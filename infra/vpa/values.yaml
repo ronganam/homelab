@@ -27,6 +27,10 @@ vpa:
         memory: 128Mi
       limits:
         memory: 256Mi
+    extraArgs:
+      # Every workload in this homelab runs a single replica. The updater
+      # default of 2 would silently skip all of them, so allow evicting one.
+      min-replicas: "1"
 
   admissionController:
     resources:
@@ -75,6 +79,8 @@ vpa:
 # containers whose request already equals a tiny limit (no headroom to tune).
 vpaTargets:
   defaults:
+    # Auto evicts + recreates pods. VPA 1.7 marks Auto as deprecated in favor
+    # of the equivalent `Recreate`; keep Auto until the API version changes.
     updateMode: Auto
     minCpu: 10m
     minMemory: 32Mi

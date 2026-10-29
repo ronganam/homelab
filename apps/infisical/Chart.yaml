@@ -8,9 +8,8 @@ dependencies:
   - name: infisical-standalone
     version: "1.11.0"
     repository: https://dl.cloudsmith.io/public/infisical/helm-charts/helm/charts/
-  - name: postgresql
-    version: "18.12.16"
-    repository: https://charts.bitnami.com/bitnami
-  - name: redis
-    version: "28.3.1"
-    repository: https://charts.bitnami.com/bitnami
+  # The database and cache come from the shared blueprint component chart
+  # (CloudNativePG Cluster + Valkey) instead of Bitnami subcharts.
+  - name: app-blueprint
+    version: "0.1.0"
+    repository: "file://../_blueprint"

@@ -41,44 +41,49 @@ infisical-standalone:
     # Redis URL will be picked up from envFrom (infisical-secrets)
     # because the bundled redis is disabled, the chart won't override it.
 
-# Configure top-level PostgreSQL dependency
-postgresql:
-  enabled: true
-  auth:
-    username: infisical
-    database: infisicalDB
-    existingSecret: "infisical-secrets"
-    secretKeys:
-      userPasswordKey: "postgres-password"
-  primary:
-    persistence:
+# Database and cache are provided by the shared blueprint component chart in
+# apps/_blueprint. `enabled: false` suppresses its Deployment/Service (the
+# workload comes from infisical-standalone); only database/cache are rendered.
+app-blueprint:
+  enabled: false
+  namespace:
+    enabled: false
+
+  database:
+    enabled: true
+    name: infisical-db
+    instances: 1
+    imageName: "ghcr.io/cloudnative-pg/postgresql:18.6-standard-trixie"
+    storage:
       size: 1Gi
       storageClass: local-path
+    database: infisicalDB
+    owner: infisical
+    # infisical-secrets is managed out-of-band by create-secret.sh and exposes
+    # the `username`/`password` keys CloudNativePG uses for the first bootstrap.
+    bootstrapSecret:
+      name: infisical-secrets
     resources:
       requests:
-        cpu: "30m"
-        memory: "80Mi"
+        cpu: "50m"
+        memory: "256Mi"
       limits:
-        memory: "150Mi"
+        memory: "1Gi"
 
-# Configure top-level Redis dependency
-redis:
-  enabled: true
-  auth:
-    existingSecret: "infisical-secrets"
-    existingSecretPasswordKey: "redis-password"
-  master:
-    persistence:
-      size: 1Gi
-      storageClass: local-path
-    # The Redis dataset alone is ~115MiB ("RDB memory usage when created 114.64 Mb"),
-    # so the previous 128Mi limit left no room for client buffers or the fork
-    # Redis performs on every AOF rewrite (see auto-aof-rewrite-percentage),
-    # which OOMKilled the pod repeatedly.
+  # Valkey replaces the deprecated Bitnami Redis image. Infisical only uses it
+  # as a cache, so it runs without persistence.
+  cache:
+    enabled: true
+    name: infisical-cache
+    image:
+      repository: valkey/valkey
+      tag: "9.0.7"
+    passwordSecret:
+      name: infisical-secrets
+      key: redis-password
     resources:
       requests:
         cpu: "20m"
-        memory: "256Mi"
+        memory: "128Mi"
       limits:
         memory: "512Mi"
-  architecture: standalone

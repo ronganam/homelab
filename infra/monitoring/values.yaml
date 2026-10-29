@@ -231,6 +231,9 @@ kube-prometheus-stack:
                         target_name: [spec, targetRef, name]
                 - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target"
                   help: "VPA target recommendation"
+                  commonLabels:
+                    resource: "memory"
+                    unit: "byte"
                   each:
                     type: Gauge
                     gauge:
@@ -238,11 +241,11 @@ kube-prometheus-stack:
                       valueFrom: [target, memory]
                     labelsFromPath:
                       container: [containerName]
-                    commonLabels:
-                      resource: "memory"
-                      unit: "byte"
                 - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_target"
                   help: "VPA target recommendation"
+                  commonLabels:
+                    resource: "cpu"
+                    unit: "core"
                   each:
                     type: Gauge
                     gauge:
@@ -250,11 +253,11 @@ kube-prometheus-stack:
                       valueFrom: [target, cpu]
                     labelsFromPath:
                       container: [containerName]
-                    commonLabels:
-                      resource: "cpu"
-                      unit: "core"
                 - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
                   help: "VPA lower bound recommendation"
+                  commonLabels:
+                    resource: "memory"
+                    unit: "byte"
                   each:
                     type: Gauge
                     gauge:
@@ -262,11 +265,11 @@ kube-prometheus-stack:
                       valueFrom: [lowerBound, memory]
                     labelsFromPath:
                       container: [containerName]
-                    commonLabels:
-                      resource: "memory"
-                      unit: "byte"
                 - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_lowerbound"
                   help: "VPA lower bound recommendation"
+                  commonLabels:
+                    resource: "cpu"
+                    unit: "core"
                   each:
                     type: Gauge
                     gauge:
@@ -274,11 +277,11 @@ kube-prometheus-stack:
                       valueFrom: [lowerBound, cpu]
                     labelsFromPath:
                       container: [containerName]
-                    commonLabels:
-                      resource: "cpu"
-                      unit: "core"
                 - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound"
                   help: "VPA upper bound recommendation"
+                  commonLabels:
+                    resource: "memory"
+                    unit: "byte"
                   each:
                     type: Gauge
                     gauge:
@@ -286,11 +289,11 @@ kube-prometheus-stack:
                       valueFrom: [upperBound, memory]
                     labelsFromPath:
                       container: [containerName]
-                    commonLabels:
-                      resource: "memory"
-                      unit: "byte"
                 - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_upperbound"
                   help: "VPA upper bound recommendation"
+                  commonLabels:
+                    resource: "cpu"
+                    unit: "core"
                   each:
                     type: Gauge
                     gauge:
@@ -298,11 +301,11 @@ kube-prometheus-stack:
                       valueFrom: [upperBound, cpu]
                     labelsFromPath:
                       container: [containerName]
-                    commonLabels:
-                      resource: "cpu"
-                      unit: "core"
                 - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget"
                   help: "VPA uncapped target recommendation"
+                  commonLabels:
+                    resource: "memory"
+                    unit: "byte"
                   each:
                     type: Gauge
                     gauge:
@@ -310,11 +313,11 @@ kube-prometheus-stack:
                       valueFrom: [uncappedTarget, memory]
                     labelsFromPath:
                       container: [containerName]
-                    commonLabels:
-                      resource: "memory"
-                      unit: "byte"
                 - name: "verticalpodautoscaler_status_recommendation_containerrecommendations_uncappedtarget"
                   help: "VPA uncapped target recommendation"
+                  commonLabels:
+                    resource: "cpu"
+                    unit: "core"
                   each:
                     type: Gauge
                     gauge:
@@ -322,6 +325,3 @@ kube-prometheus-stack:
                       valueFrom: [uncappedTarget, cpu]
                     labelsFromPath:
                       container: [containerName]
-                    commonLabels:
-                      resource: "cpu"
-                      unit: "core"

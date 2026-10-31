@@ -1,7 +1,7 @@
 app-blueprint:
   image:
     repository: registry.ganam.app/yermi-telegram-bot
-    tag: "2.7.0"
+    tag: "2.8.0"
 
   # `web` is the exposed dashboard; the Telegram bot runs as an extra container
   containerPort: 8080
@@ -63,7 +63,7 @@ app-blueprint:
 
   initContainers:
     - name: init-db
-      image: registry.ganam.app/yermi-telegram-bot:2.7.0
+      image: registry.ganam.app/yermi-telegram-bot:2.8.0
       imagePullPolicy: IfNotPresent
       command:
         - python
@@ -85,7 +85,7 @@ app-blueprint:
   # Telegram bot loop - no ports or probes, shares the DB with the web container
   extraContainers:
     - name: bot
-      image: registry.ganam.app/yermi-telegram-bot:2.7.0
+      image: registry.ganam.app/yermi-telegram-bot:2.8.0
       imagePullPolicy: IfNotPresent
       args:
         - bot

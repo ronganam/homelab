@@ -48,7 +48,27 @@ To expose your service, attach the following labels to your Kubernetes `Service`
     *   `exposure.service-controller.io/type: "public"`
 *   **Service Type:** `ClusterIP` (traffic runs securely through the Cloudflare Tunnel without an ingress).
 
+### Blueprint options worth knowing
+*   `dns.extraHostnames: ["*.myapp.ganam.app"]` — more hostnames for the same app (added to the HTTPRoute **and** to the Service annotation `dns.service-controller.io/extra-hostnames`, which the Service Controller turns into DNS records; wildcards allowed, internal exposure only). Needed for apps with one subdomain per tenant.
+*   `database.superuserAccess: true` (+ optional `database.superuserSecret`) — enables CloudNativePG's `postgres` superuser, for apps whose migrations create roles or rely on `SECURITY DEFINER` functions bypassing row-level security.
+*   `database` + `cache` can be combined with the main workload (`enabled: true`); the cache pod gets its own selector so the app Service never routes to it. (Cache-only use via `enabled: false` is unchanged.)
+*   Multiple containers in one pod: `initContainers` / `extraContainers` (repeat `envFrom`, `volumeMounts`, `resources`, `securityContext` per container); a pod-level volume from `volumes:` is visible to all of them.
+
+### Multi-tenant apps (one subdomain per tenant)
+The shared certificate `*.ganam.app` covers **one** label, so `tenant.myapp.ganam.app` needs its own wildcard certificate + listener:
+1.  `infra/gateway/<app>-certificate.yaml` — a `Certificate` for `*.myapp.ganam.app` (issuer `letsencrypt-dns01`) in `gateway-system`.
+2.  A hostname-specific listener in `infra/gateway/gateway.yaml` (`hostname: "*.myapp.ganam.app"`, own `certificateRefs`). It is additive: the existing `https` listener and certificate are untouched.
+3.  `dns.extraHostnames: ["*.myapp.ganam.app"]` in the app values (creates the wildcard DNS record).
+See `apps/gymote` for a complete example.
+
 ## 4. App-Specific Operations & Gotchas
+
+### GYMote (multi-tenant personal-trainer app)
+*   **Layout:** one pod = `gymote` (Caddy: static PWA + proxy, the only exposed port) + `api` + `worker` sidecars sharing the media volume; Postgres via CloudNativePG (`gymote-db`), Valkey (`gymote-cache`). Images: `registry.ganam.app/gymote-api` and `gymote-web` (built from the app repo with `--build-arg CADDYFILE=deploy/Caddyfile.k8s`).
+*   **Before the first sync:** run `apps/gymote/create-secret.sh` (idempotent; never rotates existing passwords or VAPID keys). Without `SMTP_URL`, emails queue in `email_outbox` and are not sent.
+*   **Hostnames:** platform `gymote.ganam.app`; tenants `<slug>.gymote.ganam.app` (wildcard cert + listener in `infra/gateway`).
+*   **Migrations** run as an init container using the Postgres superuser and are idempotent.
+*   **Operations** (run inside the `api` container): `kubectl -n gymote exec deploy/gymote -c api -- node dist/db/create-admin.js <email>` (operator + 2FA), `create-tenant.js`, `set-password.js`, `legacy/import.js`.
 
 ### Bitwarden / Vaultwarden
 *   **Secrets:** Generates hashes for admin via `docker run --rm vaultwarden/server:1.34.3 vaultwarden hash`. Put token in `vaultwarden-admin` secret.

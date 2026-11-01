@@ -1,0 +1,15 @@
+# Wildcard certificate for the multi-tenant GYMote app: one subdomain per tenant (<tenant>.gymote.ganam.app).
+# The shared wildcard (*.ganam.app) only covers ONE label, so tenant hosts need their own, issued by the same DNS-01 issuer.
+# Kept separate (and referenced by its own listener) so a problem here can never affect the other apps' certificate.
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gymote-wildcard
+  namespace: gateway-system
+spec:
+  secretName: gymote-wildcard-tls
+  issuerRef:
+    name: letsencrypt-dns01
+    kind: ClusterIssuer
+  dnsNames:
+    - "*.gymote.ganam.app"

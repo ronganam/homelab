@@ -97,6 +97,10 @@ data:
         DNS_ENABLED_LABEL = "dns.service-controller.io/enabled"
         DNS_HOSTNAME_LABEL = "dns.service-controller.io/hostname"
         EXPOSURE_TYPE_LABEL = "exposure.service-controller.io/type"  # "public" or "internal"
+        # Optional, internal exposure only: comma-separated extra hostnames, wildcards allowed (e.g. "*.app.ganam.app").
+        # An annotation rather than a label because label values cannot contain "*".
+        EXTRA_HOSTNAMES_ANNOTATION = "dns.service-controller.io/extra-hostnames"
+        EXTRA_HOSTNAME_RE = re.compile(r"^(\*\.)?([a-z0-9]([a-z0-9-]*[a-z0-9])?\.)+[a-z]{2,}$")
 
         # Exposure types
         EXPOSURE_PUBLIC = "public"
@@ -1011,6 +1015,20 @@ data:
                     logger.exception("Error reconciling public DNS: %s", e)
                     return False
 
+            def extra_hostnames(self, service):
+                """Validated extra hostnames from the annotation (may be wildcards). Invalid entries are ignored with a warning."""
+                annotations = (service.metadata and service.metadata.annotations) or {}
+                out = []
+                for raw in (annotations.get(EXTRA_HOSTNAMES_ANNOTATION) or "").split(","):
+                    h = raw.strip().lower().rstrip('.')
+                    if not h:
+                        continue
+                    if EXTRA_HOSTNAME_RE.match(h):
+                        out.append(h)
+                    else:
+                        logger.warning("Ignoring invalid extra hostname %r on %s", raw, service.metadata.name)
+                return out
+
             def reconcile_internal_dns(self):
                 """Reconcile internal DNS A records for all internal, DNS-enabled services."""
                 try:
@@ -1025,6 +1043,7 @@ data:
                         hostname = labels.get(DNS_HOSTNAME_LABEL)
                         if hostname:
                             hostnames.append(hostname.lower().strip().rstrip('.'))
+                            hostnames.extend(self.extra_hostnames(service))
 
                     if not hostnames:
                         logger.debug("No internal services to reconcile")
@@ -1116,6 +1135,8 @@ data:
                             external_ip = self.get_ingress_external_ip()
                             if external_ip:
                                 self.create_internal_dns_entry(hostname, external_ip)
+                                for extra in self.extra_hostnames(service):
+                                    self.create_internal_dns_entry(extra, external_ip)
                             else:
                                 logger.debug("Ingress controller has no external IP/hostname yet; skip ensure for %s", hostname)
                         else:

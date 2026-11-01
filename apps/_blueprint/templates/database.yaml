@@ -9,6 +9,13 @@ metadata:
     {{- include "app.labels" . | nindent 4 }}
 spec:
   instances: {{ .Values.database.instances }}
+  {{- if .Values.database.superuserAccess }}
+  enableSuperuserAccess: true
+  {{- with .Values.database.superuserSecret }}
+  superuserSecret:
+    name: {{ . | quote }}
+  {{- end }}
+  {{- end }}
   {{- with .Values.database.imageName }}
   imageName: {{ . | quote }}
   {{- end }}

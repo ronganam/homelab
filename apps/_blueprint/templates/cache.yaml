@@ -1,5 +1,12 @@
 {{- if .Values.cache.enabled }}
 {{- $name := default (printf "%s-cache" (include "app.name" .)) .Values.cache.name }}
+{{- /*
+  Pod selector. When this chart ALSO renders the main workload (`enabled: true`), the cache pod must not carry the main
+  app's `app: <name>` label, otherwise the app Service would route traffic to the cache pod (and the cache Service to the app).
+  With the workload disabled (cache-only use, e.g. infisical) the original selector is kept: StatefulSet selectors are immutable.
+*/ -}}
+{{- $selector := include "app.selectorLabels" . }}
+{{- if .Values.enabled }}{{- $selector = printf "app: %s" $name }}{{- end }}
 apiVersion: v1
 kind: Service
 metadata:
@@ -15,7 +22,7 @@ spec:
       targetPort: valkey
       protocol: TCP
   selector:
-    {{- include "app.selectorLabels" . | nindent 4 }}
+    {{- $selector | nindent 4 }}
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -29,11 +36,11 @@ spec:
   replicas: 1
   selector:
     matchLabels:
-      {{- include "app.selectorLabels" . | nindent 6 }}
+      {{- $selector | nindent 6 }}
   template:
     metadata:
       labels:
-        {{- include "app.selectorLabels" . | nindent 8 }}
+        {{- $selector | nindent 8 }}
     spec:
       containers:
         - name: valkey

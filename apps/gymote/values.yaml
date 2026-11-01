@@ -1,0 +1,178 @@
+# GYMote - multi-tenant personal-trainer PWA. Internal (LAN only) for now.
+#
+# One pod, three containers sharing localhost and the media volume:
+#   gymote   (main)  Caddy: static PWA + reverse proxy to the API   <- the only exposed port
+#   api              Fastify API                (127.0.0.1:3000)
+#   worker           jobs, reminders, push, email, tenant purge
+# Plus, from the blueprint: a CloudNativePG Postgres cluster (gymote-db) and a Valkey cache (gymote-cache).
+#
+# Tenants live on subdomains: <tenant>.gymote.ganam.app. That needs the wildcard DNS record and TLS listener:
+# see dns.extraHostnames below and infra/gateway (gymote-certificate.yaml, listener https-gymote).
+#
+# Secrets are created out-of-band by ./create-secret.sh (before the first sync, like infisical).
+app-blueprint:
+  image:
+    repository: registry.ganam.app/gymote-web
+    tag: "1.0.0"
+
+  containerPort: 8080
+  servicePort: 80
+
+  # RWO media volume shared by api + worker: never two pods at once.
+  strategy: Recreate
+  enableServiceLinks: false
+  automountServiceAccountToken: false
+
+  dns:
+    hostname: gymote.ganam.app
+    exposure: internal
+    extraHostnames:
+      - "*.gymote.ganam.app"          # one subdomain per tenant
+
+  homepage:
+    name: GYMote
+    description: Personal-trainer platform (multi-tenant)
+    icon: "mdi-dumbbell"
+    group: "Applications"
+
+  ingress:
+    proxyBodySize: "20m"
+
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+    fsGroupChangePolicy: OnRootMismatch
+    seccompProfile:
+      type: RuntimeDefault
+
+  containerSecurityContext:
+    allowPrivilegeEscalation: false
+    capabilities:
+      drop: ["ALL"]
+
+  env:
+    XDG_DATA_HOME: /tmp
+    XDG_CONFIG_HOME: /tmp
+
+  volumes:
+    - name: storage
+      size: 5Gi
+      mountPath: /data/storage
+      storageClass: local-path
+
+  resources:
+    requests: { cpu: 10m, memory: 32Mi }
+    limits: { memory: 96Mi }
+
+  probes:
+    liveness:  { enabled: true, type: httpGet, path: "/", initialDelaySeconds: 5, periodSeconds: 20, timeoutSeconds: 3 }
+    readiness: { enabled: true, type: httpGet, path: "/", initialDelaySeconds: 3, periodSeconds: 10, timeoutSeconds: 3 }
+
+  # Schema migrations run as the Postgres SUPERUSER (they create the least-privilege runtime role and define
+  # SECURITY DEFINER functions that must bypass row-level security), then set that role's password from the secret.
+  # Idempotent; retries while the database cluster is still coming up.
+  initContainers:
+    - name: migrate
+      image: registry.ganam.app/gymote-api:1.0.0
+      imagePullPolicy: IfNotPresent
+      command:
+        - sh
+        - -c
+        - |
+          i=0
+          until node dist/db/migrate.js; do
+            i=$((i+1)); [ "$i" -ge 90 ] && echo "database never became ready" && exit 1
+            echo "waiting for the database ($i)"; sleep 5
+          done
+      envFrom:
+        - secretRef: { name: gymote-secrets }
+      env:
+        - { name: NODE_ENV, value: production }
+      resources:
+        requests: { cpu: 20m, memory: 64Mi }
+        limits: { memory: 256Mi }
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities: { drop: ["ALL"] }
+
+  extraContainers:
+    - name: api
+      image: registry.ganam.app/gymote-api:1.0.0
+      imagePullPolicy: IfNotPresent
+      ports:
+        - { name: api, containerPort: 3000 }
+      env:
+        - { name: NODE_ENV, value: production }
+        - { name: PORT, value: "3000" }
+        - { name: PLATFORM_DOMAIN, value: gymote.ganam.app }
+        - { name: TENANT_URL_TEMPLATE, value: "https://{slug}.gymote.ganam.app" }
+        - { name: STORAGE_DIR, value: /data/storage }
+        - { name: REDIS_URL, value: "redis://gymote-cache:6379" }
+      envFrom:
+        - secretRef: { name: gymote-secrets }
+      volumeMounts:
+        - { name: storage, mountPath: /data/storage }
+      readinessProbe:
+        httpGet: { path: /readyz, port: api }
+        initialDelaySeconds: 5
+        periodSeconds: 10
+        timeoutSeconds: 3
+      livenessProbe:
+        httpGet: { path: /healthz, port: api }
+        initialDelaySeconds: 15
+        periodSeconds: 20
+        timeoutSeconds: 3
+      resources:
+        requests: { cpu: 30m, memory: 128Mi }
+        limits: { memory: 384Mi }
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities: { drop: ["ALL"] }
+
+    - name: worker
+      image: registry.ganam.app/gymote-api:1.0.0
+      imagePullPolicy: IfNotPresent
+      command: ["node", "dist/worker.js"]
+      env:
+        - { name: NODE_ENV, value: production }
+        - { name: PLATFORM_DOMAIN, value: gymote.ganam.app }
+        - { name: TENANT_URL_TEMPLATE, value: "https://{slug}.gymote.ganam.app" }
+        - { name: STORAGE_DIR, value: /data/storage }
+      envFrom:
+        - secretRef: { name: gymote-secrets }
+      volumeMounts:
+        - { name: storage, mountPath: /data/storage }
+      resources:
+        requests: { cpu: 10m, memory: 96Mi }
+        limits: { memory: 256Mi }
+      securityContext:
+        allowPrivilegeEscalation: false
+        capabilities: { drop: ["ALL"] }
+
+  # Managed PostgreSQL (CloudNativePG). Superuser access is required for the migrations (see above).
+  database:
+    enabled: true
+    name: gymote-db
+    instances: 1
+    storage:
+      size: 5Gi
+      storageClass: local-path
+    database: gymote
+    owner: gymote
+    bootstrapSecret:
+      name: gymote-db-credentials
+    superuserAccess: true
+    superuserSecret: gymote-db-superuser
+    resources:
+      requests: { cpu: 50m, memory: 192Mi }
+      limits: { memory: 512Mi }
+
+  # Rate-limit counters shared across API replicas. Losing them is harmless: no persistence.
+  cache:
+    enabled: true
+    name: gymote-cache
+    resources:
+      requests: { cpu: 10m, memory: 24Mi }
+      limits: { memory: 96Mi }

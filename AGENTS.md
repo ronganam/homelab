@@ -58,6 +58,7 @@ exposure.service-controller.io/type: "internal" | "public"
 - **Internal:** MetalLB `LoadBalancer` → DNS A record pointing to MetalLB IP
 - **Public:** `ClusterIP` + Cloudflare Tunnel → DNS CNAME to `<tunnel-uuid>.cfargotunnel.com`
 - Blueprint apps set these via `dns.hostname` and `dns.exposure` in values
+- Extra/wildcard hostnames (internal only) go in `dns.extraHostnames` → Service annotation `dns.service-controller.io/extra-hostnames` (an annotation: label values can't contain `*`). Wildcard hosts also need a TLS listener, see `AI_DEPLOYMENT_GUIDE.md` → "Multi-tenant apps"
 - Homepage only auto-discovers **internal** apps (those with Ingress); public apps need manual `services.yaml` entries
 
 ## Key Commands

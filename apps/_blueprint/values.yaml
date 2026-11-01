@@ -27,6 +27,11 @@ dns:
   enabled: true
   hostname: ""
   exposure: "internal"
+  # Additional hostnames served by the same app (HTTPRoute) and published in DNS by the
+  # service controller. Wildcards are allowed, e.g. "*.myapp.ganam.app" for multi-tenant
+  # apps that use one subdomain per tenant. A wildcard needs a matching TLS listener in
+  # infra/gateway (the shared *.ganam.app certificate only covers one label).
+  extraHostnames: []
 
 homepage:
   enabled: true
@@ -133,6 +138,11 @@ database:
   # Defaults to "<app>-db".
   name: ""
   instances: 1
+  # Expose the `postgres` superuser (needed by apps whose migrations create roles or rely on
+  # SECURITY DEFINER functions bypassing row-level security). When `superuserSecret` is set it
+  # must hold `username: postgres` and `password`; otherwise CNPG generates "<name>-superuser".
+  superuserAccess: false
+  superuserSecret: ""
   # Pin the operand image; CNPG requires images built by the project.
   imageName: "ghcr.io/cloudnative-pg/postgresql:18.6-standard-trixie"
   storage:

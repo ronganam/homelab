@@ -24,6 +24,9 @@ spec:
       kind: Gateway
   hostnames:
     - {{ .Values.dns.hostname | quote }}
+    {{- range .Values.dns.extraHostnames }}
+    - {{ . | quote }}
+    {{- end }}
   rules:
     - matches:
         - path:

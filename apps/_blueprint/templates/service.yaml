@@ -11,6 +11,11 @@ metadata:
     dns.service-controller.io/hostname: {{ .Values.dns.hostname | quote }}
     exposure.service-controller.io/type: {{ .Values.dns.exposure | quote }}
     {{- end }}
+  {{- if and .Values.dns.enabled .Values.dns.extraHostnames }}
+  annotations:
+    # Annotation (not a label): label values cannot contain "*".
+    dns.service-controller.io/extra-hostnames: {{ join "," .Values.dns.extraHostnames | quote }}
+  {{- end }}
 spec:
   type: ClusterIP
   ports:

@@ -54,6 +54,21 @@ spec:
       allowedRoutes:
         namespaces:
           from: All
+    # Multi-tenant GYMote: <tenant>.gymote.ganam.app. A hostname-specific listener with its own certificate
+    # (the shared *.ganam.app one does not cover two labels). Envoy picks it by SNI.
+    - name: https-gymote
+      port: 443
+      protocol: HTTPS
+      hostname: "*.gymote.ganam.app"
+      tls:
+        mode: Terminate
+        certificateRefs:
+          - group: ""
+            kind: Secret
+            name: gymote-wildcard-tls
+      allowedRoutes:
+        namespaces:
+          from: All
     # Frigate WebRTC listeners on port 8555
     # Required for real-time WebRTC UDP/TCP media streaming to avoid MSE buffering latency.
     # Exposing these via Gateway allows using the domain name (frigate.ganam.app:8555)

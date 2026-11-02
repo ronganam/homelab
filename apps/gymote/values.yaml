@@ -13,7 +13,7 @@
 app-blueprint:
   image:
     repository: registry.ganam.app/gymote-web
-    tag: "1.1.0"
+    tag: "1.1.1"
 
   containerPort: 8080
   servicePort: 80

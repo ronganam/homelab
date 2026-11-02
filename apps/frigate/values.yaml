@@ -207,6 +207,17 @@ frigate:
             loitering_time: 0
             objects:
               - person
+          # Dog crate zone. Must stay here: the configmap is re-copied to
+          # /config/config.yml on every pod restart, so UI-only edits are lost.
+          # Consumed by the Home Assistant "Dog: Crate Motion (Night Ding)" automation
+          # through binary_sensor.dog_crate_dog_occupancy.
+          dog-crate:
+            coordinates: 0,0.38,0.248,0.322,0.251,0.545,0.07,0.703,0,0.65
+            enabled: true
+            inertia: 3
+            loitering_time: 0
+            objects:
+              - dog
     version: 0.18-0
     semantic_search:
       enabled: true

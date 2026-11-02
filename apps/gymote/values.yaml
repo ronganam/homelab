@@ -13,7 +13,7 @@
 app-blueprint:
   image:
     repository: registry.ganam.app/gymote-web
-    tag: "1.1.4"
+    tag: "1.1.5"
 
   containerPort: 8080
   servicePort: 80
@@ -75,7 +75,7 @@ app-blueprint:
   # Idempotent; retries while the database cluster is still coming up.
   initContainers:
     - name: migrate
-      image: registry.ganam.app/gymote-api:1.1.1
+      image: registry.ganam.app/gymote-api:1.1.2
       imagePullPolicy: IfNotPresent
       command:
         - sh
@@ -99,7 +99,7 @@ app-blueprint:
 
   extraContainers:
     - name: api
-      image: registry.ganam.app/gymote-api:1.1.1
+      image: registry.ganam.app/gymote-api:1.1.2
       imagePullPolicy: IfNotPresent
       ports:
         - { name: api, containerPort: 3000 }
@@ -132,7 +132,7 @@ app-blueprint:
         capabilities: { drop: ["ALL"] }
 
     - name: worker
-      image: registry.ganam.app/gymote-api:1.1.1
+      image: registry.ganam.app/gymote-api:1.1.2
       imagePullPolicy: IfNotPresent
       command: ["node", "dist/worker.js"]
       env:

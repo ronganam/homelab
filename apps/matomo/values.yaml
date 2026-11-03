@@ -47,7 +47,7 @@ app-blueprint:
     name: matomo-mariadb
     image:
       repository: mariadb
-      tag: "11.4"
+      tag: "13.0"
     persistence:
       enabled: true
       size: 1Gi

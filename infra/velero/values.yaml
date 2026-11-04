@@ -127,6 +127,7 @@ velero:
           - gilartworks-portfolio
           - gilartworks-store
           - excalidraw
+          - ganam-assistant
           - infisical
           - n8n
           - paperless-ngx

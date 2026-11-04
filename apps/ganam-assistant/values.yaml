@@ -28,7 +28,22 @@ app-blueprint:
     secretName: ganam-assistant-secret
 
   env:
+    # All app data (DB, call recordings, media, uploads, APKs) lives next to
+    # the database, i.e. on the PVC mounted at /app/db.
     DATABASE_PATH: "/app/db/db.sqlite3"
+    TIMEZONE: "Asia/Jerusalem"
+    # Callers that reach the pod via the ClusterIP Service (Home Assistant
+    # integration, WAHA webhook) are trusted; everything through the gateway
+    # must present API_TOKEN (set in Infisical).
+    INTERNAL_HOSTS: "ganam-assistant.ganam-assistant,ganam-assistant.ganam-assistant.svc,ganam-assistant.ganam-assistant.svc.cluster.local"
+
+  # Velero copies volume files, which can catch SQLite mid-write. This hook
+  # writes a consistent copy to /app/db/snapshots/db.sqlite3 first; restore
+  # from that file.
+  podAnnotations:
+    pre.hook.backup.velero.io/container: ganam-assistant
+    pre.hook.backup.velero.io/command: '["sh", "-c", "cd /app && python3 -m core.db_snapshot"]'
+    pre.hook.backup.velero.io/timeout: 2m
 
   securityContext:
     runAsUser: 1001

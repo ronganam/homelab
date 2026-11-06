@@ -169,7 +169,7 @@ cache:
   name: ""
   image:
     repository: valkey/valkey
-    tag: "9.0.7"
+    tag: "9.1.3"
   # A cache does not need durable storage; keep this disabled unless the app
   # really needs its contents to survive a restart.
   persistence:

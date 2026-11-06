@@ -6,7 +6,7 @@ version: 0.1.0
 appVersion: "1.0.1"
 dependencies:
   - name: infisical-standalone
-    version: "1.11.0"
+    version: "1.12.0"
     repository: https://dl.cloudsmith.io/public/infisical/helm-charts/helm/charts/
   # The database and cache come from the shared blueprint component chart
   # (CloudNativePG Cluster + Valkey) instead of Bitnami subcharts.
